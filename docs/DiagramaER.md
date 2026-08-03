@@ -56,7 +56,21 @@
 
 ---
 
-## 4. Entidades de Transacción
+## 4. Entidades de Gestión de Proyectos
+
+### Tabla: `Proyecto`
+
+> Permite agrupar las facturas de un mismo cliente bajo un proyecto específico.
+
+| Campo | Tipo | Descripción |
+|--------|------|-------------|
+| `nombre` | String | Nombre del proyecto (ejemplo: `"Construcción Residencial 1"` o `"Reparación Techo"`). |
+| `estado` | Enum (`ACTIVO`, `FINALIZADO`) | Estado del proyecto. Solo los proyectos activos aparecerán por defecto al crear nuevas facturas. |
+| `cliente_id` | UUID | Llave foránea hacia `Cliente`. |
+
+---
+
+## 5. Entidades de Transacción
 
 ### Tabla: `Factura`
 
@@ -70,6 +84,7 @@
 | `total_venta` | Decimal | Total de la venta calculado a partir de sus detalles. |
 | `cliente_id` | UUID | Llave foránea hacia `Cliente`. |
 | `usuario_id` | UUID | Llave foránea hacia `Usuario`. |
+| `proyecto_id` | UUID *(Opcional)* | Llave foránea hacia `Proyecto`. Si es `NULL`, la compra corresponde al cliente de forma general; si contiene un valor, la factura pertenece a ese proyecto. |
 
 ### Tabla: `DetalleFactura`
 
@@ -90,13 +105,32 @@
 
 ---
 
+# Flujo de Usuario para la Asignación de Proyectos
+
+Al crear una nueva factura, el flujo será el siguiente:
+
+1. El usuario busca y selecciona al cliente (por ejemplo, **Juan Pérez**).
+2. El sistema verifica si el cliente posee proyectos registrados.
+3. Se muestra un campo **"Asignar a Proyecto (Opcional)"**, donde el usuario puede:
+   - Seleccionar uno de los proyectos activos del cliente.
+   - Crear un nuevo proyecto en ese momento.
+   - Dejar el campo vacío si la compra no pertenece a ningún proyecto específico.
+
+---
+
 # Resumen de Relaciones Principales
 
 - **Producto** → **AliasProducto**: **1:N**
   - Un producto puede tener múltiples alias.
 
+- **Cliente** → **Proyecto**: **1:N**
+  - Un cliente puede tener múltiples proyectos.
+
 - **Cliente** → **Factura**: **1:N**
   - Un cliente puede tener múltiples facturas.
+
+- **Proyecto** → **Factura**: **1:N**
+  - Un proyecto puede agrupar múltiples facturas.
 
 - **Factura** → **DetalleFactura**: **1:N**
   - Una factura puede contener múltiples detalles.
@@ -106,3 +140,5 @@
 
 - **Producto** → **DetalleFactura**: **1:N**
   - Un producto puede aparecer en múltiples detalles de factura.
+
+> **Regla de negocio:** Toda factura pertenece obligatoriamente a un **Cliente** y, de manera opcional, puede estar asociada a un **Proyecto** perteneciente a ese mismo cliente.
