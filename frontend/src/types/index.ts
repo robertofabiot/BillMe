@@ -53,3 +53,26 @@ export interface Proyecto {
   nombre: string
   estado: 'ACTIVO' | 'FINALIZADO'
 }
+
+export interface ConsolidadoItem {
+  id: string
+  facturaId?: string
+  productoNombre: string
+  cantidad: number
+  precioUnitario: number
+}
+
+export interface ConsolidadoGroup {
+  id: string
+  nombre: string
+  items: ConsolidadoItem[]
+}
+
+export interface Consolidado {
+  id: string
+  folioInterno: string
+  clienteId: string
+  nombre: string
+  createdAt: string
+  grupos: ConsolidadoGroup[]
+}

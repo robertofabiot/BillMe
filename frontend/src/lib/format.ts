@@ -1,6 +1,6 @@
-export const fmt = new Intl.NumberFormat('es-MX', {
+export const fmt = new Intl.NumberFormat('es-NI', {
   style: 'currency',
-  currency: 'MXN',
+  currency: 'NIO',
   minimumFractionDigits: 2,
 })
 

@@ -68,3 +68,10 @@ export const FACTURAS: Factura[] = [
     abonos: [],
   },
 ]
+
+export const USUARIOS = [
+  { id: 'u1', username: 'admin', rol: 'ADMIN', nombre: 'Administrador' },
+  { id: 'u2', username: 'ventas1', rol: 'VENDEDOR', nombre: 'Vendedor Principal' },
+]
+
+export const CONSOLIDADOS: any[] = []

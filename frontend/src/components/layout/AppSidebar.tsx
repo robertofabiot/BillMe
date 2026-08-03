@@ -6,11 +6,13 @@ import {
   FolderKanban,
   BarChart3,
   Settings,
+  Layers,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { to: '/',          label: 'Facturas',   icon: ReceiptText },
+  { to: '/consolidados', label: 'Consolidados', icon: Layers },
   { to: '/clientes',  label: 'Clientes',   icon: Users },
   { to: '/productos', label: 'Productos',  icon: Package },
   { to: '/proyectos', label: 'Proyectos',  icon: FolderKanban },
