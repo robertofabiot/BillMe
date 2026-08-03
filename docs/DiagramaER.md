@@ -45,7 +45,10 @@
 | `codigo_interno` | String | Código único del producto (llave natural). |
 | `nombre_principal` | String | Nombre principal del producto. |
 | `descripcion` | String | Opcional. |
-| `peso` | Decimal | Peso del producto en una unidad estandarizada (por ejemplo, kilogramos). |
+| `precio_lista_proveedor` | Decimal | Precio base del proveedor sin IVA. |
+| `descuento_proveedor` | Decimal | Porcentaje de descuento aplicado por el proveedor. |
+| `costo_neto` | Decimal | Costo real final (incluye descuento e IVA). |
+| `peso` | Decimal | Peso del producto en una unidad estandarizada. |
 
 ### Tabla: `AliasProducto`
 
@@ -103,6 +106,35 @@
 | `fecha_pago` | Timestamp | Fecha en que el cliente realizó el pago. |
 | `factura_id` | UUID | Llave foránea hacia `Factura`. |
 
+### Tabla: `Consolidado`
+
+> Agrupador de facturas utilizado para emitir estados de cuenta organizados por bloques.
+
+| Campo | Tipo | Descripción |
+|--------|------|-------------|
+| `folio_interno` | String | Identificador único (ejemplo: `CONS-0001`). |
+| `nombre` | String | Título del consolidado. |
+| `cliente_id` | UUID | Llave foránea hacia `Cliente`. |
+
+### Tabla: `ConsolidadoGroup`
+
+| Campo | Tipo | Descripción |
+|--------|------|-------------|
+| `nombre` | String | Nombre del subtotal o bloque. |
+| `orden` | Integer | Posición del grupo en el documento. |
+| `consolidado_id` | UUID | Llave foránea hacia `Consolidado`. |
+
+### Tabla: `ConsolidadoItem`
+
+| Campo | Tipo | Descripción |
+|--------|------|-------------|
+| `producto_nombre` | String | Texto con el nombre del producto o servicio. |
+| `cantidad` | Decimal | Cantidad del ítem. |
+| `precio_unitario` | Decimal | Precio reflejado en el consolidado. |
+| `orden` | Integer | Posición del ítem dentro del grupo. |
+| `factura_id` | UUID *(Opcional)* | Referencia a la factura original. |
+| `grupo_id` | UUID | Llave foránea hacia `ConsolidadoGroup`. |
+
 ---
 
 # Flujo de Usuario para la Asignación de Proyectos
@@ -140,5 +172,14 @@ Al crear una nueva factura, el flujo será el siguiente:
 
 - **Producto** → **DetalleFactura**: **1:N**
   - Un producto puede aparecer en múltiples detalles de factura.
+
+- **Cliente** → **Consolidado**: **1:N**
+  - Un cliente puede tener múltiples consolidados (estados de cuenta).
+
+- **Consolidado** → **ConsolidadoGroup**: **1:N**
+  - Un consolidado se divide en múltiples grupos/subtotales.
+
+- **ConsolidadoGroup** → **ConsolidadoItem**: **1:N**
+  - Un grupo tiene múltiples ítems (productos/servicios extraídos de facturas).
 
 > **Regla de negocio:** Toda factura pertenece obligatoriamente a un **Cliente** y, de manera opcional, puede estar asociada a un **Proyecto** perteneciente a ese mismo cliente.

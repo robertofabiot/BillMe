@@ -27,7 +27,7 @@ Plataforma web para la gestión de cotizaciones, ventas y pagos parciales de mat
   - Finalizado
 - Listado de proyectos activos al momento de crear una nueva factura.
 - Posibilidad de crear un proyecto directamente desde la pantalla de facturación sin abandonar el flujo de trabajo.
-- Agrupación de facturas por proyecto para facilitar el seguimiento de una obra o construcción.
+- Agrupación de facturas por proyecto para facilitar el seguimiento de una obra o construcción, manteniendo el modelo estrictamente minimalista (solo nombre y estado, sin presupuestos ni fechas estimadas irrelevantes).
 
 ---
 
@@ -36,6 +36,10 @@ Plataforma web para la gestión de cotizaciones, ventas y pagos parciales de mat
 - Registro de productos con:
   - UUID como llave primaria interna.
   - Código de producto como llave natural.
+- Gestión avanzada de precios y costos:
+  - Registro de **Precio de Lista del Proveedor**.
+  - Registro de **Descuento** otorgado por el proveedor.
+  - Cálculo automático del **Costo Neto** `(Precio Lista * (1 - Descuento) * (1 + IVA))`.
 - Administración de alias paramétricos para vincular múltiples nombres o dimensiones a un mismo producto.
 - Búsqueda de productos mediante:
   - Código interno.
@@ -77,8 +81,8 @@ Plataforma web para la gestión de cotizaciones, ventas y pagos parciales de mat
 
 - Bandeja de facturas cerradas.
 - Alertas o sugerencias para completar información faltante.
-- Registro posterior del costo real facturado por el proveedor.
-- Cálculo automático del margen de ganancia real sin afectar el flujo rápido de ventas.
+- Tablero de **Reportes Cruzados**: Motor analítico global para agrupar ingresos, costos y ganancias combinando Rango de Fechas, Clientes y Proyectos en tiempo real.
+- Cálculo de diferencias entre Costo Neto y Precio de Venta al Cliente para mostrar ganancias exactas.
 - Consulta del historial de precios por cliente y producto.
 
 ---
@@ -88,6 +92,26 @@ Plataforma web para la gestión de cotizaciones, ventas y pagos parciales de mat
 - Renderizado HTML de proformas y facturas.
 - Exportación en formato imagen (`.jpg` o `.png`) para compartir mediante WhatsApp.
 - Posibilidad de reexportar documentos históricos.
+
+---
+
+### 2.8. Módulo de Consolidados
+
+- Agrupación de múltiples facturas de un mismo cliente en un solo estado de cuenta (Consolidado).
+- Generación automática de subtotales por factura.
+- Constructor de documentos completamente editable:
+  - Reordenamiento visual de productos y facturas (bloques).
+  - Personalización de los nombres de los subtotales.
+  - Eliminación de ítems del reporte sin afectar las facturas originales en base de datos.
+- Generación de un total general consolidado acumulando todos los grupos.
+
+---
+
+### 2.9. Módulo de Configuración
+
+- Configuración del **IVA por defecto** utilizado para todos los cálculos internos y cálculos de costo neto.
+- Selección de la **Moneda Principal** del sistema (limitada a Córdobas `C$` y Dólares `USD`).
+- Modificación del prefijo y secuencia del siguiente folio de facturación.
 
 ---
 
