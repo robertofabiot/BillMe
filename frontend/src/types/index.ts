@@ -109,3 +109,17 @@ export interface PrecioHistorial {
   precioUnitario: number
   cantidad: number
 }
+
+// ─── Tipos de Autenticación ─────────────────────────────────────────────
+
+export interface AuthRequest {
+  username: string
+  password?: string // Opcional porque solo se usa para enviar
+}
+
+export interface AuthResponse {
+  token: string
+  username: string
+  nombre: string
+  rol: 'ADMIN' | 'VENDEDOR'
+}
