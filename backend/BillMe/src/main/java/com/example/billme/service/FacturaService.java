@@ -196,24 +196,9 @@ public class FacturaService {
     }
 
     private String generarFolioInterno() {
-        List<Factura> facturas = facturaRepository.findAll();
-        if (facturas.isEmpty()) {
-            return "FAC-0001";
-        }
-        
-        int max = 0;
-        for (Factura f : facturas) {
-            if (f.getFolioInterno() != null && f.getFolioInterno().startsWith("FAC-")) {
-                try {
-                    int num = Integer.parseInt(f.getFolioInterno().substring(4));
-                    if (num > max) {
-                        max = num;
-                    }
-                } catch (NumberFormatException ignored) {}
-            }
-        }
-        
-        return String.format("FAC-%04d", max + 1);
+        Integer max = facturaRepository.findMaxFolioNumero();
+        int next = (max != null ? max : 0) + 1;
+        return String.format("FAC-%04d", next);
     }
 
     public FacturaResponse toResponse(Factura f) {
@@ -264,7 +249,8 @@ public class FacturaService {
                 d.getProducto() != null ? d.getProducto().getCodigoInterno() : null,
                 d.getCantidad(),
                 d.getPrecioUnitarioVenta(),
-                d.getProducto() != null ? d.getProducto().getCostoNeto() : null
+                d.getProducto() != null ? d.getProducto().getCostoNeto() : null,
+                d.getProducto() != null ? d.getProducto().getPeso() : null
         );
     }
 

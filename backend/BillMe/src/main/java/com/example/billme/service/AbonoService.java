@@ -42,6 +42,19 @@ public class AbonoService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La factura ya está pagada");
         }
 
+        if (request.monto() == null || request.monto().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El monto del abono debe ser mayor a cero");
+        }
+
+        BigDecimal totalAbonadoActual = abonoRepository.sumMontoByFacturaId(facturaId);
+        if (totalAbonadoActual == null) totalAbonadoActual = BigDecimal.ZERO;
+        BigDecimal totalVenta = factura.getTotalVenta() != null ? factura.getTotalVenta() : BigDecimal.ZERO;
+        BigDecimal saldoPendiente = totalVenta.subtract(totalAbonadoActual);
+
+        if (request.monto().compareTo(saldoPendiente) > 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El monto del abono excede el saldo pendiente de " + saldoPendiente);
+        }
+
         Abono abono = new Abono();
         abono.setFactura(factura);
         abono.setMonto(request.monto());
@@ -53,8 +66,6 @@ public class AbonoService {
         if (totalAbonado == null) {
             totalAbonado = BigDecimal.ZERO;
         }
-
-        BigDecimal totalVenta = factura.getTotalVenta() != null ? factura.getTotalVenta() : BigDecimal.ZERO;
 
         if (totalAbonado.compareTo(totalVenta) >= 0) {
             factura.setEstado(EstadoFactura.PAGADO);

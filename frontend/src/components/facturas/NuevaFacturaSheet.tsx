@@ -165,7 +165,9 @@ export function NuevaFacturaSheet({ open, onOpenChange, onSave, clientes, proyec
                   <label className="text-xs text-[#705D56]">Cliente *</label>
                   <Select value={clienteId} onValueChange={handleClienteChange}>
                     <SelectTrigger className="rounded border-[#E5E7EB] text-sm h-9">
-                      <SelectValue placeholder="Seleccionar cliente…" />
+                      <SelectValue placeholder="Seleccionar cliente…">
+                        {clienteId ? clientes.find(c => c.id === clienteId)?.nombre : undefined}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {clientes.map(c => (
@@ -185,7 +187,9 @@ export function NuevaFacturaSheet({ open, onOpenChange, onSave, clientes, proyec
                       <SelectValue placeholder={
                         !clienteId ? 'Elige un cliente primero' :
                         clienteProyectos.length ? 'Asignar proyecto…' : 'Sin proyectos activos'
-                      } />
+                      }>
+                        {proyectoId ? clienteProyectos.find(p => p.id === proyectoId)?.nombre : undefined}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {clienteProyectos.map(p => (

@@ -10,5 +10,6 @@ public record DetalleResponse(
         String productoCodigoInterno,
         BigDecimal cantidad,
         BigDecimal precioUnitarioVenta,
-        BigDecimal costoUnitario
+        BigDecimal costoUnitario,
+        BigDecimal pesoUnitario
 ) {}

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, type ChangeEvent } from 'react'
 import type { Factura, Abono, EstadoFactura, Cliente, Proyecto } from '@/types'
 import { facturaService, clienteService, proyectoService } from '@/services'
+import type { FacturaPayload, AbonoPayload } from '@/services/facturaService'
 import { formatCurrency, formatDate, getSaldo } from '@/lib/format'
 import { EstadoBadge } from '@/components/facturas/EstadoBadge'
 import { NuevaFacturaSheet } from '@/components/facturas/NuevaFacturaSheet'
@@ -101,7 +102,7 @@ export function FacturasPage() {
   }, [facturas, search, filtroEstado])
 
   // ── Handlers ───────────────────────────────────────────
-  const handleSaveFactura = async (nueva: any) => {
+  const handleSaveFactura = async (nueva: FacturaPayload) => {
     try {
       await facturaService.crear(nueva)
       await fetchData()
@@ -112,7 +113,7 @@ export function FacturasPage() {
     }
   }
 
-  const handleAddAbono = async (facturaId: string, abono: any) => {
+  const handleAddAbono = async (facturaId: string, abono: AbonoPayload) => {
     try {
       await facturaService.registrarAbono(facturaId, abono)
       await fetchData()
@@ -126,20 +127,18 @@ export function FacturasPage() {
   }
 
   const handleUpdateEstado = async (facturaId: string, estado: EstadoFactura) => {
-    if (estado === 'PENDIENTE') {
-      try {
+    try {
+      if (estado === 'PENDIENTE') {
         await facturaService.confirmar(facturaId)
-        await fetchData()
-        const freshFactura = await facturaService.obtener(facturaId)
-        setSelected(freshFactura)
-      } catch (err) {
-        console.error(err)
-        alert('Error al confirmar factura')
+      } else {
+        await facturaService.actualizar(facturaId, { estado } as any)
       }
-    } else {
-       // local only fallback if not confirmar
-       setFacturas(prev => prev.map(f => f.id === facturaId ? { ...f, estado } : f))
-       setSelected(prev => prev?.id === facturaId ? { ...prev, estado } : prev)
+      await fetchData()
+      const freshFactura = await facturaService.obtener(facturaId)
+      setSelected(freshFactura)
+    } catch (err) {
+      console.error(err)
+      alert('Error al actualizar estado')
     }
   }
 
@@ -192,7 +191,13 @@ export function FacturasPage() {
         </div>
         <Select value={filtroEstado} onValueChange={(v) => setFiltroEstado(v as FiltroEstado)}>
           <SelectTrigger className="w-44 rounded border-[#E5E7EB] text-sm h-9">
-            <SelectValue />
+            <SelectValue>
+              {filtroEstado === 'TODOS' ? 'Todos los estados' :
+               filtroEstado === 'COTIZACION' ? 'Cotización' :
+               filtroEstado === 'PENDIENTE' ? 'Pendiente' :
+               filtroEstado === 'PAGO_PARCIAL' ? 'Pago Parcial' :
+               filtroEstado === 'PAGADO' ? 'Pagado' : 'Estado'}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="TODOS">Todos los estados</SelectItem>

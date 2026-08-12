@@ -34,8 +34,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (credentials: AuthRequest) => {
     const data = await authService.login(credentials)
     localStorage.setItem('billme_token', data.token)
-    // Guardamos la metadata del usuario (sin el token por seguridad/limpieza)
-    const userInfo = { ...data }
+    // Guardamos la metadata del usuario sin el token
+    const { token: _, ...userInfo } = data
     localStorage.setItem('billme_user', JSON.stringify(userInfo))
     setUser(userInfo)
   }

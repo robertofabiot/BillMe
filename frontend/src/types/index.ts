@@ -24,6 +24,7 @@ export interface DetalleFactura {
   cantidad: number
   precioUnitarioVenta: number
   costoUnitario?: number
+  pesoUnitario?: number
 }
 
 export interface Abono {

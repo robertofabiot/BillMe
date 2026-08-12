@@ -19,7 +19,7 @@ public class JwtService {
 
     // Una clave secreta lo suficientemente larga para HMAC-SHA256 (mínimo 256 bits / 32 caracteres)
     // En producción esto debería venir de application.properties
-    @Value("${jwt.secret:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}")
+    @Value("${jwt.secret}")
     private String secretKey;
 
     @Value("${jwt.expiration:86400000}") // 1 día por defecto

@@ -51,4 +51,7 @@ public interface FacturaRepository extends JpaRepository<Factura, UUID> {
             @Param("clienteId")  UUID clienteId,
             @Param("productoId") UUID productoId
     );
+
+    @Query("SELECT MAX(CAST(SUBSTRING(f.folioInterno, 5) AS int)) FROM Factura f WHERE f.folioInterno LIKE 'FAC-%'")
+    Integer findMaxFolioNumero();
 }
