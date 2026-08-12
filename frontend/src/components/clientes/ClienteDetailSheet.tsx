@@ -1,5 +1,7 @@
 import type { Cliente, Factura, Proyecto } from '@/types'
-import { FACTURAS, PROYECTOS } from '@/data/mock'
+import { useEffect, useState } from 'react'
+import { facturaService } from '@/services/facturaService'
+import { proyectoService } from '@/services/proyectoService'
 import { formatCurrency, formatDate, getSaldo } from '@/lib/format'
 import { EstadoBadge } from '@/components/facturas/EstadoBadge'
 import {
@@ -18,14 +20,20 @@ interface Props {
 export function ClienteDetailSheet({ cliente, open, onOpenChange, onEdit }: Props) {
   if (!open || !cliente) return null
 
-  const facturas: Factura[] = FACTURAS.filter(f => f.clienteId === cliente.id)
-  const proyectos: Proyecto[] = PROYECTOS.filter(p => p.clienteId === cliente.id)
+  const [facturas, setFacturas] = useState<Factura[]>([])
+  const [proyectos, setProyectos] = useState<Proyecto[]>([])
+
+  useEffect(() => {
+    if (!cliente?.id) return
+    facturaService.listar({ clienteId: cliente.id }).then(setFacturas).catch(console.error)
+    proyectoService.listar(cliente.id).then(setProyectos).catch(console.error)
+  }, [cliente?.id])
 
   const totalFacturado = facturas.reduce((s, f) => s + f.totalVenta, 0)
-  const totalCobrado   = facturas.reduce((s, f) => s + f.abonos.reduce((a, b) => a + b.monto, 0), 0)
+  const totalCobrado   = facturas.reduce((s, f) => s + (f.totalAbonado ?? f.abonos?.reduce((a, b) => a + b.monto, 0) ?? 0), 0)
   const porCobrar      = facturas.reduce((s, f) => {
     if (f.estado === 'PAGADO' || f.estado === 'COTIZACION') return s
-    return s + getSaldo(f.totalVenta, f.abonos)
+    return s + (f.saldoPendiente ?? getSaldo(f.totalVenta, f.abonos || []))
   }, 0)
 
   return (

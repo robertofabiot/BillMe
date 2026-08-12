@@ -1,7 +1,6 @@
 import { useState, useEffect, type ChangeEvent } from 'react'
 import { createPortal } from 'react-dom'
-import type { Proyecto } from '@/types'
-import { CLIENTES } from '@/data/mock'
+import type { Proyecto, Cliente } from '@/types'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { FolderGit2, X, Plus, Building2 } from 'lucide-react'
@@ -12,9 +11,10 @@ interface Props {
   initial?: Proyecto | null
   onSave: (proyecto: Omit<Proyecto, 'id'> & { id?: string }) => void
   defaultClienteId?: string
+  clientes: Cliente[]
 }
 
-export function ProyectoModal({ open, onOpenChange, initial, onSave, defaultClienteId }: Props) {
+export function ProyectoModal({ open, onOpenChange, initial, onSave, defaultClienteId, clientes }: Props) {
   const [nombre,       setNombre]       = useState('')
   const [clienteId,    setClienteId]    = useState('')
   const [estado,       setEstado]       = useState<Proyecto['estado']>('ACTIVO')
@@ -86,7 +86,7 @@ export function ProyectoModal({ open, onOpenChange, initial, onSave, defaultClie
               className="h-9 w-full rounded border border-[#E5E7EB] bg-white px-3 py-1 text-sm text-[#022F40] outline-none focus:border-[#022F40] focus:ring-2 focus:ring-[#022F40]/10 transition-all"
             >
               <option value="" disabled>Selecciona un cliente</option>
-              {CLIENTES.map(c => (
+              {clientes.map(c => (
                 <option key={c.id} value={c.id}>{c.nombre}</option>
               ))}
             </select>

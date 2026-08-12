@@ -1,44 +1,87 @@
-import { useState, useMemo } from 'react'
-import type { Consolidado } from '@/types'
-import { CONSOLIDADOS, CLIENTES } from '@/data/mock'
+import { useState, useMemo, useEffect } from 'react'
+import type { Consolidado, Cliente } from '@/types'
+import { consolidadoService, clienteService } from '@/services'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { NuevoConsolidadoSheet } from '@/components/consolidados/NuevoConsolidadoSheet'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Layers, Plus, Search, Building2, Eye } from 'lucide-react'
+import { Layers, Plus, Search, Building2, Eye, Trash2 } from 'lucide-react'
 
 export function ConsolidadosPage() {
-  const [consolidados, setConsolidados] = useState<Consolidado[]>(CONSOLIDADOS)
+  const [consolidados, setConsolidados] = useState<Consolidado[]>([])
+  const [clientes, setClientes] = useState<Cliente[]>([])
   const [showSheet, setShowSheet] = useState(false)
   const [search, setSearch] = useState('')
+
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchData = async () => {
+    try {
+      setLoading(true)
+      const [resConsolidados, resClientes] = await Promise.all([
+        consolidadoService.listar(),
+        clienteService.listar()
+      ])
+      setConsolidados(resConsolidados)
+      setClientes(resClientes)
+      setError(null)
+    } catch (err) {
+      console.error(err)
+      setError('Error al cargar datos')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [])
 
   /* ── Filter ── */
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
     return consolidados.filter(c => {
-      const cli = CLIENTES.find(x => x.id === c.clienteId)
       return !q ||
         c.nombre.toLowerCase().includes(q) ||
         c.folioInterno.toLowerCase().includes(q) ||
-        (cli?.nombre.toLowerCase().includes(q) ?? false)
+        (c.clienteNombre?.toLowerCase().includes(q) ?? false)
     }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   }, [consolidados, search])
 
-  const handleSave = (data: Omit<Consolidado, 'id' | 'createdAt' | 'folioInterno'>) => {
-    const nuevo: Consolidado = {
-      ...data,
-      id: `c-${Date.now()}`,
-      folioInterno: `CONS-${String(consolidados.length + 1).padStart(4, '0')}`,
-      createdAt: new Date().toISOString().split('T')[0]
+  const handleSave = async (data: any) => {
+    try {
+      await consolidadoService.crear(data)
+      await fetchData()
+      setShowSheet(false)
+    } catch (err) {
+      console.error(err)
+      alert('Error al crear consolidado')
     }
-    setConsolidados(prev => [nuevo, ...prev])
-    setShowSheet(false)
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Seguro que deseas eliminar este consolidado?')) return
+    try {
+      await consolidadoService.eliminar(id)
+      await fetchData()
+    } catch (err) {
+      console.error(err)
+      alert('Error al eliminar consolidado')
+    }
   }
 
   const getTotal = (c: Consolidado) => {
-    return c.grupos.reduce((accG, g) => 
+    return c.totalGeneral ?? c.grupos.reduce((accG, g) => 
       accG + g.items.reduce((accI, i) => accI + (i.cantidad * i.precioUnitario), 0)
     , 0)
+  }
+
+  if (loading) {
+    return <div className="p-8 text-center text-[#705D56]">Cargando consolidados...</div>
+  }
+  if (error) {
+    return <div className="p-8 text-center text-red-500">{error}</div>
   }
 
   return (
@@ -81,7 +124,6 @@ export function ConsolidadosPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map(c => {
-            const cliente = CLIENTES.find(x => x.id === c.clienteId)
             const total = getTotal(c)
             
             return (
@@ -94,7 +136,7 @@ export function ConsolidadosPage() {
                 </div>
                 
                 <p className="text-xs text-[#705D56] flex items-center gap-1.5 mb-1 truncate">
-                  <Building2 className="w-3.5 h-3.5 text-[#80727B]" /> {cliente?.nombre ?? 'Desconocido'}
+                  <Building2 className="w-3.5 h-3.5 text-[#80727B]" /> {c.clienteNombre ?? 'Desconocido'}
                 </p>
                 <p className="text-[11px] text-[#80727B] mb-4">Creado el {formatDate(c.createdAt)}</p>
                 
@@ -103,9 +145,14 @@ export function ConsolidadosPage() {
                     <p className="text-[10px] text-[#705D56] uppercase tracking-wider">Total Acumulado</p>
                     <p className="text-base font-bold text-[#022F40] leading-none mt-0.5">{formatCurrency(total)}</p>
                   </div>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded text-[#022F40] bg-[#F9FAFB] hover:bg-[#E5E7EB]">
-                    <Eye className="w-4 h-4" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded text-[#022F40] bg-[#F9FAFB] hover:bg-[#E5E7EB]">
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(c.id)} className="h-8 w-8 p-0 rounded text-red-500 hover:bg-red-50">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             )
@@ -118,6 +165,7 @@ export function ConsolidadosPage() {
         open={showSheet}
         onOpenChange={setShowSheet}
         onSave={handleSave}
+        clientes={clientes}
       />
     </div>
   )

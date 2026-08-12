@@ -1,6 +1,7 @@
-import { useState, useMemo, type ChangeEvent } from 'react'
-import type { Producto } from '@/types'
-import { PRODUCTOS, FACTURAS } from '@/data/mock'
+import { useState, useMemo, useEffect, type ChangeEvent } from 'react'
+import type { Producto, Factura } from '@/types'
+import { productoService } from '@/services/productoService'
+import { facturaService } from '@/services/facturaService'
 import { formatCurrency } from '@/lib/format'
 import { ProductoModal } from '@/components/productos/ProductoModal'
 import { ProductoDetailSheet } from '@/components/productos/ProductoDetailSheet'
@@ -25,21 +26,43 @@ function StatCard({ icon: Icon, label, value, accent }: {
 }
 
 export function ProductosPage() {
-  const [productos, setProductos]   = useState<Producto[]>(PRODUCTOS)
+  const [productos, setProductos]   = useState<Producto[]>([])
+  const [facturas, setFacturas]     = useState<Factura[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [error, setError]           = useState<string | null>(null)
   const [selected,  setSelected]    = useState<Producto | null>(null)
   const [editTarget, setEditTarget] = useState<Producto | null>(null)
   const [showModal, setShowModal]   = useState(false)
   const [search,    setSearch]      = useState('')
 
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true)
+        const [productosData, facturasData] = await Promise.all([
+          productoService.listar(),
+          facturaService.listar()
+        ])
+        setProductos(productosData)
+        setFacturas(facturasData)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Error al cargar datos')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
+
   /* ── Stats ── */
   const stats = useMemo(() => {
     const totalAliases  = productos.reduce((s, p) => s + p.aliases.length, 0)
     const vendidos      = new Set(
-      FACTURAS.flatMap(f => f.detalles.map(d => d.productoId))
+      facturas.flatMap(f => f.detalles.map(d => d.productoId))
     ).size
     const sinAlias = productos.filter(p => p.aliases.length === 0).length
     return { total: productos.length, totalAliases, vendidos, sinAlias }
-  }, [productos])
+  }, [productos, facturas])
 
   /* ── Filter ── */
   const filtered = useMemo(() => {
@@ -56,19 +79,36 @@ export function ProductosPage() {
   const openCreate = () => { setEditTarget(null); setShowModal(true) }
   const openEdit   = (p: Producto) => { setEditTarget(p); setShowModal(true); setSelected(null) }
 
-  const handleSave = (data: Omit<Producto, 'id'> & { id?: string }) => {
-    if (data.id) {
-      setProductos(prev => prev.map(p => p.id === data.id ? { ...p, ...data } as Producto : p))
-    } else {
-      setProductos(prev => [...prev, { ...data, id: `pr-${Date.now()}` }])
+  const handleSave = async (data: Omit<Producto, 'id'> & { id?: string }) => {
+    try {
+      if (data.id) {
+        await productoService.actualizar(data.id, data)
+      } else {
+        await productoService.crear(data)
+      }
+      const newData = await productoService.listar()
+      setProductos(newData)
+    } catch (e) {
+      console.error(e)
     }
   }
 
   /* ── Veces vendido por producto ── */
   const vecesVendido = (productoId: string) =>
-    FACTURAS.filter(f =>
+    facturas.filter(f =>
       f.estado !== 'COTIZACION' && f.detalles.some(d => d.productoId === productoId)
     ).length
+
+  if (loading) return (
+    <div className="p-8 flex items-center justify-center h-64">
+      <div className="text-sm text-[#705D56]">Cargando...</div>
+    </div>
+  )
+  if (error) return (
+    <div className="p-8 flex items-center justify-center h-64">
+      <div className="text-sm text-red-600">{error}</div>
+    </div>
+  )
 
   return (
     <div className="p-8 flex flex-col gap-6">

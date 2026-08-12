@@ -1,6 +1,8 @@
-import { useState, useMemo, type ChangeEvent } from 'react'
-import type { Proyecto } from '@/types'
-import { PROYECTOS, CLIENTES, FACTURAS } from '@/data/mock'
+import { useState, useMemo, useEffect, type ChangeEvent } from 'react'
+import type { Proyecto, Cliente, Factura } from '@/types'
+import { proyectoService } from '@/services/proyectoService'
+import { clienteService } from '@/services/clienteService'
+import { facturaService } from '@/services/facturaService'
 import { formatCurrency } from '@/lib/format'
 import { ProyectoModal } from '@/components/proyectos/ProyectoModal'
 import { ProyectoDetailSheet } from '@/components/proyectos/ProyectoDetailSheet'
@@ -25,55 +27,97 @@ function StatCard({ icon: Icon, label, value, accent }: {
 }
 
 export function ProyectosPage() {
-  const [proyectos, setProyectos]   = useState<Proyecto[]>(PROYECTOS)
+  const [proyectos, setProyectos]   = useState<Proyecto[]>([])
+  const [clientes, setClientes]     = useState<Cliente[]>([])
+  const [facturas, setFacturas]     = useState<Factura[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [error, setError]           = useState<string | null>(null)
   const [selected,  setSelected]    = useState<Proyecto | null>(null)
   const [editTarget, setEditTarget] = useState<Proyecto | null>(null)
   const [showModal, setShowModal]   = useState(false)
   const [search,    setSearch]      = useState('')
 
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true)
+        const [proyectosData, clientesData, facturasData] = await Promise.all([
+          proyectoService.listar(),
+          clienteService.listar(),
+          facturaService.listar()
+        ])
+        setProyectos(proyectosData)
+        setClientes(clientesData)
+        setFacturas(facturasData)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Error al cargar datos')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
+
   /* ── Stats ── */
   const stats = useMemo(() => {
     const activos = proyectos.filter(p => p.estado === 'ACTIVO').length
-    const facturado = FACTURAS
+    const facturado = facturas
       .filter(f => f.estado !== 'COTIZACION' && f.proyectoId)
       .reduce((s, f) => s + f.totalVenta, 0)
     
     return { total: proyectos.length, activos, facturado }
-  }, [proyectos])
+  }, [proyectos, facturas])
 
   /* ── Filter ── */
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
     return proyectos.filter(p => {
-      const c = CLIENTES.find(c => c.id === p.clienteId)
+      const cNombre = p.clienteNombre || clientes.find(c => c.id === p.clienteId)?.nombre
       return !q ||
         p.nombre.toLowerCase().includes(q) ||
-        (c?.nombre.toLowerCase().includes(q) ?? false)
+        (cNombre?.toLowerCase().includes(q) ?? false)
     }).sort((a, b) => {
       // Ordenar por estado (Activos primero)
       if (a.estado === 'ACTIVO' && b.estado !== 'ACTIVO') return -1
       if (a.estado !== 'ACTIVO' && b.estado === 'ACTIVO') return 1
       return 0
     })
-  }, [proyectos, search])
+  }, [proyectos, clientes, search])
 
   /* ── Handlers ── */
   const openCreate = () => { setEditTarget(null); setShowModal(true) }
   const openEdit   = (p: Proyecto) => { setEditTarget(p); setShowModal(true); setSelected(null) }
 
-  const handleSave = (data: Omit<Proyecto, 'id'> & { id?: string }) => {
-    if (data.id) {
-      setProyectos(prev => prev.map(p => p.id === data.id ? { ...p, ...data } as Proyecto : p))
-    } else {
-      setProyectos(prev => [{ ...data, id: `p-${Date.now()}` } as Proyecto, ...prev])
+  const handleSave = async (data: Omit<Proyecto, 'id'> & { id?: string }) => {
+    try {
+      if (data.id) {
+        await proyectoService.actualizar(data.id, data)
+      } else {
+        await proyectoService.crear(data)
+      }
+      const newData = await proyectoService.listar()
+      setProyectos(newData)
+    } catch (e) {
+      console.error(e)
     }
   }
 
   /* ── Helpers ── */
   const getFacturado = (proyectoId: string) => 
-    FACTURAS
+    facturas
       .filter(f => f.proyectoId === proyectoId && f.estado !== 'COTIZACION')
       .reduce((s, f) => s + f.totalVenta, 0)
+
+  if (loading) return (
+    <div className="p-8 flex items-center justify-center h-64">
+      <div className="text-sm text-[#705D56]">Cargando...</div>
+    </div>
+  )
+  if (error) return (
+    <div className="p-8 flex items-center justify-center h-64">
+      <div className="text-sm text-red-600">{error}</div>
+    </div>
+  )
 
   return (
     <div className="p-8 flex flex-col gap-6">
@@ -121,7 +165,7 @@ export function ProyectosPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map(p => {
-            const cliente = CLIENTES.find(c => c.id === p.clienteId)
+            const clienteNombre = p.clienteNombre || clientes.find(c => c.id === p.clienteId)?.nombre
             const facturado = getFacturado(p.id)
             
             const estadoColors = {
@@ -140,7 +184,7 @@ export function ProyectosPage() {
                   <div className="min-w-0">
                     <h3 className="text-sm font-semibold text-[#022F40] truncate group-hover:text-[#022F40]">{p.nombre}</h3>
                     <p className="text-xs text-[#705D56] truncate mt-0.5 flex items-center gap-1">
-                      <Building2 className="w-3 h-3" /> {cliente?.nombre ?? 'Desconocido'}
+                      <Building2 className="w-3 h-3" /> {clienteNombre ?? 'Desconocido'}
                     </p>
                   </div>
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${estadoColors[p.estado]}`}>
@@ -165,6 +209,7 @@ export function ProyectosPage() {
         onOpenChange={setShowModal}
         initial={editTarget}
         onSave={handleSave}
+        clientes={clientes}
       />
       <ProyectoDetailSheet
         proyecto={selected}

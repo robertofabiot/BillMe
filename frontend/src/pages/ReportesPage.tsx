@@ -1,5 +1,9 @@
-import { useState, useMemo } from 'react'
-import { FACTURAS, CLIENTES, PRODUCTOS, PROYECTOS } from '@/data/mock'
+import { useState, useMemo, useEffect } from 'react'
+import { facturaService } from '@/services/facturaService'
+import { clienteService } from '@/services/clienteService'
+import { productoService } from '@/services/productoService'
+import { proyectoService } from '@/services/proyectoService'
+import type { Factura, Cliente, Proyecto, Producto } from '@/types'
 import { formatCurrency, formatDate } from '@/lib/format'
 import {
   BarChart3, TrendingUp, Users, Package, FolderGit2, Calendar,
@@ -46,20 +50,45 @@ export function ReportesPage() {
   const [clienteId, setClienteId] = useState('ALL')
   const [proyectoId, setProyectoId] = useState('ALL')
 
+  const [clientes, setClientes] = useState<Cliente[]>([])
+  const [proyectos, setProyectos] = useState<Proyecto[]>([])
+  const [productos, setProductos] = useState<Producto[]>([])
+  const [facturas, setFacturas] = useState<Factura[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    Promise.all([
+      clienteService.listar(),
+      proyectoService.listar(),
+      productoService.listar()
+    ]).then(([resClientes, resProyectos, resProductos]) => {
+      setClientes(resClientes)
+      setProyectos(resProyectos)
+      setProductos(resProductos)
+    }).catch(err => {
+      setError('Error al cargar datos iniciales')
+    })
+  }, [])
+
+  useEffect(() => {
+    setLoading(true)
+    const filtros: any = {}
+    if (clienteId !== 'ALL') filtros.clienteId = clienteId
+    if (proyectoId !== 'ALL') filtros.proyectoId = proyectoId
+    if (dateFrom) filtros.desde = dateFrom
+    if (dateTo) filtros.hasta = dateTo
+
+    facturaService.listar(filtros)
+      .then(res => setFacturas(res))
+      .catch(err => setError('Error al cargar facturas'))
+      .finally(() => setLoading(false))
+  }, [clienteId, proyectoId, dateFrom, dateTo])
+
   /* ── Core Data Processing ── */
   const filteredFacturas = useMemo(() => {
-    return FACTURAS.filter(f => {
-      if (f.estado === 'COTIZACION') return false
-      
-      if (dateFrom && f.createdAt < dateFrom) return false
-      if (dateTo && f.createdAt > dateTo) return false
-      
-      if (clienteId !== 'ALL' && f.clienteId !== clienteId) return false
-      if (proyectoId !== 'ALL' && f.proyectoId !== proyectoId) return false
-      
-      return true
-    })
-  }, [dateFrom, dateTo, clienteId, proyectoId])
+    return facturas.filter(f => f.estado !== 'COTIZACION')
+  }, [facturas])
 
   // 1. General Metrics
   const metrics = useMemo(() => {
@@ -109,8 +138,7 @@ export function ReportesPage() {
     const clients: Record<string, { name: string; ventas: number; cobrado: number; facturas: number }> = {}
     
     filteredFacturas.forEach(f => {
-      const c = CLIENTES.find(c => c.id === f.clienteId)
-      const name = c?.nombre || 'Desconocido'
+      const name = f.clienteNombre || 'Desconocido'
       
       if (!clients[name]) clients[name] = { name, ventas: 0, cobrado: 0, facturas: 0 }
       
@@ -128,12 +156,10 @@ export function ReportesPage() {
     
     filteredFacturas.forEach(f => {
       if (!f.proyectoId) return
-      const p = PROYECTOS.find(p => p.id === f.proyectoId)
-      const c = CLIENTES.find(c => c.id === f.clienteId)
       
-      const name = p?.nombre || 'Desconocido'
+      const name = f.proyectoNombre || 'Desconocido'
       
-      if (!projects[name]) projects[name] = { name, cliente: c?.nombre || 'Desconocido', ventas: 0, facturas: 0 }
+      if (!projects[name]) projects[name] = { name, cliente: f.clienteNombre || 'Desconocido', ventas: 0, facturas: 0 }
       
       projects[name].ventas += f.totalVenta
       projects[name].facturas += 1
@@ -148,10 +174,10 @@ export function ReportesPage() {
     
     filteredFacturas.forEach(f => {
       f.detalles.forEach(d => {
-        const name = d.nombre
+        const name = d.productoNombre
         if (!prods[name]) prods[name] = { name, cantidad: 0, ingresos: 0, ganancia: 0 }
         
-        const ingresos = d.cantidad * d.precioUnitario
+        const ingresos = d.cantidad * d.precioUnitarioVenta
         const costo = d.cantidad * (d.costoUnitario || 0)
         
         prods[name].cantidad += d.cantidad
@@ -164,9 +190,9 @@ export function ReportesPage() {
   }, [filteredFacturas])
 
   const proyectosDisponibles = useMemo(() => {
-    if (clienteId === 'ALL') return PROYECTOS
-    return PROYECTOS.filter(p => p.clienteId === clienteId)
-  }, [clienteId])
+    if (clienteId === 'ALL') return proyectos
+    return proyectos.filter(p => p.clienteId === clienteId)
+  }, [clienteId, proyectos])
 
   return (
     <div className="p-8 flex flex-col gap-6">
@@ -175,8 +201,10 @@ export function ReportesPage() {
       <div>
         <h1 className="text-xl font-semibold text-[#022F40] flex items-center gap-2">
           <BarChart3 className="w-5 h-5" /> Reportes y Analíticas
+          {loading && <span className="text-sm font-normal text-blue-500 ml-2">(Cargando...)</span>}
         </h1>
         <p className="text-sm text-[#705D56] mt-0.5">Filtra y cruza información para obtener vistas detalladas</p>
+        {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
       </div>
 
       {/* ── Barra de Filtros Globales ── */}
@@ -213,7 +241,7 @@ export function ReportesPage() {
               className="h-8 rounded border border-[#E5E7EB] px-2 text-xs text-[#022F40] outline-none focus:border-[#022F40]"
             >
               <option value="ALL">Todos los clientes</option>
-              {CLIENTES.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1 flex-1 min-w-[200px]">

@@ -1,0 +1,7 @@
+export { api } from './api'
+export { clienteService } from './clienteService'
+export { productoService } from './productoService'
+export { proyectoService } from './proyectoService'
+export { facturaService } from './facturaService'
+export { consolidadoService } from './consolidadoService'
+export { reporteService } from './reporteService'

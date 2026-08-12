@@ -40,6 +40,13 @@ public class Factura extends BaseEntity {
     @Builder.Default
     private BigDecimal totalVenta = BigDecimal.ZERO;
 
+    /**
+     * Costo real total para la empresa (suma de costoNeto × cantidad de cada detalle).
+     * Se registra/recalcula al confirmar la venta para calcular la ganancia real.
+     */
+    @Column(name = "costo_real_empresa", precision = 14, scale = 2)
+    private BigDecimal costoRealEmpresa;
+
     // ── Relaciones ──────────────────────────────────────────────────────────
 
     @ManyToOne(fetch = FetchType.LAZY)

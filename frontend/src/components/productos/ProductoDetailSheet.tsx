@@ -1,5 +1,6 @@
 import type { Producto } from '@/types'
-import { CLIENTES, FACTURAS } from '@/data/mock'
+import { useEffect, useState } from 'react'
+import { facturaService } from '@/services/facturaService'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { X, Pencil, Tag, Weight, Hash, FileText, History, Calculator } from 'lucide-react'
@@ -12,22 +13,23 @@ interface PriceEntry {
   cantidadCompras: number
 }
 
-function getPriceHistory(productoId: string): PriceEntry[] {
-  const map = new Map<string, { precio: number; fecha: string; count: number }>()
+function processHistory(productoId: string, facturas: any[]): PriceEntry[] {
+  const map = new Map<string, { precio: number; fecha: string; count: number; clienteNombre: string }>()
 
-  FACTURAS
+  facturas
     .filter(f => f.estado !== 'COTIZACION')
     .forEach(f => {
-      const d = f.detalles.find(det => det.productoId === productoId)
+      const d = f.detalles?.find((det: any) => det.productoId === productoId)
       if (!d) return
       const ex = map.get(f.clienteId)
       if (!ex) {
-        map.set(f.clienteId, { precio: d.precioUnitarioVenta, fecha: f.createdAt, count: 1 })
+        map.set(f.clienteId, { precio: d.precioUnitarioVenta, fecha: f.createdAt, count: 1, clienteNombre: f.clienteNombre || '—' })
       } else {
         map.set(f.clienteId, {
           precio: f.createdAt > ex.fecha ? d.precioUnitarioVenta : ex.precio,
           fecha:  f.createdAt > ex.fecha ? f.createdAt : ex.fecha,
           count:  ex.count + 1,
+          clienteNombre: f.clienteNombre || '—'
         })
       }
     })
@@ -35,7 +37,7 @@ function getPriceHistory(productoId: string): PriceEntry[] {
   return Array.from(map.entries())
     .map(([clienteId, data]) => ({
       clienteId,
-      clienteNombre: CLIENTES.find(c => c.id === clienteId)?.nombre ?? '—',
+      clienteNombre: data.clienteNombre,
       ultimoPrecio:  data.precio,
       ultimaFecha:   data.fecha,
       cantidadCompras: data.count,
@@ -43,23 +45,24 @@ function getPriceHistory(productoId: string): PriceEntry[] {
     .sort((a, b) => b.ultimaFecha.localeCompare(a.ultimaFecha))
 }
 
-interface Props {
-  producto: Producto | null
-  open: boolean
-  onOpenChange: (v: boolean) => void
-  onEdit: (p: Producto) => void
-}
-
 export function ProductoDetailSheet({ producto, open, onOpenChange, onEdit }: Props) {
-  if (!open || !producto) return null
+  const [history, setHistory] = useState<PriceEntry[]>([])
+  const [totalVentas, setTotalVentas] = useState(0)
 
-  const history = getPriceHistory(producto.id)
-  const totalVentas = FACTURAS
-    .filter(f => f.estado !== 'COTIZACION')
-    .reduce((s, f) => {
-      const d = f.detalles.find(det => det.productoId === producto.id)
-      return d ? s + d.cantidad : s
-    }, 0)
+  useEffect(() => {
+    if (!producto?.id || !open) return
+    facturaService.listar().then(facturas => {
+      setHistory(processHistory(producto.id, facturas))
+      setTotalVentas(facturas
+        .filter(f => f.estado !== 'COTIZACION')
+        .reduce((s, f) => {
+          const d = f.detalles?.find((det: any) => det.productoId === producto.id)
+          return d ? s + d.cantidad : s
+        }, 0))
+    }).catch(console.error)
+  }, [producto?.id, open])
+
+  if (!open || !producto) return null
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end">

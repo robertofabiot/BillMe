@@ -9,7 +9,10 @@ export function formatCurrency(amount: number): string {
 }
 
 export function formatDate(dateStr: string): string {
-  return new Date(`${dateStr}T12:00:00`).toLocaleDateString('es-MX', {
+  if (!dateStr) return 'N/A'
+  // Si ya es un timestamp ISO, no agregamos T12
+  const d = dateStr.includes('T') ? new Date(dateStr) : new Date(`${dateStr}T12:00:00`);
+  return d.toLocaleDateString('es-MX', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',

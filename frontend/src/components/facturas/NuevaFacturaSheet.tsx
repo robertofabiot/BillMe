@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect, type ChangeEvent } from 'react'
 import { createPortal } from 'react-dom'
-import type { Factura, Producto, EstadoFactura } from '@/types'
-import { CLIENTES, PROYECTOS, PRODUCTOS, FACTURAS } from '@/data/mock'
+import type { Factura, Producto, EstadoFactura, Cliente, Proyecto } from '@/types'
+import { productoService } from '@/services/productoService'
 import { formatCurrency } from '@/lib/format'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -25,22 +25,12 @@ interface LineItem {
 interface Props {
   open: boolean
   onOpenChange: (v: boolean) => void
-  onSave: (factura: Factura) => void
-  nextFolio: string
+  onSave: (payload: any) => void
+  clientes: Cliente[]
+  proyectos: Proyecto[]
 }
 
-function getSuggestedPrice(productoId: string, clienteId: string): number {
-  const historial = FACTURAS
-    .filter(f => f.clienteId === clienteId && f.estado !== 'COTIZACION')
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-  for (const f of historial) {
-    const d = f.detalles.find(det => det.productoId === productoId)
-    if (d) return d.precioUnitarioVenta
-  }
-  return 0
-}
-
-export function NuevaFacturaSheet({ open, onOpenChange, onSave, nextFolio }: Props) {
+export function NuevaFacturaSheet({ open, onOpenChange, onSave, clientes, proyectos }: Props) {
   const [clienteId, setClienteId]     = useState('')
   const [proyectoId, setProyectoId]   = useState('')
   const [items, setItems]             = useState<LineItem[]>([])
@@ -57,24 +47,33 @@ export function NuevaFacturaSheet({ open, onOpenChange, onSave, nextFolio }: Pro
   }, [open, onOpenChange])
 
   const clienteProyectos = useMemo(
-    () => PROYECTOS.filter(p => p.clienteId === clienteId && p.estado === 'ACTIVO'),
-    [clienteId],
+    () => proyectos.filter(p => p.clienteId === clienteId && p.estado === 'ACTIVO'),
+    [clienteId, proyectos],
   )
 
-  const filteredProducts = useMemo(() => {
-    if (!productSearch.trim()) return []
-    const q = productSearch.toLowerCase()
-    return PRODUCTOS.filter(p =>
-      p.codigoInterno.toLowerCase().includes(q) ||
-      p.nombrePrincipal.toLowerCase().includes(q) ||
-      p.aliases.some(a => a.toLowerCase().includes(q))
-    ).slice(0, 8)
+  const [filteredProducts, setFilteredProducts] = useState<Producto[]>([])
+
+  useEffect(() => {
+    if (!productSearch.trim()) {
+      setFilteredProducts([])
+      return
+    }
+    const fetchProducts = async () => {
+      try {
+        const results = await productoService.listar(productSearch)
+        setFilteredProducts(results.slice(0, 8))
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    const timer = setTimeout(fetchProducts, 300)
+    return () => clearTimeout(timer)
   }, [productSearch])
 
   const total = items.reduce((sum, i) => sum + i.cantidad * i.precioUnitario, 0)
 
   const addProduct = (producto: Producto) => {
-    const precioSugerido = clienteId ? getSuggestedPrice(producto.id, clienteId) : 0
+    const precioSugerido = 0
     setItems(prev => [...prev, {
       key: `${producto.id}-${Date.now()}`,
       productoId: producto.id,
@@ -99,32 +98,19 @@ export function NuevaFacturaSheet({ open, onOpenChange, onSave, nextFolio }: Pro
   const handleClienteChange = (id: string) => {
     setClienteId(id)
     setProyectoId('')
-    setItems(prev => prev.map(i => {
-      const suggested = getSuggestedPrice(i.productoId, id)
-      return { ...i, precioSugerido: suggested, precioUnitario: suggested || i.precioUnitario }
-    }))
   }
 
   const handleSave = (estado: EstadoFactura) => {
     if (!clienteId || items.length === 0) return
     onSave({
-      id: `f-${Date.now()}`,
-      folioInterno: nextFolio,
-      estado,
-      totalVenta: total,
       clienteId,
       proyectoId: proyectoId || undefined,
-      detalles: items.map((item, idx) => ({
-        id: `d-${Date.now()}-${idx}`,
+      estado,
+      detalles: items.map(item => ({
         productoId: item.productoId,
-        productoNombre: item.nombre,
-        productoCodigoInterno: item.codigoInterno,
         cantidad: item.cantidad,
         precioUnitarioVenta: item.precioUnitario,
-        costoUnitario: item.costoUnitario,
       })),
-      abonos: [],
-      createdAt: new Date().toISOString().split('T')[0],
     })
     setClienteId(''); setProyectoId(''); setItems([]); setSearch('')
     onOpenChange(false)
@@ -154,7 +140,7 @@ export function NuevaFacturaSheet({ open, onOpenChange, onSave, nextFolio }: Pro
             </div>
             <div>
               <h2 className="text-sm font-semibold text-[#022F40]">Nueva Factura</h2>
-              <p className="text-xs text-[#80727B]">Folio: <span className="font-mono font-medium">{nextFolio}</span></p>
+              <p className="text-xs text-[#80727B]">Folio: <span className="font-mono font-medium">Automático</span></p>
             </div>
           </div>
           <button
@@ -182,7 +168,7 @@ export function NuevaFacturaSheet({ open, onOpenChange, onSave, nextFolio }: Pro
                       <SelectValue placeholder="Seleccionar cliente…" />
                     </SelectTrigger>
                     <SelectContent>
-                      {CLIENTES.map(c => (
+                      {clientes.map(c => (
                         <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>
                       ))}
                     </SelectContent>

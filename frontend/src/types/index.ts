@@ -1,3 +1,8 @@
+// ─── Tipos alineados con los DTOs del backend ───────────────────────
+
+export type EstadoFactura = 'COTIZACION' | 'PENDIENTE' | 'PAGO_PARCIAL' | 'PAGADO'
+export type EstadoProyecto = 'ACTIVO' | 'FINALIZADO'
+
 export interface Producto {
   id: string
   codigoInterno: string
@@ -5,19 +10,19 @@ export interface Producto {
   descripcion?: string
   peso: number
   aliases: string[]
-  precioListaProveedor?: number // Precio de lista original del proveedor
-  descuentoProveedor?: number   // Descuento % que nos dio el proveedor
-  costoNeto?: number            // Nuestro costo real
+  precioListaProveedor?: number
+  descuentoProveedor?: number
+  costoNeto?: number
+  createdAt?: string
 }
 
 export interface DetalleFactura {
-  key: string
+  id: string
   productoId: string
-  nombre: string
-  codigoInterno: string
+  productoNombre: string
+  productoCodigoInterno: string
   cantidad: number
-  precioUnitario: number
-  precioSugerido: number
+  precioUnitarioVenta: number
   costoUnitario?: number
 }
 
@@ -30,14 +35,18 @@ export interface Abono {
 export interface Factura {
   id: string
   folioInterno: string
-  estado: 'COTIZACION' | 'PENDIENTE' | 'PAGO_PARCIAL' | 'PAGADO'
+  estado: EstadoFactura
   costoRealEmpresa?: number
   totalVenta: number
   clienteId: string
+  clienteNombre?: string
   proyectoId?: string
+  proyectoNombre?: string
   createdAt: string
   detalles: DetalleFactura[]
   abonos: Abono[]
+  totalAbonado?: number
+  saldoPendiente?: number
 }
 
 export interface Cliente {
@@ -45,13 +54,16 @@ export interface Cliente {
   nombre: string
   telefono?: string
   detalles?: string
+  createdAt?: string
 }
 
 export interface Proyecto {
   id: string
   clienteId: string
+  clienteNombre?: string
   nombre: string
-  estado: 'ACTIVO' | 'FINALIZADO'
+  estado: EstadoProyecto
+  createdAt?: string
 }
 
 export interface ConsolidadoItem {
@@ -60,19 +72,40 @@ export interface ConsolidadoItem {
   productoNombre: string
   cantidad: number
   precioUnitario: number
+  orden?: number
 }
 
 export interface ConsolidadoGroup {
   id: string
   nombre: string
   items: ConsolidadoItem[]
+  orden?: number
+  subtotal?: number
 }
 
 export interface Consolidado {
   id: string
   folioInterno: string
   clienteId: string
+  clienteNombre?: string
   nombre: string
   createdAt: string
   grupos: ConsolidadoGroup[]
+  totalGeneral?: number
+}
+
+export interface ReporteData {
+  ingresosTotales: number
+  totalCobrado: number
+  porCobrar: number
+  costoTotal: number
+  gananciaNeta: number
+  totalFacturas: number
+}
+
+export interface PrecioHistorial {
+  folioInterno: string
+  fecha: string
+  precioUnitario: number
+  cantidad: number
 }

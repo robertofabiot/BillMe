@@ -1,18 +1,20 @@
-import { useState, useMemo } from 'react'
-import type { Consolidado, ConsolidadoGroup, Factura } from '@/types'
-import { CLIENTES, FACTURAS } from '@/data/mock'
+import { useState, useMemo, useEffect } from 'react'
+import type { Consolidado, ConsolidadoGroup, Factura, Cliente } from '@/types'
+import { facturaService } from '@/services/facturaService'
+import { consolidadoService } from '@/services/consolidadoService'
 import { formatCurrency } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { X, Layers, ArrowUp, ArrowDown, Plus, Trash2, CheckSquare, Square } from 'lucide-react'
 
 interface Props {
+  clientes: Cliente[]
   open: boolean
   onOpenChange: (v: boolean) => void
   onSave: (c: Omit<Consolidado, 'id' | 'createdAt' | 'folioInterno'>) => void
 }
 
-export function NuevoConsolidadoSheet({ open, onOpenChange, onSave }: Props) {
+export function NuevoConsolidadoSheet({ clientes, open, onOpenChange, onSave }: Props) {
   const [step, setStep] = useState<1 | 2>(1)
   
   // Step 1 State
@@ -24,9 +26,16 @@ export function NuevoConsolidadoSheet({ open, onOpenChange, onSave }: Props) {
   const [grupos, setGrupos] = useState<ConsolidadoGroup[]>([])
 
   // Derived
-  const facturasCliente = useMemo(() => {
-    if (!clienteId) return []
-    return FACTURAS.filter(f => f.clienteId === clienteId && f.estado !== 'COTIZACION')
+  const [facturasCliente, setFacturasCliente] = useState<Factura[]>([])
+
+  useEffect(() => {
+    if (!clienteId) {
+      setFacturasCliente([])
+      return
+    }
+    facturaService.listar({ clienteId }).then(res => {
+      setFacturasCliente(res.filter(f => f.estado !== 'COTIZACION'))
+    })
   }, [clienteId])
 
   const handleNext = () => {
@@ -35,27 +44,28 @@ export function NuevoConsolidadoSheet({ open, onOpenChange, onSave }: Props) {
       
       // Generate initial groups based on selected invoices
       const initialGrupos: ConsolidadoGroup[] = selectedFacturas.map(fid => {
-        const fac = FACTURAS.find(f => f.id === fid)!
+        const fac = facturasCliente.find(f => f.id === fid)!
         return {
           id: `g-${fid}`,
           nombre: `Factura ${fac.folioInterno}`,
           items: fac.detalles.map(d => ({
             id: `item-${Date.now()}-${Math.random()}`,
             facturaId: fac.id,
-            productoNombre: d.nombre,
+            productoNombre: d.productoNombre,
             cantidad: d.cantidad,
-            precioUnitario: d.precioUnitario
+            precioUnitario: d.precioUnitarioVenta
           }))
         }
       })
       setGrupos(initialGrupos)
       setStep(2)
     } else {
-      onSave({
+      const payload = {
         clienteId,
         nombre: nombre.trim(),
         grupos
-      })
+      }
+      onSave(payload)
       reset()
     }
   }
@@ -158,7 +168,7 @@ export function NuevoConsolidadoSheet({ open, onOpenChange, onSave }: Props) {
                 className="h-10 w-full rounded border border-[#E5E7EB] bg-white px-3 text-sm text-[#022F40] outline-none focus:border-[#022F40] focus:ring-2 focus:ring-[#022F40]/10 transition-all"
               >
                 <option value="" disabled>Selecciona un cliente</option>
-                {CLIENTES.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </div>
 

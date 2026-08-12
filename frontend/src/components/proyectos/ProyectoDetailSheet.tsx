@@ -1,5 +1,6 @@
 import type { Proyecto } from '@/types'
-import { CLIENTES, FACTURAS } from '@/data/mock'
+import { useEffect, useState } from 'react'
+import { facturaService } from '@/services/facturaService'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { EstadoBadge } from '@/components/facturas/EstadoBadge'
 import { Button } from '@/components/ui/button'
@@ -13,13 +14,17 @@ interface Props {
 }
 
 export function ProyectoDetailSheet({ proyecto, open, onOpenChange, onEdit }: Props) {
+  const [facturas, setFacturas] = useState<any[]>([])
+
+  useEffect(() => {
+    if (!proyecto?.id || !open) return
+    facturaService.listar({ proyectoId: proyecto.id }).then(setFacturas).catch(console.error)
+  }, [proyecto?.id, open])
+
   if (!open || !proyecto) return null
 
-  const cliente = CLIENTES.find(c => c.id === proyecto.clienteId)
-  const facturas = FACTURAS.filter(f => f.proyectoId === proyecto.id)
-
   const facturado = facturas.filter(f => f.estado !== 'COTIZACION').reduce((s, f) => s + f.totalVenta, 0)
-  const cobrado = facturas.filter(f => f.estado !== 'COTIZACION').reduce((s, f) => s + f.abonos.reduce((a, b) => a + b.monto, 0), 0)
+  const cobrado = facturas.filter(f => f.estado !== 'COTIZACION').reduce((s, f) => s + (f.totalAbonado ?? f.abonos?.reduce((a: any, b: any) => a + b.monto, 0) ?? 0), 0)
   const porCobrar = facturado - cobrado
 
   const estadoColors = {
@@ -47,7 +52,7 @@ export function ProyectoDetailSheet({ proyecto, open, onOpenChange, onEdit }: Pr
                 </span>
               </div>
               <p className="text-xs text-[#705D56] mt-1 flex items-center gap-1">
-                <Building2 className="w-3 h-3" /> {cliente?.nombre ?? 'Cliente desconocido'}
+                <Building2 className="w-3 h-3" /> {proyecto.clienteNombre ?? 'Cliente desconocido'}
               </p>
             </div>
           </div>
@@ -96,8 +101,8 @@ export function ProyectoDetailSheet({ proyecto, open, onOpenChange, onEdit }: Pr
           ) : (
             <div className="flex flex-col gap-2">
               {facturas.map(f => {
-                const abonado = f.abonos.reduce((s, a) => s + a.monto, 0)
-                const saldo = f.totalVenta - abonado
+                const abonado = f.totalAbonado ?? f.abonos?.reduce((s: any, a: any) => s + a.monto, 0) ?? 0
+                const saldo = f.saldoPendiente ?? (f.totalVenta - abonado)
                 return (
                   <div key={f.id} className="border border-[#E5E7EB] rounded p-3 bg-white flex flex-col gap-2 shadow-sm hover:border-[#022F40]/20 transition-colors">
                     <div className="flex justify-between items-start">

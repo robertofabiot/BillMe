@@ -26,10 +26,10 @@ public interface FacturaRepository extends JpaRepository<Factura, UUID> {
      * con todos los parámetros opcionales (NULL = sin filtro).
      */
     @Query("SELECT f FROM Factura f WHERE " +
-           "(:clienteId IS NULL OR f.cliente.id = :clienteId) AND " +
-           "(:proyectoId IS NULL OR f.proyecto.id = :proyectoId) AND " +
-           "(:desde IS NULL OR f.createdAt >= :desde) AND " +
-           "(:hasta IS NULL OR f.createdAt <= :hasta) AND " +
+           "(cast(:clienteId as uuid) IS NULL OR f.cliente.id = :clienteId) AND " +
+           "(cast(:proyectoId as uuid) IS NULL OR f.proyecto.id = :proyectoId) AND " +
+           "(cast(:desde as timestamp) IS NULL OR f.createdAt >= :desde) AND " +
+           "(cast(:hasta as timestamp) IS NULL OR f.createdAt <= :hasta) AND " +
            "(:estado IS NULL OR f.estado = :estado)")
     List<Factura> filtrar(
             @Param("clienteId")  UUID clienteId,

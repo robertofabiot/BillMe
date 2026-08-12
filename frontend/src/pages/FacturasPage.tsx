@@ -1,6 +1,6 @@
-import { useState, useMemo, type ChangeEvent } from 'react'
-import type { Factura, Abono, EstadoFactura } from '@/types'
-import { CLIENTES, PROYECTOS, FACTURAS } from '@/data/mock'
+import { useState, useMemo, useEffect, type ChangeEvent } from 'react'
+import type { Factura, Abono, EstadoFactura, Cliente, Proyecto } from '@/types'
+import { facturaService, clienteService, proyectoService } from '@/services'
 import { formatCurrency, formatDate, getSaldo } from '@/lib/format'
 import { EstadoBadge } from '@/components/facturas/EstadoBadge'
 import { NuevaFacturaSheet } from '@/components/facturas/NuevaFacturaSheet'
@@ -39,80 +39,115 @@ function StatCard({
 }
 
 export function FacturasPage() {
-  const [facturas, setFacturas] = useState<Factura[]>(FACTURAS)
+  const [facturas, setFacturas] = useState<Factura[]>([])
+  const [clientes, setClientes] = useState<Cliente[]>([])
+  const [proyectos, setProyectos] = useState<Proyecto[]>([])
   const [selected, setSelected] = useState<Factura | null>(null)
   const [showNueva, setShowNueva] = useState(false)
   const [search, setSearch] = useState('')
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('TODOS')
+  
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchData = async () => {
+    try {
+      setLoading(true)
+      const [resFacturas, resClientes, resProyectos] = await Promise.all([
+        facturaService.listar(),
+        clienteService.listar(),
+        proyectoService.listar()
+      ])
+      setFacturas(resFacturas)
+      setClientes(resClientes)
+      setProyectos(resProyectos)
+      setError(null)
+    } catch (err) {
+      console.error(err)
+      setError('Error al cargar datos')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [])
 
   // ── Stats ──────────────────────────────────────────────
   const stats = useMemo(() => {
     const porCobrar = facturas.reduce((sum, f) => {
       if (f.estado === 'PAGADO' || f.estado === 'COTIZACION') return sum
-      return sum + getSaldo(f.totalVenta, f.abonos)
+      return sum + (f.saldoPendiente ?? getSaldo(f.totalVenta, f.abonos))
     }, 0)
     const cobrado = facturas.reduce((sum, f) =>
-      sum + f.abonos.reduce((s, a) => s + a.monto, 0), 0
+      sum + (f.totalAbonado ?? f.abonos.reduce((s, a) => s + a.monto, 0)), 0
     )
     const cotizaciones = facturas.filter(f => f.estado === 'COTIZACION').length
     const pendientes = facturas.filter(f => f.estado === 'PENDIENTE' || f.estado === 'PAGO_PARCIAL').length
     return { porCobrar, cobrado, cotizaciones, pendientes }
   }, [facturas])
 
-  // ── Next folio ─────────────────────────────────────────
-  const nextFolio = useMemo(() => {
-    const nums = facturas
-      .map(f => parseInt(f.folioInterno.replace('FAC-', ''), 10))
-      .filter(n => !isNaN(n))
-    const max = nums.length > 0 ? Math.max(...nums) : 0
-    return `FAC-${String(max + 1).padStart(4, '0')}`
-  }, [facturas])
-
   // ── Filtered rows ──────────────────────────────────────
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
     return facturas.filter(f => {
-      const cliente = CLIENTES.find(c => c.id === f.clienteId)
       const matchSearch = !q ||
         f.folioInterno.toLowerCase().includes(q) ||
-        (cliente?.nombre.toLowerCase().includes(q) ?? false)
+        (f.clienteNombre?.toLowerCase().includes(q) ?? false)
       const matchEstado = filtroEstado === 'TODOS' || f.estado === filtroEstado
       return matchSearch && matchEstado
     })
   }, [facturas, search, filtroEstado])
 
   // ── Handlers ───────────────────────────────────────────
-  const handleSaveFactura = (nueva: Factura) => {
-    setFacturas(prev => [nueva, ...prev])
+  const handleSaveFactura = async (nueva: any) => {
+    try {
+      await facturaService.crear(nueva)
+      await fetchData()
+      setShowNueva(false)
+    } catch (err) {
+      console.error(err)
+      alert('Error al crear factura')
+    }
   }
 
-  const handleAddAbono = (facturaId: string, abono: Abono) => {
-    setFacturas(prev =>
-      prev.map(f => {
-        if (f.id !== facturaId) return f
-        const abonos = [...f.abonos, abono]
-        const totalAbonado = abonos.reduce((s, a) => s + a.monto, 0)
-        const estado: EstadoFactura =
-          totalAbonado >= f.totalVenta ? 'PAGADO' :
-          totalAbonado > 0 ? 'PAGO_PARCIAL' : f.estado
-        return { ...f, abonos, estado }
-      })
-    )
-    // Update selected too
-    setSelected(prev => {
-      if (!prev || prev.id !== facturaId) return prev
-      const abonos = [...prev.abonos, abono]
-      const totalAbonado = abonos.reduce((s, a) => s + a.monto, 0)
-      const estado: EstadoFactura =
-        totalAbonado >= prev.totalVenta ? 'PAGADO' :
-        totalAbonado > 0 ? 'PAGO_PARCIAL' : prev.estado
-      return { ...prev, abonos, estado }
-    })
+  const handleAddAbono = async (facturaId: string, abono: any) => {
+    try {
+      await facturaService.registrarAbono(facturaId, abono)
+      await fetchData()
+      // Update selected with fresh data to keep modal consistent, or close it
+      const freshFactura = await facturaService.obtener(facturaId)
+      setSelected(freshFactura)
+    } catch (err) {
+      console.error(err)
+      alert('Error al registrar abono')
+    }
   }
 
-  const handleUpdateEstado = (facturaId: string, estado: EstadoFactura) => {
-    setFacturas(prev => prev.map(f => f.id === facturaId ? { ...f, estado } : f))
-    setSelected(prev => prev?.id === facturaId ? { ...prev, estado } : prev)
+  const handleUpdateEstado = async (facturaId: string, estado: EstadoFactura) => {
+    if (estado === 'PENDIENTE') {
+      try {
+        await facturaService.confirmar(facturaId)
+        await fetchData()
+        const freshFactura = await facturaService.obtener(facturaId)
+        setSelected(freshFactura)
+      } catch (err) {
+        console.error(err)
+        alert('Error al confirmar factura')
+      }
+    } else {
+       // local only fallback if not confirmar
+       setFacturas(prev => prev.map(f => f.id === facturaId ? { ...f, estado } : f))
+       setSelected(prev => prev?.id === facturaId ? { ...prev, estado } : prev)
+    }
+  }
+
+  if (loading) {
+    return <div className="p-8 text-center text-[#705D56]">Cargando facturas...</div>
+  }
+  if (error) {
+    return <div className="p-8 text-center text-red-500">{error}</div>
   }
 
   return (
@@ -192,9 +227,7 @@ export function FacturasPage() {
               </tr>
             )}
             {filtered.map((f, i) => {
-              const cliente = CLIENTES.find(c => c.id === f.clienteId)
-              const proyecto = f.proyectoId ? PROYECTOS.find(p => p.id === f.proyectoId) : null
-              const saldo = getSaldo(f.totalVenta, f.abonos)
+              const saldo = f.saldoPendiente ?? getSaldo(f.totalVenta, f.abonos)
               const isLast = i === filtered.length - 1
               return (
                 <tr
@@ -203,10 +236,10 @@ export function FacturasPage() {
                   className={`border-b border-[#E5E7EB] hover:bg-[#F9FAFB] cursor-pointer transition-colors ${isLast ? 'border-b-0' : ''}`}
                 >
                   <td className="px-4 py-3 font-mono font-semibold text-[#022F40]">{f.folioInterno}</td>
-                  <td className="px-4 py-3 text-[#022F40]">{cliente?.nombre ?? '—'}</td>
+                  <td className="px-4 py-3 text-[#022F40]">{f.clienteNombre ?? '—'}</td>
                   <td className="px-4 py-3 text-[#705D56]">
-                    {proyecto
-                      ? <span className="text-xs bg-[#F9FAFB] border border-[#E5E7EB] rounded px-2 py-0.5">{proyecto.nombre}</span>
+                    {f.proyectoNombre
+                      ? <span className="text-xs bg-[#F9FAFB] border border-[#E5E7EB] rounded px-2 py-0.5">{f.proyectoNombre}</span>
                       : <span className="text-[#80727B]">—</span>
                     }
                   </td>
@@ -237,7 +270,8 @@ export function FacturasPage() {
         open={showNueva}
         onOpenChange={setShowNueva}
         onSave={handleSaveFactura}
-        nextFolio={nextFolio}
+        clientes={clientes}
+        proyectos={proyectos}
       />
       <FacturaDetailSheet
         factura={selected}

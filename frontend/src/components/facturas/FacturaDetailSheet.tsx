@@ -1,6 +1,5 @@
 import { useState, type ChangeEvent } from 'react'
 import type { Factura, Abono, EstadoFactura } from '@/types'
-import { CLIENTES, PROYECTOS } from '@/data/mock'
 import { formatCurrency, formatDate, getSaldo } from '@/lib/format'
 import { EstadoBadge } from './EstadoBadge'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -28,10 +27,8 @@ export function FacturaDetailSheet({ factura, open, onOpenChange, onAddAbono, on
 
   if (!factura) return null
 
-  const cliente = CLIENTES.find(c => c.id === factura.clienteId)
-  const proyecto = factura.proyectoId ? PROYECTOS.find(p => p.id === factura.proyectoId) : null
-  const totalAbonado = factura.abonos.reduce((s, a) => s + a.monto, 0)
-  const saldo = getSaldo(factura.totalVenta, factura.abonos)
+  const totalAbonado = factura.totalAbonado ?? factura.abonos?.reduce((s, a) => s + a.monto, 0) ?? 0
+  const saldo = factura.saldoPendiente ?? getSaldo(factura.totalVenta, factura.abonos || [])
 
   const costoTotal = factura.detalles.reduce((s, d) => s + (d.costoUnitario || 0) * d.cantidad, 0)
   const gananciaNeta = factura.totalVenta - costoTotal
@@ -120,17 +117,15 @@ export function FacturaDetailSheet({ factura, open, onOpenChange, onAddAbono, on
               <User className="w-4 h-4 text-[#80727B] mt-0.5 shrink-0" />
               <div>
                 <p className="text-xs text-[#705D56]">Cliente</p>
-                <p className="text-sm font-semibold text-[#022F40]">{cliente?.nombre ?? '—'}</p>
-                {cliente?.telefono && <p className="text-xs text-[#80727B]">{cliente.telefono}</p>}
+                <p className="text-sm font-semibold text-[#022F40]">{factura.clienteNombre ?? '—'}</p>
               </div>
             </div>
-            {proyecto && (
+            {factura.proyectoNombre && (
               <div className="flex-1 bg-[#F9FAFB] border border-[#E5E7EB] rounded px-4 py-3 flex items-start gap-2">
                 <FolderKanban className="w-4 h-4 text-[#80727B] mt-0.5 shrink-0" />
                 <div>
                   <p className="text-xs text-[#705D56]">Proyecto</p>
-                  <p className="text-sm font-semibold text-[#022F40]">{proyecto.nombre}</p>
-                  <p className="text-xs text-[#80727B]">{proyecto.estado === 'ACTIVO' ? 'Activo' : 'Finalizado'}</p>
+                  <p className="text-sm font-semibold text-[#022F40]">{factura.proyectoNombre}</p>
                 </div>
               </div>
             )}

@@ -1,6 +1,7 @@
-import { useState, useMemo, type ChangeEvent } from 'react'
-import type { Cliente } from '@/types'
-import { CLIENTES, FACTURAS } from '@/data/mock'
+import { useState, useMemo, useEffect, type ChangeEvent } from 'react'
+import type { Cliente, Factura } from '@/types'
+import { clienteService } from '@/services/clienteService'
+import { facturaService } from '@/services/facturaService'
 import { formatCurrency } from '@/lib/format'
 import { ClienteModal } from '@/components/clientes/ClienteModal'
 import { ClienteDetailSheet } from '@/components/clientes/ClienteDetailSheet'
@@ -27,25 +28,47 @@ function StatCard({ icon: Icon, label, value, accent }: {
 }
 
 export function ClientesPage() {
-  const [clientes, setClientes]         = useState<Cliente[]>(CLIENTES)
+  const [clientes, setClientes]         = useState<Cliente[]>([])
+  const [facturas, setFacturas]         = useState<Factura[]>([])
+  const [loading, setLoading]           = useState(true)
+  const [error, setError]               = useState<string | null>(null)
   const [selected, setSelected]         = useState<Cliente | null>(null)
   const [editTarget, setEditTarget]     = useState<Cliente | null>(null)
   const [showModal, setShowModal]       = useState(false)
   const [search, setSearch]             = useState('')
 
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true)
+        const [clientesData, facturasData] = await Promise.all([
+          clienteService.listar(),
+          facturaService.listar()
+        ])
+        setClientes(clientesData)
+        setFacturas(facturasData)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Error al cargar datos')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
+
   /* ── Stats ── */
   const stats = useMemo(() => {
     const conPendientes = new Set(
-      FACTURAS
+      facturas
         .filter(f => f.estado === 'PENDIENTE' || f.estado === 'PAGO_PARCIAL')
         .map(f => f.clienteId)
     ).size
-    const totalFacturado = FACTURAS.reduce((s, f) => s + f.totalVenta, 0)
-    const totalCobrado   = FACTURAS.reduce((s, f) =>
+    const totalFacturado = facturas.reduce((s, f) => s + f.totalVenta, 0)
+    const totalCobrado   = facturas.reduce((s, f) =>
       s + f.abonos.reduce((a, b) => a + b.monto, 0), 0
     )
     return { total: clientes.length, conPendientes, totalFacturado, totalCobrado }
-  }, [clientes])
+  }, [clientes, facturas])
 
   /* ── Filter ── */
   const filtered = useMemo(() => {
@@ -57,7 +80,7 @@ export function ClientesPage() {
 
   /* ── Helpers ── */
   const facturasPorCliente = (clienteId: string) =>
-    FACTURAS.filter(f => f.clienteId === clienteId)
+    facturas.filter(f => f.clienteId === clienteId)
 
   const totalPorCliente = (clienteId: string) =>
     facturasPorCliente(clienteId).reduce((s, f) => s + f.totalVenta, 0)
@@ -66,14 +89,30 @@ export function ClientesPage() {
   const openCreate = () => { setEditTarget(null); setShowModal(true) }
   const openEdit   = (c: Cliente) => { setEditTarget(c); setShowModal(true); setSelected(null) }
 
-  const handleSave = (data: Omit<Cliente, 'id'> & { id?: string }) => {
-    if (data.id) {
-      setClientes(prev => prev.map(c => c.id === data.id ? { ...c, ...data } as Cliente : c))
-    } else {
-      const nuevo: Cliente = { ...data, id: `c-${Date.now()}` }
-      setClientes(prev => [...prev, nuevo])
+  const handleSave = async (data: Omit<Cliente, 'id'> & { id?: string }) => {
+    try {
+      if (data.id) {
+        await clienteService.actualizar(data.id, data)
+      } else {
+        await clienteService.crear(data)
+      }
+      const newData = await clienteService.listar()
+      setClientes(newData)
+    } catch (e) {
+      console.error(e)
     }
   }
+
+  if (loading) return (
+    <div className="p-8 flex items-center justify-center h-64">
+      <div className="text-sm text-[#705D56]">Cargando...</div>
+    </div>
+  )
+  if (error) return (
+    <div className="p-8 flex items-center justify-center h-64">
+      <div className="text-sm text-red-600">{error}</div>
+    </div>
+  )
 
   return (
     <div className="p-8 flex flex-col gap-6">
