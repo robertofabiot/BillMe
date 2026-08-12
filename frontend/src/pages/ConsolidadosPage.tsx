@@ -3,6 +3,7 @@ import type { Consolidado, Cliente } from '@/types'
 import { consolidadoService, clienteService } from '@/services'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { NuevoConsolidadoSheet } from '@/components/consolidados/NuevoConsolidadoSheet'
+import { ConsolidadoDetailSheet } from '@/components/consolidados/ConsolidadoDetailSheet'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Layers, Plus, Search, Building2, Eye, Trash2 } from 'lucide-react'
@@ -11,6 +12,7 @@ export function ConsolidadosPage() {
   const [consolidados, setConsolidados] = useState<Consolidado[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [showSheet, setShowSheet] = useState(false)
+  const [selectedConsolidado, setSelectedConsolidado] = useState<Consolidado | null>(null)
   const [search, setSearch] = useState('')
 
   const [loading, setLoading] = useState(true)
@@ -146,7 +148,7 @@ export function ConsolidadosPage() {
                     <p className="text-base font-bold text-[#022F40] leading-none mt-0.5">{formatCurrency(total)}</p>
                   </div>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded text-[#022F40] bg-[#F9FAFB] hover:bg-[#E5E7EB]">
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedConsolidado(c)} className="h-8 w-8 p-0 rounded text-[#022F40] bg-[#F9FAFB] hover:bg-[#E5E7EB]">
                       <Eye className="w-4 h-4" />
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => handleDelete(c.id)} className="h-8 w-8 p-0 rounded text-red-500 hover:bg-red-50">
@@ -160,12 +162,17 @@ export function ConsolidadosPage() {
         </div>
       )}
 
-      {/* ── Sheet ── */}
+      {/* ── Sheets ── */}
       <NuevoConsolidadoSheet
         open={showSheet}
         onOpenChange={setShowSheet}
         onSave={handleSave}
         clientes={clientes}
+      />
+      <ConsolidadoDetailSheet
+        consolidado={selectedConsolidado}
+        open={selectedConsolidado !== null}
+        onOpenChange={(v) => { if (!v) setSelectedConsolidado(null) }}
       />
     </div>
   )
