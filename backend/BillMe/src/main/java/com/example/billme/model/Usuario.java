@@ -4,6 +4,13 @@ import com.example.billme.enums.Rol;
 import jakarta.persistence.*;
 import lombok.*;
 
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Collection;
+import java.util.List;
+
 /**
  * Representa a un usuario del sistema (ADMIN o VENDEDOR).
  * Spring Security usará esta entidad para autenticación.
@@ -15,7 +22,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Usuario extends BaseEntity {
+public class Usuario extends BaseEntity implements UserDetails {
 
     @Column(name = "username", unique = true, nullable = false, length = 50)
     private String username;
@@ -33,4 +40,29 @@ public class Usuario extends BaseEntity {
 
     @Column(name = "nombre", nullable = false, length = 100)
     private String nombre;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + rol.name()));
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true; // No manejamos expiración de cuenta
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true; // No manejamos bloqueo de cuenta
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true; // No manejamos expiración de credenciales
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true; // Siempre habilitado por defecto
+    }
 }
