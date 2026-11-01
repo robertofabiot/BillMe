@@ -45,6 +45,13 @@ function processHistory(productoId: string, facturas: any[]): PriceEntry[] {
     .sort((a, b) => b.ultimaFecha.localeCompare(a.ultimaFecha))
 }
 
+interface Props {
+  producto: Producto | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onEdit: (producto: Producto) => void
+}
+
 export function ProductoDetailSheet({ producto, open, onOpenChange, onEdit }: Props) {
   const [history, setHistory] = useState<PriceEntry[]>([])
   const [totalVentas, setTotalVentas] = useState(0)

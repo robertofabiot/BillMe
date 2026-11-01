@@ -18,16 +18,17 @@ interface Props {
 }
 
 export function ClienteDetailSheet({ cliente, open, onOpenChange, onEdit }: Props) {
-  if (!open || !cliente) return null
-
   const [facturas, setFacturas] = useState<Factura[]>([])
   const [proyectos, setProyectos] = useState<Proyecto[]>([])
 
   useEffect(() => {
-    if (!cliente?.id) return
+    if (!open || !cliente?.id) return
     facturaService.listar({ clienteId: cliente.id }).then(setFacturas).catch(console.error)
     proyectoService.listar(cliente.id).then(setProyectos).catch(console.error)
-  }, [cliente?.id])
+  }, [open, cliente?.id])
+
+  // Los hooks van antes de este return para que React los llame siempre en el mismo orden
+  if (!open || !cliente) return null
 
   const totalFacturado = facturas.reduce((s, f) => s + f.totalVenta, 0)
   const totalCobrado   = facturas.reduce((s, f) => s + (f.totalAbonado ?? f.abonos?.reduce((a, b) => a + b.monto, 0) ?? 0), 0)

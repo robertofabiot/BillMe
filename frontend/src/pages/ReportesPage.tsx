@@ -1,10 +1,9 @@
 import { useState, useMemo, useEffect } from 'react'
 import { facturaService } from '@/services/facturaService'
 import { clienteService } from '@/services/clienteService'
-import { productoService } from '@/services/productoService'
 import { proyectoService } from '@/services/proyectoService'
-import type { Factura, Cliente, Proyecto, Producto } from '@/types'
-import { formatCurrency, formatDate } from '@/lib/format'
+import type { Factura, Cliente, Proyecto } from '@/types'
+import { formatCurrency } from '@/lib/format'
 import {
   BarChart3, TrendingUp, Users, Package, FolderGit2, Calendar,
   PieChart as PieChartIcon, DollarSign, ArrowUpRight, ArrowDownRight, AlertCircle, Filter
@@ -52,7 +51,6 @@ export function ReportesPage() {
 
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [proyectos, setProyectos] = useState<Proyecto[]>([])
-  const [productos, setProductos] = useState<Producto[]>([])
   const [facturas, setFacturas] = useState<Factura[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -61,12 +59,10 @@ export function ReportesPage() {
     Promise.all([
       clienteService.listar(),
       proyectoService.listar(),
-      productoService.listar()
-    ]).then(([resClientes, resProyectos, resProductos]) => {
+    ]).then(([resClientes, resProyectos]) => {
       setClientes(resClientes)
       setProyectos(resProyectos)
-      setProductos(resProductos)
-    }).catch(err => {
+    }).catch(() => {
       setError('Error al cargar datos iniciales')
     })
   }, [])
@@ -81,7 +77,7 @@ export function ReportesPage() {
 
     facturaService.listar(filtros)
       .then(res => setFacturas(res))
-      .catch(err => setError('Error al cargar facturas'))
+      .catch(() => setError('Error al cargar facturas'))
       .finally(() => setLoading(false))
   }, [clienteId, proyectoId, dateFrom, dateTo])
 
@@ -310,7 +306,7 @@ export function ReportesPage() {
                       <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#80727B' }} axisLine={false} tickLine={false} />
                       <YAxis tickFormatter={v => `$${(v/1000).toFixed(0)}k`} tick={{ fontSize: 12, fill: '#80727B' }} axisLine={false} tickLine={false} />
                       <Tooltip 
-                        formatter={(v: number) => formatCurrency(v)}
+                        formatter={v => formatCurrency(Number(v))}
                         contentStyle={{ borderRadius: '6px', border: '1px solid #E5E7EB', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
                       />
                       <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }} />
@@ -381,7 +377,7 @@ export function ReportesPage() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                      <Tooltip formatter={v => formatCurrency(Number(v))} />
                       <Legend layout="vertical" verticalAlign="bottom" wrapperStyle={{ fontSize: '11px', paddingTop: '20px' }} />
                     </PieChart>
                   </ResponsiveContainer>
@@ -408,7 +404,7 @@ export function ReportesPage() {
                       <XAxis type="number" tickFormatter={v => `$${(v/1000).toFixed(0)}k`} tick={{ fontSize: 12, fill: '#80727B' }} axisLine={false} tickLine={false} />
                       <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#022F40', fontWeight: 500 }} width={150} axisLine={false} tickLine={false} />
                       <Tooltip 
-                        formatter={(v: number) => formatCurrency(v)}
+                        formatter={v => formatCurrency(Number(v))}
                         contentStyle={{ borderRadius: '6px', border: '1px solid #E5E7EB' }}
                       />
                       <Bar dataKey="ventas" name="Total Facturado" fill="#38AECC" radius={[0, 4, 4, 0]} barSize={24}>

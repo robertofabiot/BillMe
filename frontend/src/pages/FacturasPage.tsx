@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, type ChangeEvent } from 'react'
-import type { Factura, Abono, EstadoFactura, Cliente, Proyecto } from '@/types'
+import type { Factura, EstadoFactura, Cliente, Proyecto } from '@/types'
 import { facturaService, clienteService, proyectoService } from '@/services'
 import type { FacturaPayload, AbonoPayload } from '@/services/facturaService'
 import { formatCurrency, formatDate, getSaldo } from '@/lib/format'

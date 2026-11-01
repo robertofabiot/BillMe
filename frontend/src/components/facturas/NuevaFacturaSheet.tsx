@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect, type ChangeEvent } from 'react'
 import { createPortal } from 'react-dom'
-import type { Factura, Producto, EstadoFactura, Cliente, Proyecto } from '@/types'
+import type { Producto, EstadoFactura, Cliente, Proyecto } from '@/types'
 import { productoService } from '@/services/productoService'
 import { formatCurrency } from '@/lib/format'
 import { Input } from '@/components/ui/input'
@@ -163,7 +163,7 @@ export function NuevaFacturaSheet({ open, onOpenChange, onSave, clientes, proyec
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs text-[#705D56]">Cliente *</label>
-                  <Select value={clienteId} onValueChange={handleClienteChange}>
+                  <Select value={clienteId} onValueChange={v => handleClienteChange(v ?? '')}>
                     <SelectTrigger className="rounded border-[#E5E7EB] text-sm h-9">
                       <SelectValue placeholder="Seleccionar cliente…">
                         {clienteId ? clientes.find(c => c.id === clienteId)?.nombre : undefined}
@@ -180,7 +180,7 @@ export function NuevaFacturaSheet({ open, onOpenChange, onSave, clientes, proyec
                   <label className="text-xs text-[#705D56]">Proyecto (opcional)</label>
                   <Select
                     value={proyectoId}
-                    onValueChange={setProyectoId}
+                    onValueChange={v => setProyectoId(v ?? '')}
                     disabled={clienteProyectos.length === 0}
                   >
                     <SelectTrigger className="rounded border-[#E5E7EB] text-sm h-9">

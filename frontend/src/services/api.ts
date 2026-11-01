@@ -11,9 +11,14 @@ export interface CampoError {
 }
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string, public errores: CampoError[] = []) {
+  status: number
+  errores: CampoError[]
+
+  constructor(status: number, message: string, errores: CampoError[] = []) {
     super(message)
     this.name = 'ApiError'
+    this.status = status
+    this.errores = errores
   }
 }
 
@@ -31,9 +36,9 @@ async function toApiError(res: Response): Promise<ApiError> {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const token = localStorage.getItem('billme_token')
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options?.headers,
+    ...(options?.headers as Record<string, string> | undefined),
   }
 
   if (token) {

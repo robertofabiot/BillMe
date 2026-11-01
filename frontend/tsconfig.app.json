@@ -22,8 +22,7 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
 
-    /* Path aliases */
-    "baseUrl": ".",
+    /* Path aliases (relativos a este archivo; TypeScript 6 ya no usa baseUrl) */
     "paths": {
       "@/*": ["./src/*"]
     }
