@@ -161,3 +161,16 @@ export interface PreciosListaProducto {
   historial: PrecioLista[]
   descuentoProveedorSugerido: number | null
 }
+
+/** Resumen de importar la lista de precios del proveedor (vista previa o aplicada). */
+export interface ImportacionLista {
+  hoja: string
+  filasLeidas: number
+  filasIgnoradas: number
+  productosNuevos: number
+  preciosQueCambian: number
+  sinCambios: number
+  sinPrecio: number
+  muestra: { codigo: string; descripcion: string; precioAnterior: number | null; precioNuevo: number | null }[]
+  aplicada: boolean
+}
