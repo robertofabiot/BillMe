@@ -130,3 +130,11 @@ export interface Usuario {
   nombre: string
   activo: boolean
 }
+
+export interface ConfiguracionSistema {
+  ivaPct: number
+  tipoCambio: number
+  tarifaKgUsd: number
+  densidadKgIn3: number
+  diasPrecioViejo: number
+}
