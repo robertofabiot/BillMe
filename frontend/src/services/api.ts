@@ -50,6 +50,13 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     headers,
   })
 
+  if (res.status === 401 && token && !path.startsWith('/auth/')) {
+    // La sesión venció o el usuario ya no es válido: volver al login
+    localStorage.removeItem('billme_token')
+    localStorage.removeItem('billme_user')
+    window.location.assign('/login')
+  }
+
   if (!res.ok) {
     throw await toApiError(res)
   }

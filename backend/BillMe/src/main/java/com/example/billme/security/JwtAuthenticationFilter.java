@@ -1,5 +1,6 @@
 package com.example.billme.security;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,6 +11,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -42,13 +44,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         
         // Extraemos el token (después de "Bearer ")
         jwt = authHeader.substring(7);
-        username = jwtService.extractUsername(jwt);
+        try {
+            username = jwtService.extractUsername(jwt);
+        } catch (JwtException | IllegalArgumentException e) {
+            // Token vencido, mal formado o con firma inválida: la petición sigue sin autenticar
+            // y Spring Security responde 401 si el endpoint está protegido.
+            filterChain.doFilter(request, response);
+            return;
+        }
         
         // Si hay username pero no hay autenticación en el contexto actual
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+            UserDetails userDetails;
+            try {
+                userDetails = this.userDetailsService.loadUserByUsername(username);
+            } catch (UsernameNotFoundException e) {
+                filterChain.doFilter(request, response);
+                return;
+            }
             
-            if (jwtService.isTokenValid(jwt, userDetails)) {
+            if (userDetails.isEnabled() && jwtService.isTokenValid(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
