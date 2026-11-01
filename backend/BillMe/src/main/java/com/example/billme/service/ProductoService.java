@@ -17,6 +17,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ProductoService {
 
     private final ProductoRepository productoRepository;
@@ -94,6 +95,7 @@ public class ProductoService {
         return toResponse(productoRepository.findById(id).orElseThrow());
     }
 
+    @Transactional
     public void eliminar(UUID id) {
         if (!productoRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);

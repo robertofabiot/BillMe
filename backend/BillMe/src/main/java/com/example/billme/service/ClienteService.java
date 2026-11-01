@@ -7,6 +7,7 @@ import com.example.billme.repository.ClienteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ClienteService {
 
     private final ClienteRepository clienteRepository;
@@ -37,6 +39,7 @@ public class ClienteService {
         return toResponse(cliente);
     }
 
+    @Transactional
     public ClienteResponse crear(ClienteRequest request) {
         Cliente cliente = new Cliente();
         cliente.setNombre(request.nombre());
@@ -46,6 +49,7 @@ public class ClienteService {
         return toResponse(cliente);
     }
 
+    @Transactional
     public ClienteResponse actualizar(UUID id, ClienteRequest request) {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
@@ -56,6 +60,7 @@ public class ClienteService {
         return toResponse(cliente);
     }
 
+    @Transactional
     public void eliminar(UUID id) {
         if (!clienteRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado");

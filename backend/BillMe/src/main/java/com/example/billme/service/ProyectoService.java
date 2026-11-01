@@ -10,6 +10,7 @@ import com.example.billme.repository.ProyectoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ProyectoService {
 
     private final ProyectoRepository proyectoRepository;
@@ -47,6 +49,7 @@ public class ProyectoService {
         return toResponse(proyecto);
     }
 
+    @Transactional
     public ProyectoResponse crear(ProyectoRequest request) {
         Cliente cliente = clienteRepository.findById(request.clienteId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
@@ -65,6 +68,7 @@ public class ProyectoService {
         return toResponse(saved);
     }
 
+    @Transactional
     public ProyectoResponse actualizar(UUID id, ProyectoRequest request) {
         Proyecto proyecto = proyectoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proyecto no encontrado"));
