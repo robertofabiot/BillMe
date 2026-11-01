@@ -4,6 +4,20 @@
  */
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api'
+const URL_SALUD = new URL('/actuator/health', new URL(API_BASE, window.location.origin)).href
+
+/**
+ * Consulta la salud del backend. En el plan gratis de Render el servidor se duerme
+ * sin uso: esta llamada lo despierta y termina cuando ya está listo.
+ */
+export async function esperarServidor(): Promise<boolean> {
+  try {
+    const res = await fetch(URL_SALUD, { cache: 'no-store' })
+    return res.ok
+  } catch {
+    return false
+  }
+}
 
 export interface CampoError {
   campo: string

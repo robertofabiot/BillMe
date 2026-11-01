@@ -1,17 +1,31 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { ApiError, esperarServidor } from '@/services/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ReceiptText, ShieldAlert } from 'lucide-react'
+import { ReceiptText, ShieldAlert, Loader2, WifiOff } from 'lucide-react'
 
 export function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [servidor, setServidor] = useState<'conectando' | 'listo' | 'sin-conexion'>('conectando')
+  const [tardando, setTardando] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
+
+  // Despierta el backend apenas se abre el login, mientras se escribe el usuario
+  useEffect(() => {
+    let vigente = true
+    const aviso = setTimeout(() => { if (vigente) setTardando(true) }, 1500)
+    esperarServidor().then(ok => {
+      clearTimeout(aviso)
+      if (vigente) setServidor(ok ? 'listo' : 'sin-conexion')
+    })
+    return () => { vigente = false; clearTimeout(aviso) }
+  }, [])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -24,7 +38,9 @@ export function LoginPage() {
       await login({ username, password })
       navigate('/', { replace: true })
     } catch (err) {
-      setError('Credenciales incorrectas. Inténtalo de nuevo.')
+      setError(err instanceof ApiError && err.status === 401
+        ? 'Usuario o contraseña incorrectos.'
+        : 'No se pudo conectar con el servidor. Revisa tu internet e inténtalo de nuevo.')
     } finally {
       setIsSubmitting(false)
     }
@@ -45,7 +61,21 @@ export function LoginPage() {
 
         {/* Formulario - Elementos alineados de acuerdo a la grilla */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-6 text-left">
-          
+
+          {servidor === 'conectando' && tardando && (
+            <div className="border border-[#E5E7EB] bg-[#F9FAFB] text-[#022F40] text-sm p-4 rounded flex items-start gap-2">
+              <Loader2 className="w-4 h-4 shrink-0 mt-0.5 animate-spin" />
+              <p>Conectando con el servidor… La primera vez del día puede tardar hasta un minuto.</p>
+            </div>
+          )}
+
+          {servidor === 'sin-conexion' && (
+            <div className="border border-red-200 text-red-600 text-sm p-4 rounded flex items-start gap-2">
+              <WifiOff className="w-4 h-4 shrink-0 mt-0.5" />
+              <p>No se pudo conectar con el servidor. Revisa tu internet y recarga la página.</p>
+            </div>
+          )}
+
           {error && (
             <div className="bg-[#FFFFFF] border border-red-200 text-red-600 text-sm p-4 rounded flex items-start gap-2">
               <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
@@ -58,7 +88,7 @@ export function LoginPage() {
             <Input 
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Ej. admin" 
+              placeholder="Tu usuario" 
               className="h-10 bg-[#FFFFFF] border-[#E5E7EB] text-[#022F40] placeholder:text-[#80727B] rounded focus-visible:ring-[#91E5F6]"
               disabled={isSubmitting}
             />
