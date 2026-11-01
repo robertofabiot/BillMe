@@ -22,6 +22,9 @@ import java.util.List;
 @Builder
 public class Usuario extends BaseEntity implements UserDetails {
 
+    /** Largo mínimo de una contraseña. */
+    public static final int PASSWORD_MINIMO = 8;
+
     @Column(name = "username", unique = true, nullable = false, length = 50)
     private String username;
 
