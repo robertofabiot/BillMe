@@ -63,6 +63,15 @@ class FacturaServiceTest extends IntegrationTest {
     }
 
     @Test
+    void filtraLasFacturasQueIncluyenUnProducto() {
+        facturaConUnAbono();
+        var otro = productoService.crear(new ProductoRequest("018001001", "Varilla Lisa 3/8", null, null, null, List.of()));
+
+        assertThat(facturaService.filtrar(null, null, null, null, null, tubo().id())).hasSize(1);
+        assertThat(facturaService.filtrar(null, null, null, null, null, otro.id())).isEmpty();
+    }
+
+    @Test
     void reporteSumaLoCobrado() {
         facturaConUnAbono();
 

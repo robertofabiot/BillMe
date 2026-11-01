@@ -190,6 +190,7 @@ export function ProductosPage() {
         open={selected !== null}
         onOpenChange={(v: boolean) => { if (!v) setSelected(null) }}
         onEdit={openEdit}
+        onPrecioActualizado={() => productoService.listar().then(setProductos).catch(console.error)}
       />
     </div>
   )

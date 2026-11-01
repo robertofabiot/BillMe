@@ -46,7 +46,8 @@ public class FacturaService {
                 .collect(Collectors.toList());
     }
 
-    public List<FacturaResponse> filtrar(UUID clienteId, UUID proyectoId, Instant desde, Instant hasta, String estado) {
+    public List<FacturaResponse> filtrar(UUID clienteId, UUID proyectoId, Instant desde, Instant hasta, String estado,
+                                        UUID productoId) {
         EstadoFactura estadoFactura = null;
         if (estado != null && !estado.trim().isEmpty()) {
             try {
@@ -55,7 +56,7 @@ public class FacturaService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Estado de factura no válido");
             }
         }
-        return facturaRepository.filtrar(clienteId, proyectoId, desde, hasta, estadoFactura)
+        return facturaRepository.filtrar(clienteId, proyectoId, desde, hasta, estadoFactura, productoId)
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());

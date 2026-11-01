@@ -142,3 +142,22 @@ export interface ConfiguracionSistema {
   densidadKgIn3: number
   diasPrecioViejo: number
 }
+
+export type FuentePrecio = 'LISTA_IMPORTADA' | 'FACTURA_PROVEEDOR' | 'PRECIO_CLIENTE' | 'MANUAL'
+
+/** Precio de lista del proveedor (sin IVA) vigente desde una fecha. */
+export interface PrecioLista {
+  id: string
+  precioSinIva: number
+  fecha: string
+  fuente: FuentePrecio
+  descuentoPct?: number | null
+  precioOrigen?: number | null
+  nota?: string | null
+}
+
+export interface PreciosListaProducto {
+  vigente: PrecioLista | null
+  historial: PrecioLista[]
+  descuentoProveedorSugerido: number | null
+}

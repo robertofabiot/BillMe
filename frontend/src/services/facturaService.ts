@@ -26,6 +26,7 @@ export const facturaService = {
     estado?: string
     desde?: string
     hasta?: string
+    productoId?: string
   }) => {
     const params = new URLSearchParams()
     if (filtros) {

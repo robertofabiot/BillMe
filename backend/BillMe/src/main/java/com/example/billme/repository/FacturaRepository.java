@@ -24,7 +24,7 @@ public interface FacturaRepository extends JpaRepository<Factura, UUID> {
     boolean existsByFolioInterno(String folioInterno);
 
     /**
-     * Motor de reportes cruzados: filtra por rango de fechas, cliente y proyecto,
+     * Motor de reportes cruzados: filtra por rango de fechas, cliente, proyecto y producto vendido,
      * con todos los parámetros opcionales (NULL = sin filtro).
      */
     @Query("SELECT f FROM Factura f WHERE " +
@@ -32,13 +32,16 @@ public interface FacturaRepository extends JpaRepository<Factura, UUID> {
            "(cast(:proyectoId as uuid) IS NULL OR f.proyecto.id = :proyectoId) AND " +
            "(cast(:desde as timestamp) IS NULL OR f.createdAt >= :desde) AND " +
            "(cast(:hasta as timestamp) IS NULL OR f.createdAt <= :hasta) AND " +
-           "(:estado IS NULL OR f.estado = :estado)")
+           "(:estado IS NULL OR f.estado = :estado) AND " +
+           "(cast(:productoId as uuid) IS NULL OR EXISTS " +
+           "  (SELECT 1 FROM DetalleFactura d WHERE d.factura = f AND d.producto.id = :productoId))")
     List<Factura> filtrar(
             @Param("clienteId")  UUID clienteId,
             @Param("proyectoId") UUID proyectoId,
             @Param("desde")      Instant desde,
             @Param("hasta")      Instant hasta,
-            @Param("estado")     EstadoFactura estado
+            @Param("estado")     EstadoFactura estado,
+            @Param("productoId") UUID productoId
     );
 
     /**
