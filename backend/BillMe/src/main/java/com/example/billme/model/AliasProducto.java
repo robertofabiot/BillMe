@@ -1,5 +1,6 @@
 package com.example.billme.model;
 
+import com.example.billme.util.NormalizadorTexto;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,9 +22,19 @@ public class AliasProducto extends BaseEntity {
     @Column(name = "nombre_alias", nullable = false, length = 200)
     private String nombreAlias;
 
+    /** Alias normalizado para buscar. Se calcula solo. */
+    @Column(name = "alias_norm", nullable = false, length = 200)
+    private String aliasNorm;
+
     // ── Relaciones ──────────────────────────────────────────────────────────
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "producto_id", nullable = false)
     private Producto producto;
+
+    @PrePersist
+    @PreUpdate
+    void normalizar() {
+        aliasNorm = NormalizadorTexto.normalizar(nombreAlias);
+    }
 }

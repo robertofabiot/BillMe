@@ -8,11 +8,15 @@ export interface Producto {
   codigoInterno: string
   nombrePrincipal: string
   descripcion?: string
+  unidad: string
+  familia?: string
   peso: number
+  generico: boolean
+  formaCalculo: 'NINGUNA' | 'PLACA' | 'PLATINA' | 'ANGULAR'
+  /** Precio de lista del proveedor sin IVA más reciente. */
+  precioListaVigente?: number
+  fechaPrecioLista?: string
   aliases: string[]
-  precioListaProveedor?: number
-  descuentoProveedor?: number
-  costoNeto?: number
   createdAt?: string
 }
 

@@ -38,6 +38,7 @@ public class FacturaService {
     private final ClienteRepository clienteRepository;
     private final ProyectoRepository proyectoRepository;
     private final ProductoRepository productoRepository;
+    private final PrecioListaService precioListaService;
 
     public List<FacturaResponse> listarTodas() {
         return facturaRepository.findAll().stream()
@@ -116,9 +117,12 @@ public class FacturaService {
                 BigDecimal subtotalVenta = dr.cantidad().multiply(dr.precioUnitarioVenta());
                 totalVenta = totalVenta.add(subtotalVenta);
 
-                BigDecimal costoProd = producto.getCostoNeto() != null ? producto.getCostoNeto() : BigDecimal.ZERO;
-                BigDecimal subtotalCosto = dr.cantidad().multiply(costoProd);
-                costoRealEmpresa = costoRealEmpresa.add(subtotalCosto);
+                // Costo estimado con la lista vigente; si no se conoce, la línea no suma costo
+                BigDecimal costoProd = precioListaService.costoEstimadoConIva(producto).orElse(null);
+                detalle.setCostoUnitarioSnapshot(costoProd);
+                if (costoProd != null) {
+                    costoRealEmpresa = costoRealEmpresa.add(dr.cantidad().multiply(costoProd));
+                }
             }
         }
         
@@ -189,9 +193,12 @@ public class FacturaService {
                 BigDecimal subtotalVenta = dr.cantidad().multiply(dr.precioUnitarioVenta());
                 totalVenta = totalVenta.add(subtotalVenta);
 
-                BigDecimal costoProd = producto.getCostoNeto() != null ? producto.getCostoNeto() : BigDecimal.ZERO;
-                BigDecimal subtotalCosto = dr.cantidad().multiply(costoProd);
-                costoRealEmpresa = costoRealEmpresa.add(subtotalCosto);
+                // Costo estimado con la lista vigente; si no se conoce, la línea no suma costo
+                BigDecimal costoProd = precioListaService.costoEstimadoConIva(producto).orElse(null);
+                detalle.setCostoUnitarioSnapshot(costoProd);
+                if (costoProd != null) {
+                    costoRealEmpresa = costoRealEmpresa.add(dr.cantidad().multiply(costoProd));
+                }
             }
             factura.setTotalVenta(totalVenta);
             factura.setCostoRealEmpresa(costoRealEmpresa);
@@ -255,7 +262,7 @@ public class FacturaService {
                 d.getProducto() != null ? d.getProducto().getCodigoInterno() : null,
                 d.getCantidad(),
                 d.getPrecioUnitarioVenta(),
-                d.getProducto() != null ? d.getProducto().getCostoNeto() : null,
+                d.getCostoUnitarioSnapshot(),
                 d.getProducto() != null ? d.getProducto().getPeso() : null
         );
     }

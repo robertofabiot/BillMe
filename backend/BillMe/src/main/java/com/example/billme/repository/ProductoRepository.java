@@ -15,6 +15,9 @@ public interface ProductoRepository extends JpaRepository<Producto, UUID> {
 
     boolean existsByCodigoInterno(String codigoInterno);
 
+    /** Los productos tocados más recientemente (la lista completa puede tener miles). */
+    List<Producto> findTop100ByOrderByUpdatedAtDesc();
+
     /**
      * Búsqueda multi-campo: código interno, nombre principal o cualquiera de sus alias.
      * Usada en la barra de búsqueda de la pantalla de facturación.

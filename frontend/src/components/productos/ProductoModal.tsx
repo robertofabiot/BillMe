@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef, type ChangeEvent, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import type { Producto } from '@/types'
+import type { ProductoPayload } from '@/services/productoService'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Package, X, Plus, Tag, Calculator } from 'lucide-react'
+import { Package, X, Plus, Tag } from 'lucide-react'
 
 interface Props {
   open: boolean
   onOpenChange: (v: boolean) => void
   initial?: Producto | null
-  onSave: (producto: Omit<Producto, 'id'> & { id?: string }) => void
+  onSave: (producto: ProductoPayload & { id?: string }) => void
 }
 
 export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
@@ -20,11 +21,7 @@ export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
   const [aliases,   setAliases]  = useState<string[]>([])
   const [aliasIn,   setAliasIn]  = useState('')
 
-  // Precios
-  const [precioListaProv, setPrecioListaProv] = useState('')
-  const [descuentoProv,   setDescuentoProv]   = useState('')
-  const [ivaProv,         setIvaProv]         = useState('15')
-  const [costoNeto,       setCostoNeto]       = useState('')
+  const [unidad,    setUnidad]   = useState('UND')
 
   const aliasRef = useRef<HTMLInputElement>(null)
 
@@ -37,9 +34,7 @@ export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
       setAliases(initial?.aliases        ?? [])
       setAliasIn('')
 
-      setPrecioListaProv(initial?.precioListaProveedor != null ? String(initial.precioListaProveedor) : '')
-      setDescuentoProv(initial?.descuentoProveedor != null ? String(initial.descuentoProveedor) : '')
-      setCostoNeto(initial?.costoNeto != null ? String(initial.costoNeto) : '')
+      setUnidad(initial?.unidad ?? 'UND')
     }
   }, [open, initial])
 
@@ -49,66 +44,6 @@ export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
   }, [open, onOpenChange])
-
-  // ── Handlers de Cálculo Dinámico ──
-
-  const handlePrecioListaProv = (e: ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    setPrecioListaProv(val)
-    const p = parseFloat(val)
-    const d = parseFloat(descuentoProv) || 0
-    const i = parseFloat(ivaProv) || 0
-    if (!isNaN(p)) {
-      setCostoNeto((p * (1 - d / 100) * (1 + i / 100)).toFixed(2))
-    }
-  }
-
-  const handleDescuentoProv = (e: ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    setDescuentoProv(val)
-    const d = parseFloat(val) || 0
-    const i = parseFloat(ivaProv) || 0
-    
-    const pl = parseFloat(precioListaProv)
-    if (!isNaN(pl)) {
-      setCostoNeto((pl * (1 - d / 100) * (1 + i / 100)).toFixed(2))
-      return
-    }
-
-    const cn = parseFloat(costoNeto)
-    if (isNaN(pl) && !isNaN(cn) && d < 100) {
-      setPrecioListaProv((cn / (1 + i / 100) / (1 - d / 100)).toFixed(2))
-    }
-  }
-
-  const handleIvaProv = (e: ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    setIvaProv(val)
-    const i = parseFloat(val) || 0
-    const d = parseFloat(descuentoProv) || 0
-
-    const pl = parseFloat(precioListaProv)
-    if (!isNaN(pl)) {
-      setCostoNeto((pl * (1 - d / 100) * (1 + i / 100)).toFixed(2))
-      return
-    }
-
-    const cn = parseFloat(costoNeto)
-    if (isNaN(pl) && !isNaN(cn) && d < 100) {
-      setPrecioListaProv((cn / (1 + i / 100) / (1 - d / 100)).toFixed(2))
-    }
-  }
-
-  const handleCostoNeto = (e: ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    setCostoNeto(val)
-    const cn = parseFloat(val)
-    const d = parseFloat(descuentoProv) || 0
-    const i = parseFloat(ivaProv) || 0
-    if (!isNaN(cn) && d < 100) {
-      setPrecioListaProv((cn / (1 + i / 100) / (1 - d / 100)).toFixed(2))
-    }
-  }
 
   // ── Alias handlers ──
   const addAlias = () => {
@@ -132,10 +67,8 @@ export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
       nombrePrincipal: nombre.trim(),
       descripcion:     desc.trim() || undefined,
       peso:            parseFloat(peso) || 0,
+      unidad:          unidad.trim() || 'UND',
       aliases,
-      precioListaProveedor: parseFloat(precioListaProv) || undefined,
-      descuentoProveedor:   parseFloat(descuentoProv) || undefined,
-      costoNeto:            parseFloat(costoNeto) || undefined,
     })
     onOpenChange(false)
   }
@@ -185,33 +118,11 @@ export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
             <Input value={nombre} onChange={(e: ChangeEvent<HTMLInputElement>) => setNombre(e.target.value)} placeholder='Ej. Tubo Galvanizado 1/2"' />
           </div>
 
-          {/* ── Sección de Precios Proveedor ── */}
-          <div className="flex flex-col gap-3 p-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded">
-            <div className="flex items-center gap-1.5">
-              <Calculator className="w-4 h-4 text-[#022F40]" />
-              <h3 className="text-sm font-semibold text-[#022F40]">Costos (Proveedor)</h3>
-            </div>
-            <p className="text-[10px] text-[#80727B] leading-tight mb-1">
-              Ingresa tu Costo Neto (Con IVA) y el Descuento para autocalcular el Precio de Lista (Sin IVA), o viceversa.
-            </p>
-            <div className="grid grid-cols-4 gap-3">
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-[#705D56] font-medium">Mi Costo Neto</label>
-                <Input type="number" min={0} step={0.01} value={costoNeto} onChange={handleCostoNeto} placeholder="0.00" className="font-semibold text-[#558564]" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-[#705D56] font-medium">Descuento (%)</label>
-                <Input type="number" min={0} max={99} step={0.1} value={descuentoProv} onChange={handleDescuentoProv} placeholder="0" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-[#705D56] font-medium">IVA (%)</label>
-                <Input type="number" min={0} max={99} step={0.1} value={ivaProv} onChange={handleIvaProv} placeholder="15" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-[#705D56] font-medium">Lista (Sin IVA)</label>
-                <Input type="number" min={0} step={0.01} value={precioListaProv} onChange={handlePrecioListaProv} placeholder="0.00" />
-              </div>
-            </div>
+          {/* Unidad */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-[#705D56]">Unidad</label>
+            <Input value={unidad} onChange={(e: ChangeEvent<HTMLInputElement>) => setUnidad(e.target.value.toUpperCase())} placeholder="UND, KG, METRO…" />
+            <p className="text-[11px] text-[#80727B]">El precio de lista se registra en la ficha del producto, con su fecha.</p>
           </div>
 
           {/* Descripción */}

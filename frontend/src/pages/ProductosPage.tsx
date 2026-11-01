@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, type ChangeEvent } from 'react'
 import type { Producto, Factura } from '@/types'
-import { productoService } from '@/services/productoService'
+import { productoService, type ProductoPayload } from '@/services/productoService'
 import { facturaService } from '@/services/facturaService'
 import { formatCurrency } from '@/lib/format'
 import { ProductoModal } from '@/components/productos/ProductoModal'
@@ -79,7 +79,7 @@ export function ProductosPage() {
   const openCreate = () => { setEditTarget(null); setShowModal(true) }
   const openEdit   = (p: Producto) => { setEditTarget(p); setShowModal(true); setSelected(null) }
 
-  const handleSave = async (data: Omit<Producto, 'id'> & { id?: string }) => {
+  const handleSave = async (data: ProductoPayload & { id?: string }) => {
     try {
       if (data.id) {
         await productoService.actualizar(data.id, data)
@@ -89,7 +89,8 @@ export function ProductosPage() {
       const newData = await productoService.listar()
       setProductos(newData)
     } catch (e) {
-      console.error(e)
+      // Ej. código repetido (409): el mensaje viene del backend
+      alert(e instanceof Error ? e.message : 'No se pudo guardar el producto')
     }
   }
 
@@ -159,8 +160,8 @@ export function ProductosPage() {
               <th className="text-left px-4 py-3 font-medium text-[#705D56]">Nombre Principal</th>
               <th className="text-left px-4 py-3 font-medium text-[#705D56]">Alias</th>
               <th className="text-center px-4 py-3 font-medium text-[#705D56]">Peso</th>
-              <th className="text-right px-4 py-3 font-medium text-[#705D56]">Precio Lista</th>
-              <th className="text-right px-4 py-3 font-medium text-[#705D56]">Costo Neto</th>
+              <th className="text-center px-4 py-3 font-medium text-[#705D56]">Unidad</th>
+              <th className="text-right px-4 py-3 font-medium text-[#705D56]">Lista (sin IVA)</th>
               <th className="text-center px-4 py-3 font-medium text-[#705D56]">Ventas</th>
             </tr>
           </thead>
@@ -209,11 +210,9 @@ export function ProductosPage() {
                   <td className="px-4 py-3 text-center text-[#705D56] text-xs">
                     {p.peso > 0 ? `${p.peso} kg` : '—'}
                   </td>
-                  <td className="px-4 py-3 text-right text-xs font-medium text-[#80727B]">
-                    {p.precioListaProveedor ? formatCurrency(p.precioListaProveedor) : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-right text-xs font-semibold text-[#558564]">
-                    {p.costoNeto ? formatCurrency(p.costoNeto) : '—'}
+                  <td className="px-4 py-3 text-center text-[#705D56] text-xs">{p.unidad}</td>
+                  <td className="px-4 py-3 text-right text-xs font-medium text-[#022F40]">
+                    {p.precioListaVigente != null ? formatCurrency(p.precioListaVigente) : '—'}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {ventas > 0

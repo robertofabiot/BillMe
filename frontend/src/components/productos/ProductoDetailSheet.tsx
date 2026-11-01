@@ -113,8 +113,8 @@ export function ProductoDetailSheet({ producto, open, onOpenChange, onEdit }: Pr
         <div className="grid grid-cols-4 border-b border-[#E5E7EB] shrink-0">
           {[
             { icon: Weight,  label: 'Peso',          value: `${producto.peso} kg` },
-            { icon: Calculator, label: 'Lista Prov.', value: producto.precioListaProveedor ? formatCurrency(producto.precioListaProveedor) : '—' },
-            { icon: Calculator, label: 'Costo Neto', value: producto.costoNeto ? formatCurrency(producto.costoNeto) : '—' },
+            { icon: Calculator, label: 'Lista (sin IVA)', value: producto.precioListaVigente != null ? formatCurrency(producto.precioListaVigente) : '—' },
+            { icon: Calculator, label: 'Lista desde', value: producto.fechaPrecioLista ? formatDate(producto.fechaPrecioLista) : '—' },
             { icon: History, label: 'Unidades vend.', value: totalVentas > 0 ? `${totalVentas}` : '—' },
           ].map((s, idx) => (
             <div key={idx} className="flex items-center gap-2 px-4 py-3 border-r border-[#E5E7EB] last:border-r-0">

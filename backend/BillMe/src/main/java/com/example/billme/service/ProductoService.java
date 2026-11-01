@@ -3,6 +3,7 @@ package com.example.billme.service;
 import com.example.billme.dto.ProductoRequest;
 import com.example.billme.dto.ProductoResponse;
 import com.example.billme.model.AliasProducto;
+import com.example.billme.model.PrecioLista;
 import com.example.billme.model.Producto;
 import com.example.billme.repository.AliasProductoRepository;
 import com.example.billme.repository.DetalleFacturaRepository;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -24,36 +26,27 @@ public class ProductoService {
     private final ProductoRepository productoRepository;
     private final AliasProductoRepository aliasProductoRepository;
     private final DetalleFacturaRepository detalleFacturaRepository;
+    private final PrecioListaService precioListaService;
 
-    public List<ProductoResponse> listarTodos() {
-        return productoRepository.findAll().stream()
-                .map(this::toResponse)
-                .toList();
+    /** Los 100 productos usados o editados más recientemente; el resto se encuentra con el buscador. */
+    public List<ProductoResponse> listarRecientes() {
+        return toResponses(productoRepository.findTop100ByOrderByUpdatedAtDesc());
     }
 
     public List<ProductoResponse> buscar(String q) {
-        return productoRepository.buscar(q).stream()
-                .map(this::toResponse)
-                .toList();
+        return toResponses(productoRepository.buscar(q));
     }
 
     public ProductoResponse obtenerPorId(UUID id) {
         Producto producto = productoRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        return toResponse(producto);
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
+        return toResponses(List.of(producto)).get(0);
     }
 
     @Transactional
     public ProductoResponse crear(ProductoRequest request) {
         Producto producto = new Producto();
-        producto.setCodigoInterno(request.codigoInterno());
-        producto.setNombrePrincipal(request.nombrePrincipal());
-        producto.setDescripcion(request.descripcion());
-        producto.setPeso(request.peso());
-        producto.setPrecioListaProveedor(request.precioListaProveedor());
-        producto.setDescuentoProveedor(request.descuentoProveedor());
-        producto.setCostoNeto(request.costoNeto());
-
+        aplicar(producto, request);
         producto = productoRepository.save(producto);
 
         if (request.aliases() != null && !request.aliases().isEmpty()) {
@@ -65,22 +58,15 @@ public class ProductoService {
             }
         }
 
-        return toResponse(productoRepository.findById(producto.getId()).orElseThrow());
+        return obtenerPorId(producto.getId());
     }
 
     @Transactional
     public ProductoResponse actualizar(UUID id, ProductoRequest request) {
         Producto producto = productoRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
 
-        producto.setCodigoInterno(request.codigoInterno());
-        producto.setNombrePrincipal(request.nombrePrincipal());
-        producto.setDescripcion(request.descripcion());
-        producto.setPeso(request.peso());
-        producto.setPrecioListaProveedor(request.precioListaProveedor());
-        producto.setDescuentoProveedor(request.descuentoProveedor());
-        producto.setCostoNeto(request.costoNeto());
-
+        aplicar(producto, request);
         productoRepository.save(producto);
 
         aliasProductoRepository.deleteByProductoId(id);
@@ -94,22 +80,40 @@ public class ProductoService {
             }
         }
 
-        return toResponse(productoRepository.findById(id).orElseThrow());
+        return obtenerPorId(id);
     }
 
     @Transactional
     public void eliminar(UUID id) {
-        if (!productoRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
+        if (producto.isGenerico()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Los productos genéricos no se pueden eliminar");
         }
         if (detalleFacturaRepository.existsByProductoId(id)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "No se puede eliminar un producto que aparece en facturas");
         }
+        precioListaService.eliminarDeProducto(id);
         productoRepository.deleteById(id);
     }
 
-    private ProductoResponse toResponse(Producto entity) {
+    private void aplicar(Producto producto, ProductoRequest request) {
+        producto.setCodigoInterno(request.codigoInterno().trim());
+        producto.setNombrePrincipal(request.nombrePrincipal().trim());
+        producto.setDescripcion(request.descripcion());
+        producto.setUnidad(request.unidad() == null || request.unidad().isBlank()
+                ? "UND" : request.unidad().trim().toUpperCase());
+        producto.setPeso(request.peso());
+    }
+
+    private List<ProductoResponse> toResponses(List<Producto> productos) {
+        Map<UUID, PrecioLista> vigentes = precioListaService.vigentes(
+                productos.stream().map(Producto::getId).toList());
+        return productos.stream().map(p -> toResponse(p, vigentes.get(p.getId()))).toList();
+    }
+
+    private ProductoResponse toResponse(Producto entity, PrecioLista vigente) {
         List<String> aliases = List.of();
         if (entity.getAliases() != null) {
             aliases = entity.getAliases().stream()
@@ -122,10 +126,13 @@ public class ProductoService {
                 entity.getCodigoInterno(),
                 entity.getNombrePrincipal(),
                 entity.getDescripcion(),
+                entity.getUnidad(),
+                entity.getFamilia(),
                 entity.getPeso(),
-                entity.getPrecioListaProveedor(),
-                entity.getDescuentoProveedor(),
-                entity.getCostoNeto(),
+                entity.isGenerico(),
+                entity.getFormaCalculo().name(),
+                vigente != null ? vigente.getPrecioSinIva() : null,
+                vigente != null ? vigente.getFecha() : null,
                 aliases,
                 entity.getCreatedAt()
         );
