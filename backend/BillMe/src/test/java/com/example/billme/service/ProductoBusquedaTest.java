@@ -29,6 +29,19 @@ class ProductoBusquedaTest extends IntegrationTest {
     }
 
     @Test
+    void prefiereLaMedidaExactaAunqueOtrasSeParezcan() {
+        // Nombres tal como vienen en la lista del proveedor
+        crear("009001050", "Tubo Estruct. Cua. 1½ x 1.50 mm", List.of());
+        crear("009001004", "Tubo Estruct. Cua. 1/2 x 1.50 mm", List.of());
+        crear("009001067", "Tubo Estruct. Cua. 2 x 1.50 mm", List.of());
+        crear("009001247", "Tubo Estruct. Cua. 1½ x 1.50 mm x 20pies", List.of());
+
+        assertThat(primero("tubo estruct cua 2 x 1.5")).isEqualTo("009001067");
+        assertThat(primero("tubo 2x1.50")).isEqualTo("009001067");
+        assertThat(primero("tubo estruct cua 1 1/2 x 1.5")).isEqualTo("009001050");
+    }
+
+    @Test
     void buscaTambienPorAlias() {
         crear("009001271", "Tubo Estruct. Cua. 100 x 2.38 x 6000 mm", List.of("Caja de 4\" x 4\" x 3/32\""));
 
