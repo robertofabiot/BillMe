@@ -82,7 +82,7 @@ export function AppSidebar() {
             <UserCircle className="w-6 h-6 text-[#80727B] shrink-0" />
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-bold text-[#022F40] truncate">{user?.nombre || 'Usuario'}</span>
-              <span className="text-[10px] text-[#705D56] uppercase tracking-wider">{user?.rol || 'Rol'}</span>
+              <span className="text-[10px] text-[#705D56] uppercase tracking-wider">{user?.username}</span>
             </div>
           </div>
           <button 

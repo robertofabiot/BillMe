@@ -2,7 +2,6 @@ package com.example.billme.service;
 
 import com.example.billme.dto.AuthRequest;
 import com.example.billme.dto.AuthResponse;
-import com.example.billme.enums.Rol;
 import com.example.billme.model.Usuario;
 import com.example.billme.repository.UsuarioRepository;
 import com.example.billme.security.JwtService;
@@ -35,7 +34,7 @@ public class AuthService {
         // Genera el token JWT
         String token = jwtService.generateToken(usuario);
         
-        return new AuthResponse(token, usuario.getUsername(), usuario.getNombre(), usuario.getRol());
+        return new AuthResponse(token, usuario.getUsername(), usuario.getNombre());
     }
 
     /**
@@ -49,7 +48,6 @@ public class AuthService {
                     .username("admin")
                     .password(passwordEncoder.encode("admin123"))
                     .nombre("Administrador del Sistema")
-                    .rol(Rol.ADMIN)
                     .build();
             usuarioRepository.save(admin);
             System.out.println("✅ Usuario ADMIN por defecto creado (admin / admin123)");

@@ -122,5 +122,4 @@ export interface AuthResponse {
   token: string
   username: string
   nombre: string
-  rol: 'ADMIN' | 'VENDEDOR'
 }
