@@ -4,6 +4,8 @@ import com.example.billme.dto.ClienteRequest;
 import com.example.billme.dto.ClienteResponse;
 import com.example.billme.model.Cliente;
 import com.example.billme.repository.ClienteRepository;
+import com.example.billme.repository.ConsolidadoRepository;
+import com.example.billme.repository.FacturaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,8 @@ import java.util.stream.Collectors;
 public class ClienteService {
 
     private final ClienteRepository clienteRepository;
+    private final FacturaRepository facturaRepository;
+    private final ConsolidadoRepository consolidadoRepository;
 
     public List<ClienteResponse> listarTodos() {
         return clienteRepository.findAll().stream()
@@ -64,6 +68,11 @@ public class ClienteService {
     public void eliminar(UUID id) {
         if (!clienteRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado");
+        }
+        // El historial de ventas nunca se borra junto con el cliente
+        if (facturaRepository.existsByClienteId(id) || consolidadoRepository.existsByClienteId(id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "No se puede eliminar un cliente que tiene facturas o consolidados");
         }
         clienteRepository.deleteById(id);
     }

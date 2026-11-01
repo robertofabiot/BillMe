@@ -10,5 +10,7 @@ public interface ConsolidadoRepository extends JpaRepository<Consolidado, UUID> 
 
     List<Consolidado> findByClienteId(UUID clienteId);
 
+    boolean existsByClienteId(UUID clienteId);
+
     boolean existsByFolioInterno(String folioInterno);
 }

@@ -5,6 +5,7 @@ import com.example.billme.dto.ProductoResponse;
 import com.example.billme.model.AliasProducto;
 import com.example.billme.model.Producto;
 import com.example.billme.repository.AliasProductoRepository;
+import com.example.billme.repository.DetalleFacturaRepository;
 import com.example.billme.repository.ProductoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ public class ProductoService {
 
     private final ProductoRepository productoRepository;
     private final AliasProductoRepository aliasProductoRepository;
+    private final DetalleFacturaRepository detalleFacturaRepository;
 
     public List<ProductoResponse> listarTodos() {
         return productoRepository.findAll().stream()
@@ -99,6 +101,10 @@ public class ProductoService {
     public void eliminar(UUID id) {
         if (!productoRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        if (detalleFacturaRepository.existsByProductoId(id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "No se puede eliminar un producto que aparece en facturas");
         }
         productoRepository.deleteById(id);
     }

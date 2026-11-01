@@ -12,4 +12,6 @@ public interface DetalleFacturaRepository extends JpaRepository<DetalleFactura, 
 
     /** Todos los detalles de un producto en particular — útil para reportes de margen. */
     List<DetalleFactura> findByProductoId(UUID productoId);
+
+    boolean existsByProductoId(UUID productoId);
 }
