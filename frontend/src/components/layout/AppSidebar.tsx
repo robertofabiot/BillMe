@@ -8,7 +8,8 @@ import {
   Settings,
   Layers,
   LogOut,
-  UserCircle
+  UserCircle,
+  Upload
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
@@ -20,6 +21,7 @@ const navItems = [
   { to: '/productos', label: 'Productos',  icon: Package },
   { to: '/proyectos', label: 'Proyectos',  icon: FolderKanban },
   { to: '/reportes',  label: 'Reportes',   icon: BarChart3 },
+  { to: '/importar',  label: 'Importar',   icon: Upload },
 ]
 
 export function AppSidebar() {

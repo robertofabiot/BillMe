@@ -50,8 +50,10 @@ async function toApiError(res: Response): Promise<ApiError> {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const token = localStorage.getItem('billme_token')
+  // Con FormData (subir archivos) el navegador pone el Content-Type con su separador
+  const esArchivo = options?.body instanceof FormData
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(esArchivo ? {} : { 'Content-Type': 'application/json' }),
     ...(options?.headers as Record<string, string> | undefined),
   }
 
@@ -91,4 +93,6 @@ export const api = {
     request<T>(path, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
   delete: <T>(path: string) =>
     request<T>(path, { method: 'DELETE' }),
+  subir: <T>(path: string, form: FormData) =>
+    request<T>(path, { method: 'POST', body: form }),
 }

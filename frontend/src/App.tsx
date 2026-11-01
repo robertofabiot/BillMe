@@ -11,6 +11,7 @@ import { ProyectosPage } from '@/pages/ProyectosPage'
 import { ReportesPage } from '@/pages/ReportesPage'
 import { ConfiguracionPage } from '@/pages/ConfiguracionPage'
 import { ConsolidadosPage } from '@/pages/ConsolidadosPage'
+import { ImportarPage } from '@/pages/ImportarPage'
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
                 <Route path="consolidados" element={<ConsolidadosPage />} />
                 <Route path="reportes"  element={<ReportesPage />}  />
                 <Route path="configuracion" element={<ConfiguracionPage />} />
+                <Route path="importar" element={<ImportarPage />} />
               </Route>
             </Route>
           </Routes>
