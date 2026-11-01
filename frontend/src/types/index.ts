@@ -123,3 +123,10 @@ export interface AuthResponse {
   username: string
   nombre: string
 }
+
+export interface Usuario {
+  id: string
+  username: string
+  nombre: string
+  activo: boolean
+}

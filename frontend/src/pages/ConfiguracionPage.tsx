@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Settings, Sliders, Save } from 'lucide-react'
+import { UsuariosSeccion } from '@/components/configuracion/UsuariosSeccion'
 
 export function ConfiguracionPage() {
   // Estado Mock para Preferencias del Sistema
@@ -68,6 +69,8 @@ export function ConfiguracionPage() {
           </Button>
         </div>
       </div>
+
+      <UsuariosSeccion />
     </div>
   )
 }
