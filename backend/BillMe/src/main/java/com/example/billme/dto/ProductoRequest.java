@@ -8,9 +8,7 @@ public record ProductoRequest(
     @NotBlank @Size(max = 50) String codigoInterno,
     @NotBlank @Size(max = 200) String nombrePrincipal,
     String descripcion,
+    @Size(max = 20) String unidad,
     @PositiveOrZero BigDecimal peso,
-    @PositiveOrZero BigDecimal precioListaProveedor,
-    @DecimalMin("0") @DecimalMax("100") BigDecimal descuentoProveedor,
-    @PositiveOrZero BigDecimal costoNeto,
     List<@NotBlank @Size(max = 200) String> aliases
 ) {}

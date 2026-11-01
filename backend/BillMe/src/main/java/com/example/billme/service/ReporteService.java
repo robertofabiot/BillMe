@@ -22,7 +22,7 @@ public class ReporteService {
     private final FacturaRepository facturaRepository;
 
     public ReporteResponse generarReporte(UUID clienteId, UUID proyectoId, Instant desde, Instant hasta) {
-        List<Factura> facturas = facturaRepository.filtrar(clienteId, proyectoId, desde, hasta, null);
+        List<Factura> facturas = facturaRepository.filtrar(clienteId, proyectoId, desde, hasta, null, null);
         
         BigDecimal ingresosTotales = BigDecimal.ZERO;
         BigDecimal totalCobrado = BigDecimal.ZERO;

@@ -25,7 +25,7 @@ public class ProductoController {
         if (q != null && !q.isBlank()) {
             return ResponseEntity.ok(productoService.buscar(q));
         }
-        return ResponseEntity.ok(productoService.listarTodos());
+        return ResponseEntity.ok(productoService.listarRecientes());
     }
 
     @GetMapping("/{id}")

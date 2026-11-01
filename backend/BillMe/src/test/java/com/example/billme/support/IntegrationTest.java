@@ -37,10 +37,13 @@ public abstract class IntegrationTest {
         registry.add("spring.datasource.password", () -> "postgres");
     }
 
+    /** Vacía los datos de cada test; conserva lo que siembran las migraciones (genéricos, proveedores, configuración). */
     @BeforeEach
     void vaciarDatos() {
         jdbc.execute("truncate table consolidado_items, consolidado_groups, consolidados, abonos, "
-                + "detalles_factura, facturas, alias_productos, productos, proyectos, clientes, usuarios cascade");
+                + "detalles_factura, facturas, precios_lista, alias_productos, proyectos, clientes, usuarios cascade");
+        jdbc.execute("delete from productos where not generico");
+        jdbc.execute("delete from proveedores where nombre <> 'Proveedor principal'");
     }
 
     private static EmbeddedPostgres iniciarPostgres() {

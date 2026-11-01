@@ -80,10 +80,9 @@ export function NuevaFacturaSheet({ open, onOpenChange, onSave, clientes, proyec
       nombre: producto.nombrePrincipal,
       codigoInterno: producto.codigoInterno,
       cantidad: 1,
-      precioUnitario: precioSugerido || producto.precioListaProveedor || 0,
+      precioUnitario: precioSugerido,
       precioSugerido,
-      precioListaProveedor: producto.precioListaProveedor,
-      costoUnitario: producto.costoNeto,
+      precioListaProveedor: producto.precioListaVigente,
     }])
     setSearch('')
     setDropdown(false)
@@ -292,7 +291,7 @@ export function NuevaFacturaSheet({ open, onOpenChange, onSave, clientes, proyec
                             </span>
                           ) : item.precioListaProveedor ? (
                             <span className="inline-flex items-center gap-0.5 text-[#80727B] mt-0.5">
-                              <span className="text-[10px]">Lista Prov: {formatCurrency(item.precioListaProveedor)}</span>
+                              <span className="text-[10px]">Lista sin IVA: {formatCurrency(item.precioListaProveedor)}</span>
                             </span>
                           ) : null}
                         </td>

@@ -1,19 +1,18 @@
 package com.example.billme.model;
 
+import com.example.billme.enums.FormaCalculo;
+import com.example.billme.util.NormalizadorTexto;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
- * Representa un producto del catálogo.
- * Contiene la lógica de precios de proveedor y costo neto.
- *
- * Fórmula de costo neto:
- *   costoNeto = precioListaProveedor * (1 - descuentoProveedor/100) * (1 + iva/100)
- * El iva es el configurado globalmente (por defecto 15%).
+ * Producto del catálogo. No guarda precio: el precio de lista vigente está en
+ * {@link PrecioLista} y el precio a cada cliente sale de su historial de ventas.
  */
 @Entity
 @Table(name = "productos")
@@ -24,40 +23,64 @@ import java.util.List;
 @Builder
 public class Producto extends BaseEntity {
 
+    /** Los códigos del proveedor principal tienen 9 dígitos y los 3 primeros indican la familia. */
+    private static final Pattern CODIGO_PROVEEDOR = Pattern.compile("\\d{9}");
+
     @Column(name = "codigo_interno", unique = true, nullable = false, length = 50)
     private String codigoInterno;
 
     @Column(name = "nombre_principal", nullable = false, length = 200)
     private String nombrePrincipal;
 
+    /** Nombre normalizado para buscar (ver NormalizadorTexto). Se calcula solo. */
+    @Column(name = "nombre_norm", nullable = false, length = 200)
+    private String nombreNorm;
+
     @Column(name = "descripcion", columnDefinition = "TEXT")
     private String descripcion;
 
-    /**
-     * Precio de lista publicado por el proveedor, sin IVA.
-     */
-    @Column(name = "precio_lista_proveedor", precision = 12, scale = 2)
-    private BigDecimal precioListaProveedor;
+    @Column(name = "unidad", nullable = false, length = 20)
+    @Builder.Default
+    private String unidad = "UND";
 
-    /**
-     * Porcentaje de descuento otorgado por el proveedor (0-100).
-     */
-    @Column(name = "descuento_proveedor", precision = 5, scale = 2)
-    private BigDecimal descuentoProveedor;
+    /** Familia del proveedor (prefijo del código); agrupa productos con el mismo descuento. */
+    @Column(name = "familia", length = 20)
+    private String familia;
 
-    /**
-     * Costo neto real para el negocio: precio lista * (1 - descuento%) * (1 + iva%).
-     * Se almacena calculado para búsquedas y reportes rápidos.
-     */
-    @Column(name = "costo_neto", precision = 12, scale = 2)
-    private BigDecimal costoNeto;
-
+    /** Peso unitario en kg. */
     @Column(name = "peso", precision = 10, scale = 3)
     private BigDecimal peso;
 
+    /** Genérico: placas a medida, línea libre. Se buscan por la descripción de cada venta. */
+    @Column(name = "generico", nullable = false)
+    @Builder.Default
+    private boolean generico = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "forma_calculo", nullable = false, length = 20)
+    @Builder.Default
+    private FormaCalculo formaCalculo = FormaCalculo.NINGUNA;
+
+    @Column(name = "activo", nullable = false)
+    @Builder.Default
+    private boolean activo = true;
+
     // ── Relaciones ──────────────────────────────────────────────────────────
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "proveedor_id")
+    private Proveedor proveedor;
 
     @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<AliasProducto> aliases = new ArrayList<>();
+
+    @PrePersist
+    @PreUpdate
+    void calcularCamposDerivados() {
+        nombreNorm = NormalizadorTexto.normalizar(nombrePrincipal);
+        if (familia == null && codigoInterno != null && CODIGO_PROVEEDOR.matcher(codigoInterno).matches()) {
+            familia = codigoInterno.substring(0, 3);
+        }
+    }
 }

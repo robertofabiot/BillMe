@@ -72,7 +72,7 @@ class ClienteControllerTest extends IntegrationTest {
     void borrarClienteConFacturasResponde409YNoBorraNada() throws Exception {
         var cliente = clienteService.crear(new ClienteRequest("Cliente de prueba", null, null));
         var producto = productoService.crear(new ProductoRequest(
-                "009001271", "Tubo Estruct. Cua. 4 x 4", null, null, null, null, null, List.of()));
+                "009001271", "Tubo Estruct. Cua. 4 x 4", null, "UND", null, List.of()));
         facturaService.crear(new FacturaRequest(cliente.id(), null, "PENDIENTE",
                 List.of(new DetalleFacturaRequest(producto.id(), BigDecimal.ONE, new BigDecimal("2000.00")))));
 
