@@ -1,0 +1,39 @@
+name: Respaldo semanal
+
+on:
+  schedule:
+    - cron: '0 9 * * 0' # domingos 03:00, hora de Nicaragua (UTC-6)
+  workflow_dispatch:
+
+jobs:
+  respaldo:
+    name: pg_dump cifrado de la base
+    runs-on: ubuntu-latest
+    steps:
+      - name: Volcar el esquema public con pg_dump 17
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          test -n "$SUPABASE_DB_URL" || { echo "Falta el secreto SUPABASE_DB_URL"; exit 1; }
+          docker run --rm -e SUPABASE_DB_URL postgres:17 \
+            sh -c 'pg_dump --format=custom --no-owner --no-privileges --schema=public "$SUPABASE_DB_URL"' \
+            > billme.dump
+          test -s billme.dump
+
+      # El repositorio es público: el respaldo solo se sube cifrado
+      - name: Cifrar con AES-256
+        env:
+          RESPALDO_CLAVE: ${{ secrets.RESPALDO_CLAVE }}
+        run: |
+          test -n "$RESPALDO_CLAVE" || { echo "Falta el secreto RESPALDO_CLAVE"; exit 1; }
+          FECHA=$(date -u +%F)
+          gpg --batch --yes --pinentry-mode loopback --symmetric --cipher-algo AES256 --passphrase-fd 0 \
+            --output "billme-$FECHA.dump.gpg" billme.dump <<< "$RESPALDO_CLAVE"
+          rm billme.dump
+          echo "ARCHIVO=billme-$FECHA.dump.gpg" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARCHIVO }}
+          path: ${{ env.ARCHIVO }}
+          retention-days: 90
