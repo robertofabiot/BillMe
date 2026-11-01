@@ -1,33 +1,15 @@
-import { useState, useMemo, useEffect, type ChangeEvent } from 'react'
-import type { Producto, Factura } from '@/types'
+import { useState, useEffect, type ChangeEvent } from 'react'
+import type { Producto } from '@/types'
 import { productoService, type ProductoPayload } from '@/services/productoService'
-import { facturaService } from '@/services/facturaService'
 import { formatCurrency } from '@/lib/format'
 import { ProductoModal } from '@/components/productos/ProductoModal'
 import { ProductoDetailSheet } from '@/components/productos/ProductoDetailSheet'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Package, Plus, Search, Tag, Hash, BarChart3 } from 'lucide-react'
-
-function StatCard({ icon: Icon, label, value, accent }: {
-  icon: React.ElementType; label: string; value: string; accent?: string
-}) {
-  return (
-    <div className="bg-white border border-[#E5E7EB] rounded p-4 flex items-start gap-3 shadow-sm">
-      <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${accent ?? 'bg-[#F9FAFB]'}`}>
-        <Icon className={`w-4 h-4 ${accent ? 'text-white' : 'text-[#80727B]'}`} />
-      </div>
-      <div>
-        <p className="text-xs text-[#705D56]">{label}</p>
-        <p className="text-lg font-bold text-[#022F40] leading-tight">{value}</p>
-      </div>
-    </div>
-  )
-}
+import { Package, Plus, Search } from 'lucide-react'
 
 export function ProductosPage() {
   const [productos, setProductos]   = useState<Producto[]>([])
-  const [facturas, setFacturas]     = useState<Factura[]>([])
   const [loading, setLoading]       = useState(true)
   const [error, setError]           = useState<string | null>(null)
   const [selected,  setSelected]    = useState<Producto | null>(null)
@@ -39,12 +21,7 @@ export function ProductosPage() {
     const load = async () => {
       try {
         setLoading(true)
-        const [productosData, facturasData] = await Promise.all([
-          productoService.listar(),
-          facturaService.listar()
-        ])
-        setProductos(productosData)
-        setFacturas(facturasData)
+        setProductos(await productoService.listar())
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Error al cargar datos')
       } finally {
@@ -54,26 +31,19 @@ export function ProductosPage() {
     load()
   }, [])
 
-  /* ── Stats ── */
-  const stats = useMemo(() => {
-    const totalAliases  = productos.reduce((s, p) => s + p.aliases.length, 0)
-    const vendidos      = new Set(
-      facturas.flatMap(f => f.detalles.map(d => d.productoId))
-    ).size
-    const sinAlias = productos.filter(p => p.aliases.length === 0).length
-    return { total: productos.length, totalAliases, vendidos, sinAlias }
-  }, [productos, facturas])
+  /* ── Búsqueda en el servidor (tolerante a variantes de escritura) ── */
+  const [resultados, setResultados] = useState<Producto[] | null>(null)
 
-  /* ── Filter ── */
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase()
-    return productos.filter(p =>
-      !q ||
-      p.codigoInterno.toLowerCase().includes(q)  ||
-      p.nombrePrincipal.toLowerCase().includes(q) ||
-      p.aliases.some(a => a.toLowerCase().includes(q))
-    )
-  }, [productos, search])
+  useEffect(() => {
+    const q = search.trim()
+    const timer = setTimeout(() => {
+      if (!q) { setResultados(null); return }
+      productoService.listar(q).then(setResultados).catch(() => setResultados([]))
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  const filtered = resultados ?? productos
 
   /* ── Handlers ── */
   const openCreate = () => { setEditTarget(null); setShowModal(true) }
@@ -93,12 +63,6 @@ export function ProductosPage() {
       alert(e instanceof Error ? e.message : 'No se pudo guardar el producto')
     }
   }
-
-  /* ── Veces vendido por producto ── */
-  const vecesVendido = (productoId: string) =>
-    facturas.filter(f =>
-      f.estado !== 'COTIZACION' && f.detalles.some(d => d.productoId === productoId)
-    ).length
 
   if (loading) return (
     <div className="p-8 flex items-center justify-center h-64">
@@ -130,16 +94,6 @@ export function ProductosPage() {
         </Button>
       </div>
 
-      {/* ── Stats ── */}
-      <div className="grid grid-cols-4 gap-4">
-        <StatCard icon={Package}   label="Total Productos"  value={String(stats.total)} />
-        <StatCard icon={Tag}       label="Total Alias"      value={String(stats.totalAliases)} />
-        <StatCard icon={BarChart3} label="Productos Vendidos" value={String(stats.vendidos)} accent="bg-[#022F40]" />
-        <StatCard icon={Hash}      label="Sin Alias"        value={String(stats.sinAlias)}
-          accent={stats.sinAlias > 0 ? 'bg-amber-500' : undefined}
-        />
-      </div>
-
       {/* ── Search ── */}
       <div className="relative max-w-xs">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#80727B]" />
@@ -150,6 +104,11 @@ export function ProductosPage() {
           className="pl-8"
         />
       </div>
+      <p className="text-xs text-[#80727B] -mt-3">
+        {resultados === null
+          ? 'Se muestran los productos usados más recientemente. Busca para encontrar cualquier otro.'
+          : `${resultados.length} resultado${resultados.length === 1 ? '' : 's'} (máximo 20, los más parecidos primero).`}
+      </p>
 
       {/* ── Table ── */}
       <div className="bg-white border border-[#E5E7EB] rounded overflow-hidden shadow-sm">
@@ -162,19 +121,17 @@ export function ProductosPage() {
               <th className="text-center px-4 py-3 font-medium text-[#705D56]">Peso</th>
               <th className="text-center px-4 py-3 font-medium text-[#705D56]">Unidad</th>
               <th className="text-right px-4 py-3 font-medium text-[#705D56]">Lista (sin IVA)</th>
-              <th className="text-center px-4 py-3 font-medium text-[#705D56]">Ventas</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-[#80727B] text-sm">
+                <td colSpan={6} className="px-4 py-8 text-center text-[#80727B] text-sm">
                   No se encontraron productos.
                 </td>
               </tr>
             )}
             {filtered.map((p, i) => {
-              const ventas = vecesVendido(p.id)
               const isLast = i === filtered.length - 1
               return (
                 <tr
@@ -213,12 +170,6 @@ export function ProductosPage() {
                   <td className="px-4 py-3 text-center text-[#705D56] text-xs">{p.unidad}</td>
                   <td className="px-4 py-3 text-right text-xs font-medium text-[#022F40]">
                     {p.precioListaVigente != null ? formatCurrency(p.precioListaVigente) : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {ventas > 0
-                      ? <span className="text-xs font-semibold text-[#558564] bg-[#558564]/10 border border-[#558564]/20 px-2 py-0.5 rounded">{ventas} {ventas === 1 ? 'venta' : 'ventas'}</span>
-                      : <span className="text-xs text-[#80727B]">—</span>
-                    }
                   </td>
                 </tr>
               )

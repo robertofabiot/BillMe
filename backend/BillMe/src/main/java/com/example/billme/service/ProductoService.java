@@ -8,6 +8,7 @@ import com.example.billme.model.Producto;
 import com.example.billme.repository.AliasProductoRepository;
 import com.example.billme.repository.DetalleFacturaRepository;
 import com.example.billme.repository.ProductoRepository;
+import com.example.billme.util.NormalizadorTexto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -33,8 +34,14 @@ public class ProductoService {
         return toResponses(productoRepository.findTop100ByOrderByUpdatedAtDesc());
     }
 
+    /** Encuentra un producto aunque esté escrito distinto ("tubo 2x1.5" encuentra "Tubo Estruct. Cua. 2\" x 1.50mm"). */
     public List<ProductoResponse> buscar(String q) {
-        return toResponses(productoRepository.buscar(q));
+        String normalizado = NormalizadorTexto.normalizar(q);
+        if (normalizado.isEmpty()) {
+            return listarRecientes();
+        }
+        String codigo = q.trim().toLowerCase().replaceAll("[^a-z0-9-]", "");
+        return toResponses(productoRepository.buscar(normalizado, "%" + normalizado + "%", codigo + "%"));
     }
 
     public ProductoResponse obtenerPorId(UUID id) {
