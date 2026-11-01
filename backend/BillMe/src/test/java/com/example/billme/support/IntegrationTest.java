@@ -40,7 +40,7 @@ public abstract class IntegrationTest {
     @BeforeEach
     void vaciarDatos() {
         jdbc.execute("truncate table consolidado_items, consolidado_groups, consolidados, abonos, "
-                + "detalles_factura, facturas, alias_productos, productos, proyectos, clientes cascade");
+                + "detalles_factura, facturas, alias_productos, productos, proyectos, clientes, usuarios cascade");
     }
 
     private static EmbeddedPostgres iniciarPostgres() {
