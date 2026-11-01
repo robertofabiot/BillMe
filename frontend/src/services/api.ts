@@ -4,6 +4,20 @@
  */
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api'
+const URL_SALUD = new URL('/actuator/health', new URL(API_BASE, window.location.origin)).href
+
+/**
+ * Consulta la salud del backend. En el plan gratis de Render el servidor se duerme
+ * sin uso: esta llamada lo despierta y termina cuando ya está listo.
+ */
+export async function esperarServidor(): Promise<boolean> {
+  try {
+    const res = await fetch(URL_SALUD, { cache: 'no-store' })
+    return res.ok
+  } catch {
+    return false
+  }
+}
 
 export interface CampoError {
   campo: string
@@ -36,8 +50,10 @@ async function toApiError(res: Response): Promise<ApiError> {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const token = localStorage.getItem('billme_token')
+  // Con FormData (subir archivos) el navegador pone el Content-Type con su separador
+  const esArchivo = options?.body instanceof FormData
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(esArchivo ? {} : { 'Content-Type': 'application/json' }),
     ...(options?.headers as Record<string, string> | undefined),
   }
 
@@ -49,6 +65,13 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     ...options,
     headers,
   })
+
+  if (res.status === 401 && token && !path.startsWith('/auth/')) {
+    // La sesión venció o el usuario ya no es válido: volver al login
+    localStorage.removeItem('billme_token')
+    localStorage.removeItem('billme_user')
+    window.location.assign('/login')
+  }
 
   if (!res.ok) {
     throw await toApiError(res)
@@ -70,4 +93,6 @@ export const api = {
     request<T>(path, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
   delete: <T>(path: string) =>
     request<T>(path, { method: 'DELETE' }),
+  subir: <T>(path: string, form: FormData) =>
+    request<T>(path, { method: 'POST', body: form }),
 }

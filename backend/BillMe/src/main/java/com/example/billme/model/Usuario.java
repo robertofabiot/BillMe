@@ -1,18 +1,16 @@
 package com.example.billme.model;
 
-import com.example.billme.enums.Rol;
 import jakarta.persistence.*;
 import lombok.*;
 
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
 
 /**
- * Representa a un usuario del sistema (ADMIN o VENDEDOR).
+ * Representa a un usuario del sistema. Todos tienen los mismos permisos (no hay roles).
  * Spring Security usará esta entidad para autenticación.
  */
 @Entity
@@ -24,6 +22,9 @@ import java.util.List;
 @Builder
 public class Usuario extends BaseEntity implements UserDetails {
 
+    /** Largo mínimo de una contraseña. */
+    public static final int PASSWORD_MINIMO = 8;
+
     @Column(name = "username", unique = true, nullable = false, length = 50)
     private String username;
 
@@ -34,16 +35,17 @@ public class Usuario extends BaseEntity implements UserDetails {
     @Column(name = "password", nullable = false)
     private String password;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "rol", nullable = false, length = 20)
-    private Rol rol;
-
     @Column(name = "nombre", nullable = false, length = 100)
     private String nombre;
 
+    /** Un usuario inactivo no puede iniciar sesión. */
+    @Column(name = "activo", nullable = false)
+    @Builder.Default
+    private boolean activo = true;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + rol.name()));
+        return List.of();
     }
 
     @Override
@@ -63,6 +65,6 @@ public class Usuario extends BaseEntity implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true; // Siempre habilitado por defecto
+        return activo;
     }
 }

@@ -1,9 +1,26 @@
-import type { Producto } from '@/types'
-import { useEffect, useState } from 'react'
+import type { FuentePrecio, PrecioLista, PreciosListaProducto, Producto } from '@/types'
+import { useCallback, useEffect, useState } from 'react'
 import { facturaService } from '@/services/facturaService'
+import { precioListaService } from '@/services/precioListaService'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { Button } from '@/components/ui/button'
-import { X, Pencil, Tag, Weight, Hash, FileText, History, Calculator } from 'lucide-react'
+import { CalcularListaDialog } from '@/components/precios/CalcularListaDialog'
+import { X, Pencil, Tag, Weight, Hash, FileText, History, Calculator, Receipt } from 'lucide-react'
+
+const FUENTES: Record<FuentePrecio, string> = {
+  LISTA_IMPORTADA: 'Lista del proveedor',
+  FACTURA_PROVEEDOR: 'Factura del proveedor',
+  PRECIO_CLIENTE: 'Precio a un cliente',
+  MANUAL: 'Escrito a mano',
+}
+
+function origen(p: PrecioLista) {
+  if (p.precioOrigen == null) return ''
+  const descuento = p.descuentoPct != null ? ` con ${p.descuentoPct}%` : ''
+  return p.fuente === 'PRECIO_CLIENTE'
+    ? `${formatCurrency(p.precioOrigen)} con IVA${descuento}`
+    : `${formatCurrency(p.precioOrigen)} sin IVA${descuento}`
+}
 
 interface PriceEntry {
   clienteId: string
@@ -50,15 +67,26 @@ interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   onEdit: (producto: Producto) => void
+  /** Avisa que cambió el precio de lista para refrescar la lista de productos. */
+  onPrecioActualizado?: () => void
 }
 
-export function ProductoDetailSheet({ producto, open, onOpenChange, onEdit }: Props) {
+export function ProductoDetailSheet({ producto, open, onOpenChange, onEdit, onPrecioActualizado }: Props) {
   const [history, setHistory] = useState<PriceEntry[]>([])
   const [totalVentas, setTotalVentas] = useState(0)
+  const [precios, setPrecios] = useState<PreciosListaProducto | null>(null)
+  const [calculando, setCalculando] = useState(false)
+
+  const cargarPrecios = useCallback(() => {
+    if (!producto?.id) return
+    precioListaService.consultar(producto.id).then(setPrecios).catch(console.error)
+  }, [producto?.id])
 
   useEffect(() => {
     if (!producto?.id || !open) return
-    facturaService.listar().then(facturas => {
+    cargarPrecios()
+    // Solo las facturas que incluyen este producto
+    facturaService.listar({ productoId: producto.id }).then(facturas => {
       setHistory(processHistory(producto.id, facturas))
       setTotalVentas(facturas
         .filter(f => f.estado !== 'COTIZACION')
@@ -67,9 +95,11 @@ export function ProductoDetailSheet({ producto, open, onOpenChange, onEdit }: Pr
           return d ? s + d.cantidad : s
         }, 0))
     }).catch(console.error)
-  }, [producto?.id, open])
+  }, [producto?.id, open, cargarPrecios])
 
   if (!open || !producto) return null
+
+  const vigente = precios?.vigente ?? null
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
@@ -112,9 +142,9 @@ export function ProductoDetailSheet({ producto, open, onOpenChange, onEdit }: Pr
         {/* Quick info row */}
         <div className="grid grid-cols-4 border-b border-[#E5E7EB] shrink-0">
           {[
-            { icon: Weight,  label: 'Peso',          value: `${producto.peso} kg` },
-            { icon: Calculator, label: 'Lista Prov.', value: producto.precioListaProveedor ? formatCurrency(producto.precioListaProveedor) : '—' },
-            { icon: Calculator, label: 'Costo Neto', value: producto.costoNeto ? formatCurrency(producto.costoNeto) : '—' },
+            { icon: Weight,  label: 'Peso',          value: producto.peso ? `${producto.peso} kg` : '—' },
+            { icon: Calculator, label: 'Lista (sin IVA)', value: vigente ? formatCurrency(vigente.precioSinIva) : '—' },
+            { icon: Calculator, label: 'Lista desde', value: vigente ? formatDate(vigente.fecha) : '—' },
             { icon: History, label: 'Unidades vend.', value: totalVentas > 0 ? `${totalVentas}` : '—' },
           ].map((s, idx) => (
             <div key={idx} className="flex items-center gap-2 px-4 py-3 border-r border-[#E5E7EB] last:border-r-0">
@@ -151,6 +181,49 @@ export function ProductoDetailSheet({ producto, open, onOpenChange, onEdit }: Pr
               </p>
             </section>
           )}
+
+          {/* Precio de lista del proveedor */}
+          <section>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#80727B] flex items-center gap-1.5">
+                <Receipt className="w-3.5 h-3.5" /> Precio de lista del proveedor
+              </h3>
+              <Button size="sm" variant="outline" onClick={() => setCalculando(true)} className="h-8 text-xs gap-1">
+                <Calculator className="w-3.5 h-3.5" /> Calcular precio de lista
+              </Button>
+            </div>
+
+            {!precios || precios.historial.length === 0 ? (
+              <p className="text-xs text-[#80727B] py-2">
+                Sin precio de lista. Calcúlalo desde la factura del proveedor o desde el precio dado a un cliente.
+              </p>
+            ) : (
+              <div className="border border-[#E5E7EB] rounded overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
+                      <th className="text-left px-3 py-2 font-medium text-[#705D56]">Desde</th>
+                      <th className="text-right px-3 py-2 font-medium text-[#705D56]">Lista (sin IVA)</th>
+                      <th className="text-left px-3 py-2 font-medium text-[#705D56]">Cómo se obtuvo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {precios.historial.map((p, i) => (
+                      <tr key={p.id} className={`border-b border-[#E5E7EB] last:border-b-0 ${i === 0 ? 'bg-[#558564]/5' : ''}`}>
+                        <td className="px-3 py-2.5 text-[#705D56]">{formatDate(p.fecha)}</td>
+                        <td className="px-3 py-2.5 text-right font-semibold text-[#022F40]">{formatCurrency(p.precioSinIva)}</td>
+                        <td className="px-3 py-2.5 text-[#705D56]">
+                          <p>{FUENTES[p.fuente]}{i === 0 && <span className="ml-1 text-[#558564] font-medium">· vigente</span>}</p>
+                          {origen(p) && <p className="text-[11px] text-[#80727B]">{origen(p)}</p>}
+                          {p.nota && <p className="text-[11px] text-[#80727B]">{p.nota}</p>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
 
           {/* Historial de precios por cliente */}
           <section>
@@ -196,6 +269,14 @@ export function ProductoDetailSheet({ producto, open, onOpenChange, onEdit }: Pr
           </section>
         </div>
       </div>
+
+      <CalcularListaDialog
+        producto={producto}
+        descuentoSugerido={precios?.descuentoProveedorSugerido ?? null}
+        open={calculando}
+        onOpenChange={setCalculando}
+        onGuardado={() => { cargarPrecios(); onPrecioActualizado?.() }}
+      />
     </div>
   )
 }

@@ -63,6 +63,15 @@ class FacturaServiceTest extends IntegrationTest {
     }
 
     @Test
+    void filtraLasFacturasQueIncluyenUnProducto() {
+        facturaConUnAbono();
+        var otro = productoService.crear(new ProductoRequest("018001001", "Varilla Lisa 3/8", null, null, null, List.of()));
+
+        assertThat(facturaService.filtrar(null, null, null, null, null, tubo().id())).hasSize(1);
+        assertThat(facturaService.filtrar(null, null, null, null, null, otro.id())).isEmpty();
+    }
+
+    @Test
     void reporteSumaLoCobrado() {
         facturaConUnAbono();
 
@@ -76,7 +85,7 @@ class FacturaServiceTest extends IntegrationTest {
     @Test
     void actualizarDetallesRecalculaElTotal() {
         FacturaResponse factura = facturaConUnAbono();
-        ProductoResponse producto = productoService.listarTodos().get(0);
+        ProductoResponse producto = tubo();
 
         facturaService.actualizar(factura.id(), new FacturaRequest(null, null, null,
                 List.of(new DetalleFacturaRequest(producto.id(), new BigDecimal("3"), new BigDecimal("1500")))));
@@ -87,12 +96,12 @@ class FacturaServiceTest extends IntegrationTest {
     @Test
     void noSePuedeBorrarUnProductoUsadoEnFacturas() {
         facturaConUnAbono();
-        ProductoResponse producto = productoService.listarTodos().get(0);
+        ProductoResponse producto = tubo();
 
         assertThatThrownBy(() -> productoService.eliminar(producto.id()))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
                         e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
-        assertThat(productoService.listarTodos()).hasSize(1);
+        assertThat(productoService.obtenerPorId(producto.id())).isNotNull();
     }
 
     @Test
@@ -102,11 +111,15 @@ class FacturaServiceTest extends IntegrationTest {
                         e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
 
+    private ProductoResponse tubo() {
+        return productoService.buscar("009001271").get(0);
+    }
+
     private FacturaResponse facturaConUnAbono() {
         var cliente = clienteService.crear(new ClienteRequest("Cliente de prueba", null, null));
         var proyecto = proyectoService.crear(new ProyectoRequest(cliente.id(), "Obra centro", null));
         var producto = productoService.crear(new ProductoRequest(
-                "009001271", "Tubo Estruct. Cua. 4 x 4", null, new BigDecimal("44.17"), null, null, null,
+                "009001271", "Tubo Estruct. Cua. 4 x 4", null, "UND", new BigDecimal("44.17"),
                 List.of("Caja de 4 x 4")));
         FacturaResponse factura = facturaService.crear(new FacturaRequest(cliente.id(), proyecto.id(), "PENDIENTE",
                 List.of(new DetalleFacturaRequest(producto.id(), new BigDecimal("2"), new BigDecimal("1500")))));

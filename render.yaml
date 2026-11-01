@@ -1,0 +1,36 @@
+# Blueprint de Render para el backend (ver docs/Despliegue.md).
+# Las variables con "sync: false" se piden al crear el servicio y nunca se guardan en el repo.
+services:
+  - type: web
+    name: billme-api
+    runtime: docker
+    plan: free
+    # No se puede cambiar después de crear el servicio: usar la región más cercana a Supabase
+    region: virginia
+    dockerfilePath: ./backend/BillMe/Dockerfile
+    dockerContext: ./backend/BillMe
+    branch: main
+    # Solo despliega cuando el CI de GitHub pasa en verde
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - backend/**
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_USERNAME
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
+      # 256 bits aleatorios en base64, el formato que espera JwtService
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: BILLME_USUARIO_INICIAL
+        sync: false
+      - key: BILLME_PASSWORD_INICIAL
+        sync: false
+      - key: BILLME_NOMBRE_INICIAL
+        sync: false

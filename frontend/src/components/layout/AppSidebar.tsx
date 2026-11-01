@@ -8,7 +8,8 @@ import {
   Settings,
   Layers,
   LogOut,
-  UserCircle
+  UserCircle,
+  Upload
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
@@ -20,6 +21,7 @@ const navItems = [
   { to: '/productos', label: 'Productos',  icon: Package },
   { to: '/proyectos', label: 'Proyectos',  icon: FolderKanban },
   { to: '/reportes',  label: 'Reportes',   icon: BarChart3 },
+  { to: '/importar',  label: 'Importar',   icon: Upload },
 ]
 
 export function AppSidebar() {
@@ -82,7 +84,7 @@ export function AppSidebar() {
             <UserCircle className="w-6 h-6 text-[#80727B] shrink-0" />
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-bold text-[#022F40] truncate">{user?.nombre || 'Usuario'}</span>
-              <span className="text-[10px] text-[#705D56] uppercase tracking-wider">{user?.rol || 'Rol'}</span>
+              <span className="text-[10px] text-[#705D56] uppercase tracking-wider">{user?.username}</span>
             </div>
           </div>
           <button 

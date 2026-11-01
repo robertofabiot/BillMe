@@ -5,10 +5,8 @@ export interface ProductoPayload {
   codigoInterno: string
   nombrePrincipal: string
   descripcion?: string
+  unidad?: string
   peso: number
-  precioListaProveedor?: number
-  descuentoProveedor?: number
-  costoNeto?: number
   aliases: string[]
 }
 

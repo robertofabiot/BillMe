@@ -30,10 +30,12 @@ public class FacturaController {
             @RequestParam(required = false) UUID proyectoId,
             @RequestParam(required = false) String estado,
             @RequestParam(required = false) Instant desde,
-            @RequestParam(required = false) Instant hasta) {
+            @RequestParam(required = false) Instant hasta,
+            @RequestParam(required = false) UUID productoId) {
         
-        if (clienteId != null || proyectoId != null || estado != null || desde != null || hasta != null) {
-            return ResponseEntity.ok(facturaService.filtrar(clienteId, proyectoId, desde, hasta, estado));
+        if (clienteId != null || proyectoId != null || estado != null || desde != null || hasta != null
+                || productoId != null) {
+            return ResponseEntity.ok(facturaService.filtrar(clienteId, proyectoId, desde, hasta, estado, productoId));
         }
         return ResponseEntity.ok(facturaService.listarTodas());
     }

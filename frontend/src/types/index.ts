@@ -8,11 +8,15 @@ export interface Producto {
   codigoInterno: string
   nombrePrincipal: string
   descripcion?: string
+  unidad: string
+  familia?: string
   peso: number
+  generico: boolean
+  formaCalculo: 'NINGUNA' | 'PLACA' | 'PLATINA' | 'ANGULAR'
+  /** Precio de lista del proveedor sin IVA más reciente. */
+  precioListaVigente?: number
+  fechaPrecioLista?: string
   aliases: string[]
-  precioListaProveedor?: number
-  descuentoProveedor?: number
-  costoNeto?: number
   createdAt?: string
 }
 
@@ -122,5 +126,51 @@ export interface AuthResponse {
   token: string
   username: string
   nombre: string
-  rol: 'ADMIN' | 'VENDEDOR'
+}
+
+export interface Usuario {
+  id: string
+  username: string
+  nombre: string
+  activo: boolean
+}
+
+export interface ConfiguracionSistema {
+  ivaPct: number
+  tipoCambio: number
+  tarifaKgUsd: number
+  densidadKgIn3: number
+  diasPrecioViejo: number
+}
+
+export type FuentePrecio = 'LISTA_IMPORTADA' | 'FACTURA_PROVEEDOR' | 'PRECIO_CLIENTE' | 'MANUAL'
+
+/** Precio de lista del proveedor (sin IVA) vigente desde una fecha. */
+export interface PrecioLista {
+  id: string
+  precioSinIva: number
+  fecha: string
+  fuente: FuentePrecio
+  descuentoPct?: number | null
+  precioOrigen?: number | null
+  nota?: string | null
+}
+
+export interface PreciosListaProducto {
+  vigente: PrecioLista | null
+  historial: PrecioLista[]
+  descuentoProveedorSugerido: number | null
+}
+
+/** Resumen de importar la lista de precios del proveedor (vista previa o aplicada). */
+export interface ImportacionLista {
+  hoja: string
+  filasLeidas: number
+  filasIgnoradas: number
+  productosNuevos: number
+  preciosQueCambian: number
+  sinCambios: number
+  sinPrecio: number
+  muestra: { codigo: string; descripcion: string; precioAnterior: number | null; precioNuevo: number | null }[]
+  aplicada: boolean
 }
