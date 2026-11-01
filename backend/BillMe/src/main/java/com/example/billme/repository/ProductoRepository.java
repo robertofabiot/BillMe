@@ -15,6 +15,8 @@ public interface ProductoRepository extends JpaRepository<Producto, UUID> {
 
     boolean existsByCodigoInterno(String codigoInterno);
 
+    List<Producto> findByCodigoInternoIn(java.util.Collection<String> codigos);
+
     /** Los productos tocados más recientemente (la lista completa puede tener miles). */
     List<Producto> findTop100ByOrderByUpdatedAtDesc();
 
