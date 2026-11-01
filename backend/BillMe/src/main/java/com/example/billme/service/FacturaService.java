@@ -68,6 +68,9 @@ public class FacturaService {
 
     @Transactional
     public FacturaResponse crear(FacturaRequest request) {
+        if (request.clienteId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La factura necesita un cliente");
+        }
         Cliente cliente = clienteRepository.findById(request.clienteId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
 

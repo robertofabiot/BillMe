@@ -1,10 +1,11 @@
 package com.example.billme.dto;
 
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.UUID;
 
 public record DetalleFacturaRequest(
-        UUID productoId,
-        BigDecimal cantidad,
-        BigDecimal precioUnitarioVenta
+        @NotNull UUID productoId,
+        @NotNull @Positive BigDecimal cantidad,
+        @NotNull @PositiveOrZero BigDecimal precioUnitarioVenta
 ) {}

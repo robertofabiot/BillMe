@@ -51,6 +51,9 @@ public class ProyectoService {
 
     @Transactional
     public ProyectoResponse crear(ProyectoRequest request) {
+        if (request.clienteId() == null || request.nombre() == null || request.nombre().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El proyecto necesita cliente y nombre");
+        }
         Cliente cliente = clienteRepository.findById(request.clienteId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
         
@@ -59,7 +62,7 @@ public class ProyectoService {
         proyecto.setNombre(request.nombre());
         
         if (request.estado() != null) {
-            proyecto.setEstado(EstadoProyecto.valueOf(request.estado()));
+            proyecto.setEstado(parseEstado(request.estado()));
         } else {
             proyecto.setEstado(EstadoProyecto.ACTIVO);
         }
@@ -78,7 +81,7 @@ public class ProyectoService {
         }
         
         if (request.estado() != null) {
-            proyecto.setEstado(EstadoProyecto.valueOf(request.estado()));
+            proyecto.setEstado(parseEstado(request.estado()));
         }
         
         if (request.clienteId() != null && !proyecto.getCliente().getId().equals(request.clienteId())) {
@@ -89,6 +92,14 @@ public class ProyectoService {
         
         Proyecto updated = proyectoRepository.save(proyecto);
         return toResponse(updated);
+    }
+
+    private EstadoProyecto parseEstado(String estado) {
+        try {
+            return EstadoProyecto.valueOf(estado.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Estado de proyecto no válido");
+        }
     }
 
     private ProyectoResponse toResponse(Proyecto entity) {

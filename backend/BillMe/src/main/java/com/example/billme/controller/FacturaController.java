@@ -9,6 +9,7 @@ import com.example.billme.service.FacturaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -43,12 +44,12 @@ public class FacturaController {
     }
 
     @PostMapping
-    public ResponseEntity<FacturaResponse> crear(@RequestBody FacturaRequest request) {
+    public ResponseEntity<FacturaResponse> crear(@Valid @RequestBody FacturaRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(facturaService.crear(request));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<FacturaResponse> actualizar(@PathVariable UUID id, @RequestBody FacturaRequest request) {
+    public ResponseEntity<FacturaResponse> actualizar(@PathVariable UUID id, @Valid @RequestBody FacturaRequest request) {
         return ResponseEntity.ok(facturaService.actualizar(id, request));
     }
 
@@ -63,7 +64,7 @@ public class FacturaController {
     }
 
     @PostMapping("/{facturaId}/abonos")
-    public ResponseEntity<AbonoResponse> registrarAbono(@PathVariable UUID facturaId, @RequestBody AbonoRequest request) {
+    public ResponseEntity<AbonoResponse> registrarAbono(@PathVariable UUID facturaId, @Valid @RequestBody AbonoRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(abonoService.registrarAbono(facturaId, request));
     }
 }
