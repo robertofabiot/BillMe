@@ -14,6 +14,8 @@ public interface FacturaRepository extends JpaRepository<Factura, UUID> {
 
     List<Factura> findByClienteId(UUID clienteId);
 
+    boolean existsByClienteId(UUID clienteId);
+
     List<Factura> findByProyectoId(UUID proyectoId);
 
     List<Factura> findByEstado(EstadoFactura estado);

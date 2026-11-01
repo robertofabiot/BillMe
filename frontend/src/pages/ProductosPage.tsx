@@ -238,7 +238,7 @@ export function ProductosPage() {
       <ProductoDetailSheet
         producto={selected}
         open={selected !== null}
-        onOpenChange={v => { if (!v) setSelected(null) }}
+        onOpenChange={(v: boolean) => { if (!v) setSelected(null) }}
         onEdit={openEdit}
       />
     </div>

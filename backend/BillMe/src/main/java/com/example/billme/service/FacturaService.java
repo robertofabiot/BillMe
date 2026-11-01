@@ -12,7 +12,6 @@ import com.example.billme.enums.EstadoFactura;
 import com.example.billme.model.Factura;
 import com.example.billme.model.Producto;
 import com.example.billme.model.Proyecto;
-import com.example.billme.repository.AbonoRepository;
 import com.example.billme.repository.ClienteRepository;
 import com.example.billme.repository.FacturaRepository;
 import com.example.billme.repository.ProductoRepository;
@@ -20,6 +19,7 @@ import com.example.billme.repository.ProyectoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -31,13 +31,13 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class FacturaService {
 
     private final FacturaRepository facturaRepository;
     private final ClienteRepository clienteRepository;
     private final ProyectoRepository proyectoRepository;
     private final ProductoRepository productoRepository;
-    private final AbonoRepository abonoRepository;
 
     public List<FacturaResponse> listarTodas() {
         return facturaRepository.findAll().stream()
@@ -66,7 +66,11 @@ public class FacturaService {
         return toResponse(factura);
     }
 
+    @Transactional
     public FacturaResponse crear(FacturaRequest request) {
+        if (request.clienteId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La factura necesita un cliente");
+        }
         Cliente cliente = clienteRepository.findById(request.clienteId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
 
@@ -126,6 +130,7 @@ public class FacturaService {
         return toResponse(savedFactura);
     }
 
+    @Transactional
     public FacturaResponse confirmarVenta(UUID id) {
         Factura factura = facturaRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Factura no encontrada"));
@@ -139,6 +144,7 @@ public class FacturaService {
         return toResponse(savedFactura);
     }
 
+    @Transactional
     public FacturaResponse actualizar(UUID id, FacturaRequest request) {
         Factura factura = facturaRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Factura no encontrada"));
@@ -213,10 +219,10 @@ public class FacturaService {
                 ? f.getAbonos().stream().map(this::toAbonoResponse).collect(Collectors.toList())
                 : new ArrayList<>();
 
-        BigDecimal totalAbonado = abonoRepository.sumMontoByFacturaId(f.getId());
-        if (totalAbonado == null) {
-            totalAbonado = BigDecimal.ZERO;
-        }
+        // Se suma desde la colección ya cargada para no lanzar una consulta extra por factura
+        BigDecimal totalAbonado = f.getAbonos() != null
+                ? f.getAbonos().stream().map(Abono::getMonto).reduce(BigDecimal.ZERO, BigDecimal::add)
+                : BigDecimal.ZERO;
 
         BigDecimal saldoPendiente = BigDecimal.ZERO;
         if (f.getTotalVenta() != null) {

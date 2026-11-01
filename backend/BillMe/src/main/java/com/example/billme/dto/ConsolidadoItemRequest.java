@@ -1,12 +1,13 @@
 package com.example.billme.dto;
 
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.UUID;
 
 public record ConsolidadoItemRequest(
-    String productoNombre,
-    BigDecimal cantidad,
-    BigDecimal precioUnitario,
+    @NotBlank @Size(max = 200) String productoNombre,
+    @NotNull @Positive BigDecimal cantidad,
+    @NotNull @PositiveOrZero BigDecimal precioUnitario,
     Integer orden,
     UUID facturaId
 ) {}

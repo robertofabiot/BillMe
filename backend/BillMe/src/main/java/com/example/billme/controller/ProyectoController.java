@@ -6,6 +6,7 @@ import com.example.billme.service.ProyectoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -43,13 +44,13 @@ public class ProyectoController {
     }
 
     @PostMapping
-    public ResponseEntity<ProyectoResponse> crear(@RequestBody ProyectoRequest request) {
+    public ResponseEntity<ProyectoResponse> crear(@Valid @RequestBody ProyectoRequest request) {
         ProyectoResponse response = proyectoService.crear(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ProyectoResponse> actualizar(@PathVariable UUID id, @RequestBody ProyectoRequest request) {
+    public ResponseEntity<ProyectoResponse> actualizar(@PathVariable UUID id, @Valid @RequestBody ProyectoRequest request) {
         return ResponseEntity.ok(proyectoService.actualizar(id, request));
     }
 }

@@ -5,18 +5,40 @@
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api'
 
-class ApiError extends Error {
-  constructor(public status: number, message: string) {
+export interface CampoError {
+  campo: string
+  mensaje: string
+}
+
+export class ApiError extends Error {
+  status: number
+  errores: CampoError[]
+
+  constructor(status: number, message: string, errores: CampoError[] = []) {
     super(message)
     this.name = 'ApiError'
+    this.status = status
+    this.errores = errores
   }
+}
+
+/** El backend responde los errores como { mensaje, errores }; si no, se usa el texto crudo. */
+async function toApiError(res: Response): Promise<ApiError> {
+  const text = await res.text().catch(() => '')
+  try {
+    const body = JSON.parse(text) as { mensaje?: string; errores?: CampoError[] }
+    if (body.mensaje) return new ApiError(res.status, body.mensaje, body.errores ?? [])
+  } catch {
+    // respuesta que no es JSON (por ejemplo, un proxy caído)
+  }
+  return new ApiError(res.status, text || res.statusText || `Error ${res.status}`)
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const token = localStorage.getItem('billme_token')
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options?.headers,
+    ...(options?.headers as Record<string, string> | undefined),
   }
 
   if (token) {
@@ -29,8 +51,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   })
 
   if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText)
-    throw new ApiError(res.status, text)
+    throw await toApiError(res)
   }
 
   // 204 No Content

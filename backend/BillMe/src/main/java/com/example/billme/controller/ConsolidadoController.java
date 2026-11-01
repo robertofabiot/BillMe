@@ -6,6 +6,7 @@ import com.example.billme.service.ConsolidadoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,7 +34,7 @@ public class ConsolidadoController {
     }
 
     @PostMapping
-    public ResponseEntity<ConsolidadoResponse> crear(@RequestBody ConsolidadoRequest request) {
+    public ResponseEntity<ConsolidadoResponse> crear(@Valid @RequestBody ConsolidadoRequest request) {
         ConsolidadoResponse response = consolidadoService.crear(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

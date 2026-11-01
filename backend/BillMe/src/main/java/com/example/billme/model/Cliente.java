@@ -33,15 +33,11 @@ public class Cliente extends BaseEntity {
 
     // ── Relaciones ──────────────────────────────────────────────────────────
 
+    /**
+     * Los proyectos se borran con el cliente. Las facturas y consolidados no se
+     * mapean aquí a propósito: nunca deben borrarse en cascada (ver ClienteService).
+     */
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Proyecto> proyectos = new ArrayList<>();
-
-    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<Factura> facturas = new ArrayList<>();
-
-    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<Consolidado> consolidados = new ArrayList<>();
 }

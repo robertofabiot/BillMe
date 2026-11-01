@@ -10,6 +10,7 @@ import com.example.billme.repository.FacturaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AbonoService {
 
     private final AbonoRepository abonoRepository;
@@ -30,6 +32,7 @@ public class AbonoService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public AbonoResponse registrarAbono(UUID facturaId, AbonoRequest request) {
         Factura factura = facturaRepository.findById(facturaId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Factura no encontrada"));

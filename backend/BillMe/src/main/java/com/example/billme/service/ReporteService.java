@@ -2,11 +2,12 @@ package com.example.billme.service;
 
 import com.example.billme.dto.ReporteResponse;
 import com.example.billme.enums.EstadoFactura;
+import com.example.billme.model.Abono;
 import com.example.billme.model.Factura;
-import com.example.billme.repository.AbonoRepository;
 import com.example.billme.repository.FacturaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -15,10 +16,10 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ReporteService {
 
     private final FacturaRepository facturaRepository;
-    private final AbonoRepository abonoRepository;
 
     public ReporteResponse generarReporte(UUID clienteId, UUID proyectoId, Instant desde, Instant hasta) {
         List<Factura> facturas = facturaRepository.filtrar(clienteId, proyectoId, desde, hasta, null);
@@ -33,9 +34,8 @@ public class ReporteService {
             if (factura.getEstado() != EstadoFactura.COTIZACION) {
                 ingresosTotales = ingresosTotales.add(factura.getTotalVenta() != null ? factura.getTotalVenta() : BigDecimal.ZERO);
                 costoTotal = costoTotal.add(factura.getCostoRealEmpresa() != null ? factura.getCostoRealEmpresa() : BigDecimal.ZERO);
-                BigDecimal cobrado = abonoRepository.sumMontoByFacturaId(factura.getId());
-                if (cobrado != null) {
-                    totalCobrado = totalCobrado.add(cobrado);
+                for (Abono abono : factura.getAbonos()) {
+                    totalCobrado = totalCobrado.add(abono.getMonto());
                 }
                 totalFacturas++;
             }

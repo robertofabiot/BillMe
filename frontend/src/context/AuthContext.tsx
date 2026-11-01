@@ -1,9 +1,12 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import type { AuthResponse, AuthRequest } from '@/types'
+
+/** Datos del usuario en sesión (el token se guarda aparte). */
+type UsuarioSesion = Omit<AuthResponse, 'token'>
 import { authService } from '@/services'
 
 interface AuthContextType {
-  user: AuthResponse | null
+  user: UsuarioSesion | null
   loading: boolean
   login: (credentials: AuthRequest) => Promise<void>
   logout: () => void
@@ -12,7 +15,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthResponse | null>(null)
+  const [user, setUser] = useState<UsuarioSesion | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

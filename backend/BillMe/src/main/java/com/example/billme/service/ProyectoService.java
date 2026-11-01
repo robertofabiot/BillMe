@@ -10,6 +10,7 @@ import com.example.billme.repository.ProyectoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ProyectoService {
 
     private final ProyectoRepository proyectoRepository;
@@ -47,7 +49,11 @@ public class ProyectoService {
         return toResponse(proyecto);
     }
 
+    @Transactional
     public ProyectoResponse crear(ProyectoRequest request) {
+        if (request.clienteId() == null || request.nombre() == null || request.nombre().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El proyecto necesita cliente y nombre");
+        }
         Cliente cliente = clienteRepository.findById(request.clienteId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
         
@@ -56,7 +62,7 @@ public class ProyectoService {
         proyecto.setNombre(request.nombre());
         
         if (request.estado() != null) {
-            proyecto.setEstado(EstadoProyecto.valueOf(request.estado()));
+            proyecto.setEstado(parseEstado(request.estado()));
         } else {
             proyecto.setEstado(EstadoProyecto.ACTIVO);
         }
@@ -65,6 +71,7 @@ public class ProyectoService {
         return toResponse(saved);
     }
 
+    @Transactional
     public ProyectoResponse actualizar(UUID id, ProyectoRequest request) {
         Proyecto proyecto = proyectoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proyecto no encontrado"));
@@ -74,7 +81,7 @@ public class ProyectoService {
         }
         
         if (request.estado() != null) {
-            proyecto.setEstado(EstadoProyecto.valueOf(request.estado()));
+            proyecto.setEstado(parseEstado(request.estado()));
         }
         
         if (request.clienteId() != null && !proyecto.getCliente().getId().equals(request.clienteId())) {
@@ -85,6 +92,14 @@ public class ProyectoService {
         
         Proyecto updated = proyectoRepository.save(proyecto);
         return toResponse(updated);
+    }
+
+    private EstadoProyecto parseEstado(String estado) {
+        try {
+            return EstadoProyecto.valueOf(estado.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Estado de proyecto no válido");
+        }
     }
 
     private ProyectoResponse toResponse(Proyecto entity) {

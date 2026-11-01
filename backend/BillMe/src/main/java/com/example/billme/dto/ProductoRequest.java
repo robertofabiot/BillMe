@@ -1,15 +1,16 @@
 package com.example.billme.dto;
 
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.List;
 
 public record ProductoRequest(
-    String codigoInterno,
-    String nombrePrincipal,
+    @NotBlank @Size(max = 50) String codigoInterno,
+    @NotBlank @Size(max = 200) String nombrePrincipal,
     String descripcion,
-    BigDecimal peso,
-    BigDecimal precioListaProveedor,
-    BigDecimal descuentoProveedor,
-    BigDecimal costoNeto,
-    List<String> aliases
+    @PositiveOrZero BigDecimal peso,
+    @PositiveOrZero BigDecimal precioListaProveedor,
+    @DecimalMin("0") @DecimalMax("100") BigDecimal descuentoProveedor,
+    @PositiveOrZero BigDecimal costoNeto,
+    List<@NotBlank @Size(max = 200) String> aliases
 ) {}
