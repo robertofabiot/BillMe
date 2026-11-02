@@ -39,6 +39,8 @@ class ProductoBusquedaTest extends IntegrationTest {
         assertThat(primero("tubo estruct cua 2 x 1.5")).isEqualTo("009001067");
         assertThat(primero("tubo 2x1.50")).isEqualTo("009001067");
         assertThat(primero("tubo estruct cua 1 1/2 x 1.5")).isEqualTo("009001050");
+        assertThat(primero("tubo estruct cua 1/2 x 1.5")).isEqualTo("009001004");
+        assertThat(primero("tubo 1 1/2 x 1.5 20pies")).isEqualTo("009001247");
     }
 
     @Test
