@@ -31,6 +31,8 @@ export function DocumentoExportSheet({ documento, open, onOpenChange }: Props) {
 
   if (!documento) return null
 
+  const conEntrega = documento.mostrarEntrega
+
   const handleExport = async () => {
     if (!printRef.current) return
     setIsExporting(true)
@@ -58,8 +60,8 @@ export function DocumentoExportSheet({ documento, open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-[calc(100%-2rem)] sm:max-w-[850px] max-h-[90vh] p-0 flex flex-col bg-[#F9FAFB] overflow-hidden">
-        <DialogHeader className="px-6 py-4 border-b border-[#E5E7EB] bg-white shrink-0">
+      <DialogContent className={`w-full max-w-[calc(100%-2rem)] ${conEntrega ? 'sm:max-w-[1060px]' : 'sm:max-w-[850px]'} max-h-[90vh] p-0 flex flex-col bg-[#F9FAFB] overflow-hidden`}>
+        <DialogHeader className="pl-6 pr-12 py-4 border-b border-[#E5E7EB] bg-white shrink-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-[#022F40]">Exportar Documento</DialogTitle>
             <Button 
@@ -79,7 +81,7 @@ export function DocumentoExportSheet({ documento, open, onOpenChange }: Props) {
           <div 
             ref={printRef}
             className="bg-white p-8 border border-gray-300 shadow-sm font-sans"
-            style={{ width: '700px', color: '#000000' }}
+            style={{ width: conEntrega ? '960px' : '700px', color: '#000000' }}
           >
             {/* Fila 1: Fecha a la derecha */}
             <div className="flex justify-end mb-4">
@@ -111,6 +113,8 @@ export function DocumentoExportSheet({ documento, open, onOpenChange }: Props) {
                   <th className="border border-black px-2 py-1 text-center font-bold text-sm w-24">PESO TOTAL (KG)</th>
                   <th className="border border-black px-2 py-1 text-center font-bold text-sm w-28">PRECIO UNITARIO</th>
                   <th className="border border-black px-2 py-1 text-center font-bold text-sm w-28">PRECIO TOTAL</th>
+                  {conEntrega && <th className="border border-black px-2 py-1 text-center font-bold text-sm w-28">FECHA DE ENTREGA</th>}
+                  {conEntrega && <th className="border border-black px-2 py-1 text-center font-bold text-sm w-32">LUGAR DE ENTREGA</th>}
                 </tr>
               </thead>
               <tbody>
@@ -141,12 +145,20 @@ export function DocumentoExportSheet({ documento, open, onOpenChange }: Props) {
                     <td className="border border-black px-2 py-1 text-right text-sm font-semibold">
                       {formatCurrency(d.total)}
                     </td>
+                    {conEntrega && (
+                      <td className="border border-black px-2 py-1 text-center text-sm">
+                        {d.fechaEntrega ? formatDate(d.fechaEntrega) : ''}
+                      </td>
+                    )}
+                    {conEntrega && (
+                      <td className="border border-black px-2 py-1 text-center text-sm uppercase">{d.lugarEntrega}</td>
+                    )}
                   </tr>
                 ))}
                 
                 {/* FIN DE LINEA */}
                 <tr>
-                  <td className="border border-black px-2 py-1 text-center font-bold italic" colSpan={5}>
+                  <td className="border border-black px-2 py-1 text-center font-bold italic" colSpan={conEntrega ? 7 : 5}>
                     ***FIN DE LINEA***
                   </td>
                 </tr>
