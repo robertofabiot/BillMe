@@ -65,7 +65,7 @@ En *Settings → Secrets and variables → Actions*:
 | Variable | `BACKEND_URL` | `https://<servicio>.onrender.com` (sin `/api`) |
 
 - **Respaldo semanal:** los domingos a las 03:00 (hora de Nicaragua) se respalda la base, cifrada con AES-256 porque el repositorio es público. Queda 90 días como artefacto del workflow *Respaldo semanal*. Pruébalo una vez con *Run workflow*.
-- **Ping:** cada 10 minutos, de 7:00 a 19:00, se consulta la salud del backend para que Render no lo duerma. También mantiene activo el proyecto de Supabase.
+- **Ping:** cada 10 minutos, de 7:00 a 22:00 (hora de Nicaragua), se consulta la salud del backend para que Render no lo duerma. También mantiene activo el proyecto de Supabase.
 - GitHub desactiva los workflows programados de repositorios públicos tras 60 días sin commits. Si pasa, se reactivan desde la pestaña *Actions*.
 
 ## 5. Restaurar un respaldo
