@@ -11,9 +11,10 @@ import { EstadoDocumentoBadge } from '@/components/documentos/EstadoDocumentoBad
 import { LineasTabla } from '@/components/documentos/LineasTabla'
 import { calcularLinea, type LineaForm } from '@/components/documentos/lineaForm'
 import { ProductoBuscador } from '@/components/documentos/ProductoBuscador'
+import { RevisionesDialog } from '@/components/documentos/RevisionesDialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, FileDown, FileText, Plus, ReceiptText, Save } from 'lucide-react'
+import { ArrowLeft, FileDown, FileText, History, Plus, ReceiptText, Save } from 'lucide-react'
 
 interface Formulario {
   clienteId: string
@@ -119,6 +120,7 @@ export function DocumentoEditorPage() {
   const [trabajando, setTrabajando] = useState(false)
   const [aviso, setAviso] = useState<Aviso>(null)
   const [exportando, setExportando] = useState(false)
+  const [viendoCambios, setViendoCambios] = useState(false)
 
   const tipo: TipoDocumento = documento?.tipo
     ?? (parametros.get('tipo') === 'COTIZACION' ? 'COTIZACION' : 'FACTURA')
@@ -341,6 +343,9 @@ export function DocumentoEditorPage() {
             <Button variant="outline" onClick={() => setExportando(true)} className="h-9 gap-2">
               <FileDown className="w-4 h-4" /> Exportar imagen
             </Button>
+            <Button variant="outline" onClick={() => setViendoCambios(true)} className="h-9 gap-2">
+              <History className="w-4 h-4" /> Ver cambios
+            </Button>
             {documento.estado === 'PENDIENTE' && (
               <>
                 <Button variant="outline" disabled={trabajando} onClick={rechazar} className="h-9">Rechazar</Button>
@@ -537,6 +542,7 @@ export function DocumentoEditorPage() {
       )}
 
       <DocumentoExportSheet documento={documento} open={exportando} onOpenChange={setExportando} />
+      {documento && <RevisionesDialog documentoId={documento.id} open={viendoCambios} onOpenChange={setViendoCambios} />}
     </div>
   )
 }
