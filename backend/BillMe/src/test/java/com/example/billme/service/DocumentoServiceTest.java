@@ -10,10 +10,13 @@ import com.example.billme.dto.LineaResponse;
 import com.example.billme.dto.ProductoRequest;
 import com.example.billme.dto.ProductoResponse;
 import com.example.billme.dto.ProyectoRequest;
+import com.example.billme.dto.RevisionResponse;
 import com.example.billme.enums.EstadoDocumento;
 import com.example.billme.enums.MetodoPrecio;
 import com.example.billme.enums.TipoDocumento;
+import com.example.billme.model.Usuario;
 import com.example.billme.repository.ProductoRepository;
+import com.example.billme.repository.UsuarioRepository;
 import com.example.billme.support.IntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,6 +62,9 @@ class DocumentoServiceTest extends IntegrationTest {
 
     @Autowired
     ReporteService reporteService;
+
+    @Autowired
+    UsuarioRepository usuarioRepository;
 
     ClienteResponse cliente;
     ProductoResponse tubo;
@@ -288,6 +294,50 @@ class DocumentoServiceTest extends IntegrationTest {
         assertEstado(HttpStatus.BAD_REQUEST, () -> documentoService.actualizar(factura.id(), new DocumentoRequest(null, cliente.id(),
                 null, FECHA, null, false, List.of(new LineaRequest(otra.lineas().get(0).id(), tubo.id(), null,
                 BigDecimal.ONE, null, BigDecimal.TEN, null, null, null, null)))));
+    }
+
+    // ── Versiones anteriores ─────────────────────────────────────────────────
+
+    @Test
+    void editarGuardaCopiaDeComoEstabaYQuienLoCambio() {
+        usuarioRepository.save(Usuario.builder().username("user").nombre("Juan Pérez").password("x").build());
+        DocumentoResponse factura = crear(TipoDocumento.FACTURA);
+
+        documentoService.actualizar(factura.id(), new DocumentoRequest(null, cliente.id(), null, FECHA, "Primera corrección",
+                false, List.of(linea(tubo.id(), "2", "150"))));
+        documentoService.actualizar(factura.id(), new DocumentoRequest(null, cliente.id(), null, FECHA, "Segunda corrección",
+                false, List.of(linea(tubo.id(), "3", "200"))));
+
+        List<RevisionResponse> revisiones = documentoService.revisiones(factura.id());
+        assertThat(revisiones).extracting(RevisionResponse::numero).containsExactly(2, 1);
+        RevisionResponse primera = revisiones.get(1);
+        assertThat(primera.editadoPor()).isEqualTo("Juan Pérez");
+        assertThat(primera.editadoEn()).isNotNull();
+        assertThat(primera.documento().total()).isEqualByComparingTo("100.00");
+        assertThat(primera.documento().notas()).isNull();
+        assertThat(primera.documento().fecha()).isEqualTo(FECHA);
+        assertThat(primera.documento().lineas().get(0).descripcion()).isEqualTo("Tubo Estruct. Cua. 4 x 4");
+        assertThat(revisiones.get(0).documento().notas()).isEqualTo("Primera corrección");
+        assertThat(revisiones.get(0).documento().total()).isEqualByComparingTo("300.00");
+        assertThat(documentoService.obtener(factura.id()).total()).isEqualByComparingTo("600.00");
+    }
+
+    @Test
+    void guardarSinCambiosNoCreaUnaVersion() {
+        DocumentoResponse factura = documentoService.crear(new DocumentoRequest(TipoDocumento.FACTURA, cliente.id(), null, FECHA,
+                "Nota", true, List.of(linea(tubo.id(), "2", "100"))));
+        LineaResponse linea = factura.lineas().get(0);
+
+        documentoService.actualizar(factura.id(), new DocumentoRequest(null, cliente.id(), null, FECHA, "Nota", true,
+                List.of(new LineaRequest(linea.id(), tubo.id(), linea.descripcion(), new BigDecimal("2.000"), linea.pesoUnitKg(),
+                        new BigDecimal("100.00"), MetodoPrecio.MANUAL, null, null, null))));
+
+        assertThat(documentoService.revisiones(factura.id())).isEmpty();
+    }
+
+    @Test
+    void unDocumentoInexistenteNoTieneVersiones() {
+        assertEstado(HttpStatus.NOT_FOUND, () -> documentoService.revisiones(UUID.randomUUID()));
     }
 
     // ── Consultas, abonos y reportes (con open-in-view desactivado) ──────────

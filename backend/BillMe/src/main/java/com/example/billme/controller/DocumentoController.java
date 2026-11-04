@@ -5,6 +5,7 @@ import com.example.billme.dto.AbonoResponse;
 import com.example.billme.dto.CambioEstadoRequest;
 import com.example.billme.dto.DocumentoRequest;
 import com.example.billme.dto.DocumentoResponse;
+import com.example.billme.dto.RevisionResponse;
 import com.example.billme.enums.EstadoDocumento;
 import com.example.billme.enums.TipoDocumento;
 import com.example.billme.service.AbonoService;
@@ -54,6 +55,11 @@ public class DocumentoController {
     @PutMapping("/{id}")
     public ResponseEntity<DocumentoResponse> actualizar(@PathVariable UUID id, @Valid @RequestBody DocumentoRequest request) {
         return ResponseEntity.ok(documentoService.actualizar(id, request));
+    }
+
+    @GetMapping("/{id}/revisiones")
+    public ResponseEntity<List<RevisionResponse>> revisiones(@PathVariable UUID id) {
+        return ResponseEntity.ok(documentoService.revisiones(id));
     }
 
     /** Crea la factura de una cotización; {@code fecha} es la de la factura (hoy si no se indica). */

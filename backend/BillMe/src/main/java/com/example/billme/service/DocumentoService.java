@@ -7,6 +7,7 @@ import com.example.billme.dto.DocumentoRequest;
 import com.example.billme.dto.DocumentoResponse;
 import com.example.billme.dto.LineaRequest;
 import com.example.billme.dto.LineaResponse;
+import com.example.billme.dto.RevisionResponse;
 import com.example.billme.enums.EstadoDocumento;
 import com.example.billme.enums.MetodoPrecio;
 import com.example.billme.enums.TipoDocumento;
@@ -14,11 +15,13 @@ import com.example.billme.model.Abono;
 import com.example.billme.model.Cliente;
 import com.example.billme.model.Documento;
 import com.example.billme.model.DocumentoLinea;
+import com.example.billme.model.DocumentoRevision;
 import com.example.billme.model.Producto;
 import com.example.billme.model.Proyecto;
 import com.example.billme.model.Usuario;
 import com.example.billme.repository.ClienteRepository;
 import com.example.billme.repository.DocumentoRepository;
+import com.example.billme.repository.DocumentoRevisionRepository;
 import com.example.billme.repository.ProductoRepository;
 import com.example.billme.repository.ProyectoRepository;
 import com.example.billme.repository.UsuarioRepository;
@@ -30,6 +33,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -54,6 +58,8 @@ public class DocumentoService {
     private final ProductoRepository productoRepository;
     private final UsuarioRepository usuarioRepository;
     private final PrecioListaService precioListaService;
+    private final DocumentoRevisionRepository revisionRepository;
+    private final JsonMapper jsonMapper;
 
     public List<DocumentoResponse> filtrar(TipoDocumento tipo, EstadoDocumento estado, UUID clienteId, UUID proyectoId,
                                            UUID productoId, LocalDate desde, LocalDate hasta) {
@@ -92,8 +98,31 @@ public class DocumentoService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Esta cotización ya se convirtió en factura: edita la factura");
         }
+        String copiaAnterior = jsonMapper.writeValueAsString(toResponse(documento, null));
+        String antes = huella(documento);
         aplicar(documento, request);
+        // Guardar sin cambios no deja una versión nueva
+        if (!huella(documento).equals(antes)) {
+            revisionRepository.save(DocumentoRevision.builder()
+                    .documento(documento)
+                    .numero(revisionRepository.countByDocumentoId(id) + 1)
+                    .snapshot(copiaAnterior)
+                    .usuario(usuarioActual())
+                    .build());
+        }
         return toResponse(documentoRepository.saveAndFlush(documento), null);
+    }
+
+    /** Versiones anteriores de un documento, la más reciente primero. */
+    public List<RevisionResponse> revisiones(UUID id) {
+        buscar(id);
+        return revisionRepository.findByDocumentoIdOrderByNumeroDesc(id).stream()
+                .map(r -> new RevisionResponse(
+                        r.getNumero(),
+                        r.getCreatedAt(),
+                        r.getUsuario() != null ? r.getUsuario().getNombre() : null,
+                        jsonMapper.readValue(r.getSnapshot(), DocumentoResponse.class)))
+                .toList();
     }
 
     /** Crea la factura de una cotización pendiente (con las mismas líneas) y marca la cotización como aceptada. */
@@ -264,6 +293,29 @@ public class DocumentoService {
         CalculoDocumento.Totales totales = CalculoDocumento.totales(calculadas);
         documento.setTotal(totales.total());
         documento.setTotalKg(totales.totalKg());
+    }
+
+    /** Todo lo que se puede editar de un documento, para saber si una edición cambió algo. */
+    private String huella(Documento d) {
+        StringBuilder huella = new StringBuilder()
+                .append(d.getCliente().getId()).append('|')
+                .append(d.getProyecto() != null ? d.getProyecto().getId() : null).append('|')
+                .append(d.getFecha()).append('|')
+                .append(d.getNotas()).append('|')
+                .append(d.isMostrarEntrega());
+        for (DocumentoLinea l : d.getLineas()) {
+            huella.append('\n')
+                    .append(l.getProducto().getId()).append('|')
+                    .append(l.getDescripcion()).append('|')
+                    .append(l.getCantidad().stripTrailingZeros().toPlainString()).append('|')
+                    .append(l.getPesoUnitKg() != null ? l.getPesoUnitKg().stripTrailingZeros().toPlainString() : null).append('|')
+                    .append(l.getPrecioUnit().stripTrailingZeros().toPlainString()).append('|')
+                    .append(l.getMetodoPrecio()).append('|')
+                    .append(l.getParametros()).append('|')
+                    .append(l.getFechaEntrega()).append('|')
+                    .append(l.getLugarEntrega());
+        }
+        return huella.toString();
     }
 
     private DocumentoResponse toResponse(Documento d, Documento facturaGenerada) {
