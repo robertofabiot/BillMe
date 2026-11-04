@@ -1,18 +1,18 @@
 import { useRef, useState, useEffect } from 'react'
 import { toPng } from 'html-to-image'
-import type { Factura } from '@/types'
+import type { Documento } from '@/types'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Download, Loader2 } from 'lucide-react'
 
 interface Props {
-  factura: Factura | null
+  documento: Documento | null
   open: boolean
   onOpenChange: (v: boolean) => void
 }
 
-export function FacturaExportSheet({ factura, open, onOpenChange }: Props) {
+export function DocumentoExportSheet({ documento, open, onOpenChange }: Props) {
   const printRef = useRef<HTMLDivElement>(null)
   const [isExporting, setIsExporting] = useState(false)
   
@@ -21,13 +21,15 @@ export function FacturaExportSheet({ factura, open, onOpenChange }: Props) {
   const [editableClient, setEditableClient] = useState('')
 
   useEffect(() => {
-    if (factura && open) {
-      setEditableDate(formatDate(factura.createdAt))
-      setEditableClient(factura.clienteNombre || 'CLIENTE GENERICO')
+    if (documento && open) {
+      setEditableDate(formatDate(documento.fecha))
+      const proyecto = documento.proyectoNombre ? ` / ${documento.proyectoNombre}` : ''
+      const tipo = documento.tipo === 'COTIZACION' ? ' / Cotización' : ''
+      setEditableClient(`${documento.clienteNombre}${proyecto}${tipo}`)
     }
-  }, [factura, open])
+  }, [documento, open])
 
-  if (!factura) return null
+  if (!documento) return null
 
   const handleExport = async () => {
     if (!printRef.current) return
@@ -43,7 +45,7 @@ export function FacturaExportSheet({ factura, open, onOpenChange }: Props) {
       })
       
       const link = document.createElement('a')
-      link.download = `Factura_${factura.folioInterno}.png`
+      link.download = `${documento.folio}.png`
       link.href = dataUrl
       link.click()
     } catch (err) {
@@ -112,32 +114,32 @@ export function FacturaExportSheet({ factura, open, onOpenChange }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {factura.detalles.map((d) => (
+                {documento.lineas.map((d) => (
                   <tr key={d.id}>
                     <td className="border border-black px-2 py-1 text-center text-sm font-semibold">{d.cantidad}</td>
                     <td className="border border-black px-2 py-1 text-sm uppercase">
                       <input 
                         type="text"
-                        defaultValue={d.productoNombre}
+                        defaultValue={d.descripcion}
                         className="w-full focus:outline-none hover:bg-gray-50 uppercase"
                       />
                     </td>
                     <td className="border border-black px-2 py-1 text-center text-sm">
                       <input 
                         type="text"
-                        defaultValue={d.pesoUnitario ? (d.cantidad * d.pesoUnitario).toFixed(2) : "-"}
+                        defaultValue={d.pesoTotalKg != null ? d.pesoTotalKg.toFixed(2) : "-"}
                         className="w-full text-center focus:outline-none hover:bg-gray-50"
                       />
                     </td>
                     <td className="border border-black px-2 py-1 text-right text-sm">
                       <input 
                         type="text"
-                        defaultValue={formatCurrency(d.precioUnitarioVenta)}
+                        defaultValue={formatCurrency(d.precioUnit)}
                         className="w-full text-right focus:outline-none hover:bg-gray-50"
                       />
                     </td>
                     <td className="border border-black px-2 py-1 text-right text-sm font-semibold">
-                      {formatCurrency(d.cantidad * d.precioUnitarioVenta)}
+                      {formatCurrency(d.total)}
                     </td>
                   </tr>
                 ))}
@@ -158,13 +160,13 @@ export function FacturaExportSheet({ factura, open, onOpenChange }: Props) {
                   <tr className="border-b border-black">
                     <td className="px-4 py-1 border-r border-black font-bold">TOTAL C$</td>
                     <td className="px-4 py-1 font-bold text-right w-[120px]">
-                      {formatCurrency(factura.totalVenta)}
+                      {formatCurrency(documento.total)}
                     </td>
                   </tr>
                   <tr>
                     <td className="px-4 py-1 border-r border-black font-bold">PESO TOTAL (KG)</td>
                     <td className="px-4 py-1 font-bold text-right w-[120px]">
-                      {factura.detalles.reduce((sum, d) => sum + (d.pesoUnitario ? d.cantidad * d.pesoUnitario : 0), 0).toFixed(2)}
+                      {documento.totalKg.toFixed(2)}
                     </td>
                   </tr>
                 </tbody>

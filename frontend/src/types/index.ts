@@ -1,6 +1,5 @@
 // ─── Tipos alineados con los DTOs del backend ───────────────────────
 
-export type EstadoFactura = 'COTIZACION' | 'PENDIENTE' | 'PAGO_PARCIAL' | 'PAGADO'
 export type EstadoProyecto = 'ACTIVO' | 'FINALIZADO'
 
 export interface Producto {
@@ -20,38 +19,10 @@ export interface Producto {
   createdAt?: string
 }
 
-export interface DetalleFactura {
-  id: string
-  productoId: string
-  productoNombre: string
-  productoCodigoInterno: string
-  cantidad: number
-  precioUnitarioVenta: number
-  costoUnitario?: number
-  pesoUnitario?: number
-}
-
 export interface Abono {
   id: string
   monto: number
   fechaPago: string
-}
-
-export interface Factura {
-  id: string
-  folioInterno: string
-  estado: EstadoFactura
-  costoRealEmpresa?: number
-  totalVenta: number
-  clienteId: string
-  clienteNombre?: string
-  proyectoId?: string
-  proyectoNombre?: string
-  createdAt: string
-  detalles: DetalleFactura[]
-  abonos: Abono[]
-  totalAbonado?: number
-  saldoPendiente?: number
 }
 
 export interface Cliente {

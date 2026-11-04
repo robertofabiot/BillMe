@@ -4,7 +4,8 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AuthProvider } from '@/context/AuthContext'
 import { LoginPage } from '@/pages/LoginPage'
-import { FacturasPage } from '@/pages/FacturasPage'
+import { DocumentosPage } from '@/pages/DocumentosPage'
+import { DocumentoEditorPage } from '@/pages/DocumentoEditorPage'
 import { ClientesPage } from '@/pages/ClientesPage'
 import { ProductosPage } from '@/pages/ProductosPage'
 import { ProyectosPage } from '@/pages/ProyectosPage'
@@ -23,7 +24,10 @@ export default function App() {
             
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
-                <Route index         element={<FacturasPage />}  />
+                <Route index         element={<DocumentosPage tipo="FACTURA" />}  />
+                <Route path="cotizaciones" element={<DocumentosPage tipo="COTIZACION" />} />
+                <Route path="documentos/nuevo" element={<DocumentoEditorPage />} />
+                <Route path="documentos/:id" element={<DocumentoEditorPage />} />
                 <Route path="clientes"  element={<ClientesPage />}  />
                 <Route path="productos" element={<ProductosPage />} />
                 <Route path="proyectos" element={<ProyectosPage />} />

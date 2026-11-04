@@ -1,0 +1,542 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import type { Cliente, Documento, Producto, Proyecto, TipoDocumento } from '@/types'
+import { clienteService } from '@/services/clienteService'
+import { documentoService, type DocumentoPayload } from '@/services/documentoService'
+import { proyectoService } from '@/services/proyectoService'
+import { formatCurrency, hoyIso } from '@/lib/format'
+import { AbonosSeccion } from '@/components/documentos/AbonosSeccion'
+import { DocumentoExportSheet } from '@/components/documentos/DocumentoExportSheet'
+import { EstadoDocumentoBadge } from '@/components/documentos/EstadoDocumentoBadge'
+import { LineasTabla } from '@/components/documentos/LineasTabla'
+import { calcularLinea, type LineaForm } from '@/components/documentos/lineaForm'
+import { ProductoBuscador } from '@/components/documentos/ProductoBuscador'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft, FileDown, FileText, Plus, ReceiptText, Save } from 'lucide-react'
+
+interface Formulario {
+  clienteId: string
+  proyectoId: string
+  fecha: string
+  notas: string
+  mostrarEntrega: boolean
+  lineas: LineaForm[]
+}
+
+const TITULOS: Record<TipoDocumento, { nuevo: string; lista: string; ruta: string }> = {
+  COTIZACION: { nuevo: 'Nueva cotización', lista: 'Cotizaciones', ruta: '/cotizaciones' },
+  FACTURA: { nuevo: 'Nueva factura', lista: 'Facturas', ruta: '/' },
+}
+
+const SELECT = 'h-9 w-full rounded border border-[#E5E7EB] bg-white px-3 text-sm text-[#022F40] outline-none focus:border-[#022F40] disabled:opacity-60'
+
+function formularioVacio(): Formulario {
+  return { clienteId: '', proyectoId: '', fecha: hoyIso(), notas: '', mostrarEntrega: false, lineas: [] }
+}
+
+function formularioDe(d: Documento): Formulario {
+  return {
+    clienteId: d.clienteId,
+    proyectoId: d.proyectoId ?? '',
+    fecha: d.fecha,
+    notas: d.notas ?? '',
+    mostrarEntrega: d.mostrarEntrega,
+    lineas: d.lineas.map(l => ({
+      clave: l.id,
+      id: l.id,
+      productoId: l.productoId,
+      productoCodigo: l.productoCodigo,
+      productoGenerico: l.productoGenerico,
+      descripcion: l.descripcion,
+      cantidad: String(l.cantidad),
+      pesoUnitKg: l.pesoUnitKg != null ? String(l.pesoUnitKg) : '',
+      precioUnit: String(l.precioUnit),
+      metodoPrecio: l.metodoPrecio,
+      parametros: l.parametros,
+      fechaEntrega: l.fechaEntrega ?? '',
+      lugarEntrega: l.lugarEntrega ?? '',
+    })),
+  }
+}
+
+/** Revisa lo que el backend no puede explicar tan claro; devuelve el primer problema. */
+function problemaDe(f: Formulario): string | null {
+  if (!f.clienteId) return 'Elige el cliente.'
+  if (!f.fecha) return 'Indica la fecha.'
+  if (f.lineas.length === 0) return 'Agrega al menos un producto.'
+  for (const [i, l] of f.lineas.entries()) {
+    const n = i + 1
+    if (!(Number(l.cantidad) > 0)) return `Falta la cantidad en la línea ${n}.`
+    if (l.precioUnit.trim() === '' || Number(l.precioUnit) < 0) return `Falta el precio en la línea ${n}.`
+    if (l.productoGenerico && !l.descripcion.trim()) return `Escribe la descripción de la línea ${n}.`
+  }
+  return null
+}
+
+function payloadDe(f: Formulario, tipo: TipoDocumento): DocumentoPayload {
+  return {
+    tipo,
+    clienteId: f.clienteId,
+    proyectoId: f.proyectoId || null,
+    fecha: f.fecha,
+    notas: f.notas.trim() || null,
+    mostrarEntrega: f.mostrarEntrega,
+    lineas: f.lineas.map(l => ({
+      id: l.id,
+      productoId: l.productoId,
+      descripcion: l.descripcion.trim(),
+      cantidad: Number(l.cantidad),
+      pesoUnitKg: l.pesoUnitKg.trim() === '' ? null : Number(l.pesoUnitKg),
+      precioUnit: Number(l.precioUnit),
+      metodoPrecio: l.metodoPrecio,
+      parametros: l.parametros,
+      fechaEntrega: l.fechaEntrega || null,
+      lugarEntrega: l.lugarEntrega.trim() || null,
+    })),
+  }
+}
+
+type Aviso = { tipo: 'ok' | 'error'; texto: string } | null
+
+/** Crea o edita una cotización o factura. */
+export function DocumentoEditorPage() {
+  const { id } = useParams()
+  const [parametros] = useSearchParams()
+  const navigate = useNavigate()
+
+  const [documento, setDocumento] = useState<Documento | null>(null)
+  const [form, setForm] = useState<Formulario>(formularioVacio)
+  const guardadoRef = useRef('')
+  // Al crear ya tenemos el documento: la ruta cambia pero no hace falta pedirlo otra vez
+  const recienCreadoRef = useRef<string | null>(null)
+  const [clientes, setClientes] = useState<Cliente[]>([])
+  const [proyectos, setProyectos] = useState<Proyecto[]>([])
+  const [nuevoProyecto, setNuevoProyecto] = useState<string | null>(null)
+  const [verEntrega, setVerEntrega] = useState(false)
+  const [claveNueva, setClaveNueva] = useState<string | null>(null)
+  const [cargando, setCargando] = useState(Boolean(id))
+  const [trabajando, setTrabajando] = useState(false)
+  const [aviso, setAviso] = useState<Aviso>(null)
+  const [exportando, setExportando] = useState(false)
+
+  const tipo: TipoDocumento = documento?.tipo
+    ?? (parametros.get('tipo') === 'COTIZACION' ? 'COTIZACION' : 'FACTURA')
+  const titulos = TITULOS[tipo]
+
+  const mostrar = useCallback((d: Documento) => {
+    const f = formularioDe(d)
+    setDocumento(d)
+    setForm(f)
+    guardadoRef.current = JSON.stringify(f)
+    setVerEntrega(d.mostrarEntrega || d.lineas.some(l => l.fechaEntrega || l.lugarEntrega))
+  }, [])
+
+  useEffect(() => {
+    clienteService.listar().then(setClientes).catch(console.error)
+  }, [])
+
+  useEffect(() => {
+    if (id && id === recienCreadoRef.current) {
+      recienCreadoRef.current = null
+      return
+    }
+    setAviso(null)
+    setClaveNueva(null)
+    if (!id) {
+      const f = formularioVacio()
+      setDocumento(null)
+      setForm(f)
+      guardadoRef.current = JSON.stringify(f)
+      setVerEntrega(false)
+      setCargando(false)
+      return
+    }
+    setCargando(true)
+    documentoService.obtener(id)
+      .then(mostrar)
+      .catch(e => setAviso({ tipo: 'error', texto: e instanceof Error ? e.message : 'No se pudo cargar el documento' }))
+      .finally(() => setCargando(false))
+  }, [id, mostrar])
+
+  useEffect(() => {
+    if (!form.clienteId) {
+      setProyectos([])
+      return
+    }
+    proyectoService.listar(form.clienteId).then(setProyectos).catch(console.error)
+  }, [form.clienteId])
+
+  const cambiosSinGuardar = JSON.stringify(form) !== guardadoRef.current
+  const soloLectura = documento?.estado === 'ACEPTADA' || documento?.estado === 'ANULADA'
+
+  const proyectosVisibles = useMemo(
+    () => proyectos.filter(p => p.estado === 'ACTIVO' || p.id === form.proyectoId),
+    [proyectos, form.proyectoId],
+  )
+
+  const totales = useMemo(() => form.lineas.reduce((acum, l) => {
+    const { total, pesoTotal } = calcularLinea(l)
+    return { total: acum.total + total, kilos: acum.kilos + (pesoTotal ?? 0) }
+  }, { total: 0, kilos: 0 }), [form.lineas])
+
+  const agregarProducto = (p: Producto) => {
+    const clave = `nueva-${Date.now()}-${Math.random()}`
+    setClaveNueva(clave)
+    setForm(f => ({
+      ...f,
+      lineas: [...f.lineas, {
+        clave,
+        productoId: p.id,
+        productoCodigo: p.codigoInterno,
+        productoGenerico: p.generico,
+        descripcion: p.generico ? '' : p.nombrePrincipal,
+        cantidad: '1',
+        pesoUnitKg: p.peso ? String(p.peso) : '',
+        precioUnit: '',
+        metodoPrecio: 'MANUAL',
+        fechaEntrega: '',
+        lugarEntrega: '',
+      }],
+    }))
+  }
+
+  const cambiarLinea = (clave: string, cambios: Partial<LineaForm>) =>
+    setForm(f => ({ ...f, lineas: f.lineas.map(l => (l.clave === clave ? { ...l, ...cambios } : l)) }))
+
+  const quitarLinea = (clave: string) =>
+    setForm(f => ({ ...f, lineas: f.lineas.filter(l => l.clave !== clave) }))
+
+  const crearProyecto = async () => {
+    const nombre = nuevoProyecto?.trim()
+    if (!nombre) return
+    try {
+      const proyecto = await proyectoService.crear({ clienteId: form.clienteId, nombre, estado: 'ACTIVO' })
+      setProyectos(p => [...p, proyecto])
+      setForm(f => ({ ...f, proyectoId: proyecto.id }))
+      setNuevoProyecto(null)
+    } catch (e) {
+      setAviso({ tipo: 'error', texto: e instanceof Error ? e.message : 'No se pudo crear el proyecto' })
+    }
+  }
+
+  /** Guarda y devuelve el documento guardado, o null si hubo un problema. */
+  const guardar = async (): Promise<Documento | null> => {
+    const problema = problemaDe(form)
+    if (problema) {
+      setAviso({ tipo: 'error', texto: problema })
+      return null
+    }
+    setTrabajando(true)
+    setAviso(null)
+    try {
+      const guardado = documento
+        ? await documentoService.actualizar(documento.id, payloadDe(form, tipo))
+        : await documentoService.crear(payloadDe(form, tipo))
+      if (documento) {
+        // La respuesta de editar no trae los enlaces a otros documentos
+        mostrar(await documentoService.obtener(guardado.id))
+      } else {
+        recienCreadoRef.current = guardado.id
+        mostrar(guardado)
+        navigate(`/documentos/${guardado.id}`, { replace: true })
+      }
+      setAviso({ tipo: 'ok', texto: `${guardado.folio} guardado.` })
+      return guardado
+    } catch (e) {
+      setAviso({ tipo: 'error', texto: e instanceof Error ? e.message : 'No se pudo guardar' })
+      return null
+    } finally {
+      setTrabajando(false)
+    }
+  }
+
+  /** Corre una acción sobre el documento y muestra el resultado. */
+  const ejecutar = async (accion: () => Promise<Documento>, mensaje: string) => {
+    setTrabajando(true)
+    setAviso(null)
+    try {
+      mostrar(await accion())
+      setAviso({ tipo: 'ok', texto: mensaje })
+    } catch (e) {
+      setAviso({ tipo: 'error', texto: e instanceof Error ? e.message : 'No se pudo completar la acción' })
+    } finally {
+      setTrabajando(false)
+    }
+  }
+
+  const convertir = async () => {
+    if (!documento) return
+    const aviso = cambiosSinGuardar ? ' Los cambios sin guardar se guardarán primero.' : ''
+    if (!window.confirm(`¿Convertir ${documento.folio} en factura?${aviso}`)) return
+    if (cambiosSinGuardar && !(await guardar())) return
+    setTrabajando(true)
+    try {
+      const factura = await documentoService.convertirAFactura(documento.id, hoyIso())
+      navigate(`/documentos/${factura.id}`)
+    } catch (e) {
+      setAviso({ tipo: 'error', texto: e instanceof Error ? e.message : 'No se pudo convertir' })
+    } finally {
+      setTrabajando(false)
+    }
+  }
+
+  const rechazar = () => {
+    if (documento && window.confirm(`¿Marcar ${documento.folio} como rechazada?`)) {
+      void ejecutar(() => documentoService.cambiarEstado(documento.id, 'RECHAZADA'), 'Cotización rechazada.')
+    }
+  }
+
+  const reabrir = () => {
+    if (documento) void ejecutar(() => documentoService.cambiarEstado(documento.id, 'PENDIENTE'), 'Cotización reabierta.')
+  }
+
+  const anular = () => {
+    if (documento && window.confirm(`¿Anular ${documento.folio}? Dejará de contar en ingresos y ya no se podrá editar.`)) {
+      void ejecutar(() => documentoService.anular(documento.id), 'Factura anulada.')
+    }
+  }
+
+  const volver = () => {
+    if (!cambiosSinGuardar || window.confirm('Hay cambios sin guardar. ¿Salir sin guardar?')) {
+      navigate(titulos.ruta)
+    }
+  }
+
+  const recargarAbonos = () => {
+    if (documento) documentoService.obtener(documento.id).then(setDocumento).catch(console.error)
+  }
+
+  if (cargando) {
+    return <div className="p-8 text-sm text-[#705D56]">Cargando…</div>
+  }
+  if (id && !documento) {
+    return (
+      <div className="p-8 flex flex-col gap-3 items-start">
+        <p className="text-sm text-red-600">{aviso?.texto ?? 'No se encontró el documento.'}</p>
+        <Button variant="outline" onClick={() => navigate(titulos.ruta)}>Volver a {titulos.lista}</Button>
+      </div>
+    )
+  }
+
+  const Icono = tipo === 'COTIZACION' ? FileText : ReceiptText
+
+  return (
+    <div className="p-8 flex flex-col gap-5 w-full max-w-7xl mx-auto">
+      {/* ── Encabezado ── */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <button type="button" onClick={volver} className="text-xs text-[#705D56] hover:text-[#022F40] flex items-center gap-1 mb-1">
+            <ArrowLeft className="w-3.5 h-3.5" /> {titulos.lista}
+          </button>
+          <h1 className="text-xl font-semibold text-[#022F40] flex items-center gap-2">
+            <Icono className="w-5 h-5" />
+            {documento ? documento.folio : titulos.nuevo}
+            {documento && <EstadoDocumentoBadge documento={documento} />}
+          </h1>
+        </div>
+
+        {documento && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" onClick={() => setExportando(true)} className="h-9 gap-2">
+              <FileDown className="w-4 h-4" /> Exportar imagen
+            </Button>
+            {documento.estado === 'PENDIENTE' && (
+              <>
+                <Button variant="outline" disabled={trabajando} onClick={rechazar} className="h-9">Rechazar</Button>
+                <Button disabled={trabajando} onClick={convertir} className="h-9 bg-[#558564] hover:bg-[#558564]/90 text-white">Convertir en factura</Button>
+              </>
+            )}
+            {documento.estado === 'RECHAZADA' && (
+              <Button variant="outline" disabled={trabajando} onClick={reabrir} className="h-9">Reabrir</Button>
+            )}
+            {documento.estado === 'ACTIVA' && (
+              <Button variant="outline" disabled={trabajando} onClick={anular} className="h-9 text-red-600 hover:text-red-700">Anular</Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Avisos del estado del documento ── */}
+      {documento?.estado === 'ACEPTADA' && (
+        <p className="text-sm bg-[#558564]/10 border border-[#558564]/30 text-[#022F40] rounded px-4 py-3">
+          Esta cotización ya se convirtió en factura
+          {documento.facturaGeneradaId && (
+            <> <Link className="font-semibold underline" to={`/documentos/${documento.facturaGeneradaId}`}>{documento.facturaGeneradaFolio}</Link></>
+          )}. Para corregir algo, edita la factura.
+        </p>
+      )}
+      {documento?.estado === 'ANULADA' && (
+        <p className="text-sm bg-[#F9FAFB] border border-[#E5E7EB] text-[#705D56] rounded px-4 py-3">
+          Esta factura está anulada: no cuenta en ingresos y no se puede editar.
+        </p>
+      )}
+      {documento?.estado === 'RECHAZADA' && (
+        <p className="text-sm bg-[#F9FAFB] border border-[#E5E7EB] text-[#705D56] rounded px-4 py-3">
+          Esta cotización está rechazada. Sus precios siguen contando como referencia. Para convertirla en factura, reábrela.
+        </p>
+      )}
+      {documento?.cotizacionOrigenId && (
+        <p className="text-sm text-[#705D56]">
+          Viene de la cotización <Link className="font-semibold underline" to={`/documentos/${documento.cotizacionOrigenId}`}>{documento.cotizacionOrigenFolio}</Link>.
+        </p>
+      )}
+
+      {/* ── Datos ── */}
+      <fieldset disabled={soloLectura} className="contents">
+        <section className="bg-white border border-[#E5E7EB] rounded shadow-sm p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="cliente" className="text-xs font-medium text-[#705D56]">Cliente</label>
+            <select
+              id="cliente"
+              value={form.clienteId}
+              onChange={e => {
+                const clienteId = e.target.value
+                setNuevoProyecto(null)
+                setForm(f => ({ ...f, clienteId, proyectoId: '' }))
+              }}
+              className={SELECT}
+            >
+              <option value="">Elige un cliente…</option>
+              {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="proyecto" className="text-xs font-medium text-[#705D56]">Proyecto (opcional)</label>
+            {nuevoProyecto === null ? (
+              <div className="flex gap-2">
+                <select
+                  id="proyecto"
+                  value={form.proyectoId}
+                  disabled={!form.clienteId}
+                  onChange={e => setForm(f => ({ ...f, proyectoId: e.target.value }))}
+                  className={SELECT}
+                >
+                  <option value="">Sin proyecto</option>
+                  {proyectosVisibles.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                </select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  aria-label="Crear un proyecto nuevo"
+                  title="Crear un proyecto nuevo"
+                  disabled={!form.clienteId}
+                  onClick={() => setNuevoProyecto('')}
+                  className="h-9 px-2.5"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  id="proyecto"
+                  autoFocus
+                  placeholder="Nombre del proyecto"
+                  value={nuevoProyecto}
+                  onChange={e => setNuevoProyecto(e.target.value)}
+                />
+                <Button type="button" variant="outline" disabled={!nuevoProyecto.trim()} onClick={crearProyecto} className="h-9">Crear</Button>
+                <Button type="button" variant="outline" onClick={() => setNuevoProyecto(null)} className="h-9">Cancelar</Button>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="fecha" className="text-xs font-medium text-[#705D56]">Fecha</label>
+            <Input id="fecha" type="date" value={form.fecha} onChange={e => setForm(f => ({ ...f, fecha: e.target.value }))} />
+          </div>
+        </section>
+
+        {/* ── Líneas ── */}
+        <section className="bg-white border border-[#E5E7EB] rounded shadow-sm p-5 flex flex-col gap-4">
+          {!soloLectura && <ProductoBuscador onElegir={agregarProducto} />}
+
+          <LineasTabla
+            lineas={form.lineas}
+            verEntrega={verEntrega}
+            soloLectura={soloLectura}
+            claveNueva={claveNueva}
+            onCambiar={cambiarLinea}
+            onQuitar={quitarLinea}
+          />
+
+          <div className="flex flex-wrap items-start justify-between gap-6">
+            <div className="flex flex-col gap-2 text-sm text-[#705D56]">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={verEntrega}
+                  onChange={e => {
+                    setVerEntrega(e.target.checked)
+                    if (!e.target.checked) setForm(f => ({ ...f, mostrarEntrega: false }))
+                  }}
+                />
+                Anotar fecha y lugar de entrega
+              </label>
+              {verEntrega && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.mostrarEntrega}
+                    onChange={e => setForm(f => ({ ...f, mostrarEntrega: e.target.checked }))}
+                  />
+                  Mostrarlos también al exportar
+                </label>
+              )}
+            </div>
+
+            <dl className="text-right">
+              <div className="flex items-baseline justify-end gap-3">
+                <dt className="text-sm text-[#705D56]">Total C$</dt>
+                <dd className="text-2xl font-bold text-[#022F40]">{formatCurrency(totales.total)}</dd>
+              </div>
+              <div className="flex items-baseline justify-end gap-3">
+                <dt className="text-sm text-[#705D56]">Total KG</dt>
+                <dd className="text-sm font-semibold text-[#022F40]">{totales.kilos.toFixed(2)}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="notas" className="text-xs font-medium text-[#705D56]">Notas (opcional)</label>
+            <textarea
+              id="notas"
+              rows={2}
+              value={form.notas}
+              onChange={e => setForm(f => ({ ...f, notas: e.target.value }))}
+              className="w-full rounded border border-[#E5E7EB] px-3 py-2 text-sm text-[#022F40] outline-none focus:border-[#022F40] resize-none disabled:opacity-60"
+            />
+          </div>
+        </section>
+      </fieldset>
+
+      {/* ── Guardar ── */}
+      {!soloLectura && (
+        <div className="sticky bottom-0 z-20 bg-white border border-[#E5E7EB] rounded shadow-md px-5 py-3 flex flex-wrap items-center justify-between gap-3">
+          <p role="status" className={`text-sm ${aviso?.tipo === 'error' ? 'text-red-600' : aviso?.tipo === 'ok' && !cambiosSinGuardar ? 'text-[#558564]' : 'text-[#705D56]'}`}>
+            {aviso && (aviso.tipo === 'error' || !cambiosSinGuardar) ? aviso.texto : cambiosSinGuardar ? 'Hay cambios sin guardar.' : ''}
+          </p>
+          <Button
+            disabled={trabajando || (Boolean(documento) && !cambiosSinGuardar)}
+            onClick={() => void guardar()}
+            className="h-10 px-6 gap-2 bg-[#022F40] hover:bg-[#022F40]/90 text-white"
+          >
+            <Save className="w-4 h-4" /> {trabajando ? 'Guardando…' : 'Guardar'}
+          </Button>
+        </div>
+      )}
+      {soloLectura && aviso && (
+        <p role="status" className={`text-sm ${aviso.tipo === 'error' ? 'text-red-600' : 'text-[#558564]'}`}>{aviso.texto}</p>
+      )}
+
+      {/* ── Abonos (solo facturas guardadas) ── */}
+      {documento?.tipo === 'FACTURA' && documento.estado === 'ACTIVA' && (
+        <AbonosSeccion factura={documento} onRegistrado={recargarAbonos} />
+      )}
+
+      <DocumentoExportSheet documento={documento} open={exportando} onOpenChange={setExportando} />
+    </div>
+  )
+}

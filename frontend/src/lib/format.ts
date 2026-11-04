@@ -19,11 +19,6 @@ export function formatDate(dateStr: string): string {
   })
 }
 
-export function getSaldo(totalVenta: number, abonos: { monto: number }[]): number {
-  const abonado = abonos.reduce((sum, a) => sum + a.monto, 0)
-  return totalVenta - abonado
-}
-
 /**
  * Fecha de hoy en formato AAAA-MM-DD según el reloj local.
  * No usar toISOString(): da la fecha UTC, que en Nicaragua ya es "mañana" desde las 18:00.
