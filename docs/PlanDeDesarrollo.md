@@ -17,12 +17,7 @@ Hoja de ruta acordada el 2026-11-01 después de auditar los Excel del negocio (l
 
 **Fuera de alcance:** roles, modo sin conexión, ajustes de precio excepcionales de un cliente, grupos de precio, área de pintado, calculadoras de perlín/viga/tubo/barra, inventario, USD, numeración DGI y aprobaciones de precio.
 
-### Supuestos pendientes de confirmar
-
-- **S1** — La cotización usa las mismas columnas que la factura, con el encabezado "Cliente / Cotización". Afecta al PR 8.
-- **S2** — `cotizaciones1` se importa con una columna opcional `cliente` (si falta, se usa el cliente elegido al subir el archivo). Las filas con la misma fecha, lugar de entrega y número de factura del día forman una factura. Afecta al PR 9.
-- **S3** — Hay un solo descuento por cliente, editable al momento de calcular.
-- **S4** — El consolidado se arma en vivo desde las facturas; solo se editan los nombres de los subtotales.
+Los supuestos que quedaban abiertos ya se cerraron. Están, junto con el resto de decisiones de los PR que faltan, en [PRsPendientes.md](PRsPendientes.md).
 
 ## 2. Fórmulas oficiales
 
@@ -40,7 +35,7 @@ Por metro  PU = r2(PU_ref / largo_ref × largo_nuevo)
 Placa/platina  peso = ancho × largo × espesor × ρ        (pulgadas)
 Angular        peso = (ala1 + ala2 − espesor) × espesor × largo × ρ
 Ganancia   total − cant × costo_sin_IVA × 1.15
-Saldo      saldo_inicial + Σ facturas activas (desde fecha_inicio) − Σ abonos
+Saldo      saldo_inicial + Σ facturas activas no importadas (desde fecha_inicio) − Σ abonos (desde fecha_inicio)
 ```
 
 ## 3. Modelo de datos objetivo
@@ -61,21 +56,23 @@ Saldo      saldo_inicial + Σ facturas activas (desde fecha_inicio) − Σ abono
 
 Todos los PR comparten este DoD: CI en verde (`./mvnw verify`, `npm run lint`, `npm run build`), la migración aplica sobre el esquema anterior y cada commit compila. Los tests de integración usan un Postgres 17 embebido, así que no hace falta Docker.
 
-| # | Rama | Objetivo | Migración |
-|---|---|---|---|
-| 1 | `chore/fundaciones` | Flyway, validación y errores, transacciones, sin cascadas peligrosas, tests de integración y CI | V1 |
-| 2 | `refactor/usuarios-sin-roles` | Dos usuarios sin roles, sin `admin123`, 401 con token vencido, cambio de contraseña | V2 |
-| 3 | `chore/despliegue` | Docker, Render, Vercel, health check, respaldo semanal, ping en horario laboral | — |
-| 4 | `feat/catalogo-precios-lista` | Configuración real, proveedores, búsqueda por similitud, historial de lista y su cálculo | V3 |
-| 5 | `feat/importar-lista-proveedor` | Importar la lista del proveedor cuantas veces haga falta | — |
-| 6 | `feat/documentos` | Cotizaciones y facturas: series, fecha real, líneas libres, editor, revisiones, conversión y anulación | V4 |
-| 7 | `feat/precio-sugerido-y-calculadora` | Último precio, fórmula, calculadora de peso, precio por peso y por metro, página Precios | V5 |
-| 8 | `feat/exportacion-documentos` | PNG, PDF y Excel con el formato actual | — |
-| 9 | `feat/importar-cotizaciones` | Importar `cotizaciones1` con conciliación asistida (hito MVP) | — |
-| 10 | `feat/cuenta-corriente` | Abonos a la cuenta, saldo a favor, estado de cuenta por proyecto | V6 |
-| 11 | `feat/consolidados-por-entrega` | Consolidado en vivo por fecha de entrega con saldo anterior y abonos | V7 |
-| 12 | `feat/compras-y-ganancias` | Compra al proveedor ligada a la venta y reporte de ganancias | V8 |
-| 13 | `chore/pulido-movil-y-docs` | Celular, legibilidad, paginación, limpieza, manual de uso | — |
+Los PR que faltan están especificados uno por uno, con commits y DoD, en [PRsPendientes.md](PRsPendientes.md).
+
+| # | Rama | Objetivo | Migración | Estado |
+|---|---|---|---|---|
+| 1 | `chore/fundaciones` | Flyway, validación y errores, transacciones, sin cascadas peligrosas, tests de integración y CI | V1 | Hecho |
+| 2 | `refactor/usuarios-sin-roles` | Dos usuarios sin roles, sin `admin123`, 401 con token vencido, cambio de contraseña | V2 | Hecho |
+| 3 | `chore/despliegue` | Docker, Render, Vercel, health check, respaldo semanal, ping en horario laboral | — | Hecho |
+| 4 | `feat/catalogo-precios-lista` | Configuración real, proveedores, búsqueda por similitud, historial de lista y su cálculo | V3 | Hecho |
+| 5 | `feat/importar-lista-proveedor` | Importar la lista del proveedor cuantas veces haga falta | — | Hecho |
+| 6 | `feat/documentos` | Cotizaciones y facturas: series, fecha real, líneas libres, editor, revisiones, conversión y anulación | V4 | Hecho |
+| 7 | `feat/precio-sugerido-y-calculadora` | Último precio, fórmula, calculadora de peso, precio por peso y por metro, página Precios | V5 | Pendiente |
+| 8 | `feat/exportacion-documentos` | PNG, PDF y Excel con el formato actual | — | Pendiente |
+| 9 | `feat/importar-cotizaciones` | Importar `cotizaciones1` con conciliación asistida (hito MVP) | — | Pendiente |
+| 10 | `feat/cuenta-corriente` | Abonos a la cuenta, saldo a favor, estado de cuenta por proyecto | V6 | Pendiente |
+| 11 | `feat/consolidados-por-entrega` | Consolidado en vivo por fecha de entrega con saldo anterior y abonos | V7 | Pendiente |
+| 12 | `feat/compras-y-ganancias` | Compra al proveedor ligada a la venta y reporte de ganancias | V8 | Pendiente |
+| 13 | `chore/pulido-movil-y-docs` | Celular, legibilidad, paginación, limpieza, manual de uso | — | Pendiente |
 
 ### Casos de prueba (números de ejemplo)
 
