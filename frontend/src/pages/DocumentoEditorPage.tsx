@@ -30,6 +30,8 @@ const TITULOS: Record<TipoDocumento, { nuevo: string; lista: string; ruta: strin
   FACTURA: { nuevo: 'Nueva factura', lista: 'Facturas', ruta: '/' },
 }
 
+const SALIR_SIN_GUARDAR = 'Hay cambios sin guardar. ¿Salir sin guardar?'
+
 const SELECT = 'h-9 w-full rounded border border-[#E5E7EB] bg-white px-3 text-sm text-[#022F40] outline-none focus:border-[#022F40] disabled:opacity-60'
 
 function formularioVacio(): Formulario {
@@ -172,6 +174,25 @@ export function DocumentoEditorPage() {
   const cambiosSinGuardar = JSON.stringify(form) !== guardadoRef.current
   const soloLectura = documento?.estado === 'ACEPTADA' || documento?.estado === 'ANULADA'
 
+  // Que un clic en el menú o cerrar la pestaña no pierda lo escrito
+  useEffect(() => {
+    if (!cambiosSinGuardar) return
+    const alClic = (e: MouseEvent) => {
+      const enlace = e.target instanceof Element && e.target.closest('a[href]')
+      if (enlace && !window.confirm(SALIR_SIN_GUARDAR)) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+    }
+    const alCerrar = (e: BeforeUnloadEvent) => e.preventDefault()
+    document.addEventListener('click', alClic, true)
+    window.addEventListener('beforeunload', alCerrar)
+    return () => {
+      document.removeEventListener('click', alClic, true)
+      window.removeEventListener('beforeunload', alCerrar)
+    }
+  }, [cambiosSinGuardar])
+
   const proyectosVisibles = useMemo(
     () => proyectos.filter(p => p.estado === 'ACTIVO' || p.id === form.proyectoId),
     [proyectos, form.proyectoId],
@@ -300,7 +321,7 @@ export function DocumentoEditorPage() {
   }
 
   const volver = () => {
-    if (!cambiosSinGuardar || window.confirm('Hay cambios sin guardar. ¿Salir sin guardar?')) {
+    if (!cambiosSinGuardar || window.confirm(SALIR_SIN_GUARDAR)) {
       navigate(titulos.ruta)
     }
   }
