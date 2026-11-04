@@ -11,6 +11,8 @@ on:
 
 jobs:
   ping:
+    # Sin BACKEND_URL todavía no hay nada desplegado: no se corre (ni falla)
+    if: ${{ vars.BACKEND_URL != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

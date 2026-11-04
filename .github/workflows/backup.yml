@@ -8,6 +8,8 @@ on:
 jobs:
   respaldo:
     name: pg_dump cifrado de la base
+    # Sin BACKEND_URL todavía no hay nada desplegado. Una vez desplegado, si falta un secreto el job falla a la vista.
+    if: ${{ vars.BACKEND_URL != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Volcar el esquema public con pg_dump 17

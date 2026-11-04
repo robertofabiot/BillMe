@@ -1,8 +1,10 @@
 import type { Proyecto } from '@/types'
 import { useEffect, useState } from 'react'
-import { facturaService } from '@/services/facturaService'
+import { Link } from 'react-router-dom'
+import type { Documento } from '@/types'
+import { documentoService } from '@/services/documentoService'
 import { formatCurrency, formatDate } from '@/lib/format'
-import { EstadoBadge } from '@/components/facturas/EstadoBadge'
+import { EstadoDocumentoBadge } from '@/components/documentos/EstadoDocumentoBadge'
 import { Button } from '@/components/ui/button'
 import { X, Pencil, FolderGit2, Building2, TrendingUp, AlertCircle } from 'lucide-react'
 
@@ -14,17 +16,18 @@ interface Props {
 }
 
 export function ProyectoDetailSheet({ proyecto, open, onOpenChange, onEdit }: Props) {
-  const [facturas, setFacturas] = useState<any[]>([])
+  const [documentos, setDocumentos] = useState<Documento[]>([])
 
   useEffect(() => {
     if (!proyecto?.id || !open) return
-    facturaService.listar({ proyectoId: proyecto.id }).then(setFacturas).catch(console.error)
+    documentoService.listar({ proyectoId: proyecto.id }).then(setDocumentos).catch(console.error)
   }, [proyecto?.id, open])
 
   if (!open || !proyecto) return null
 
-  const facturado = facturas.filter(f => f.estado !== 'COTIZACION').reduce((s, f) => s + f.totalVenta, 0)
-  const cobrado = facturas.filter(f => f.estado !== 'COTIZACION').reduce((s, f) => s + (f.totalAbonado ?? f.abonos?.reduce((a: any, b: any) => a + b.monto, 0) ?? 0), 0)
+  const facturas = documentos.filter(d => d.tipo === 'FACTURA' && d.estado === 'ACTIVA')
+  const facturado = facturas.reduce((s, f) => s + f.total, 0)
+  const cobrado = facturas.reduce((s, f) => s + f.totalAbonado, 0)
   const porCobrar = facturado - cobrado
 
   const estadoColors = {
@@ -89,49 +92,43 @@ export function ProyectoDetailSheet({ proyecto, open, onOpenChange, onEdit }: Pr
         {/* Body (Facturas) */}
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-[#80727B] flex items-center gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5" /> Facturas Asociadas
+            <TrendingUp className="w-3.5 h-3.5" /> Cotizaciones y facturas
           </h3>
 
-          {facturas.length === 0 ? (
+          {documentos.length === 0 ? (
             <div className="border border-dashed border-[#E5E7EB] rounded p-6 flex flex-col items-center justify-center text-center">
               <AlertCircle className="w-6 h-6 text-[#80727B] mb-2" />
-              <p className="text-sm font-medium text-[#705D56]">Sin facturas</p>
-              <p className="text-xs text-[#80727B] mt-1">Este proyecto aún no tiene facturas asociadas.</p>
+              <p className="text-sm font-medium text-[#705D56]">Sin documentos</p>
+              <p className="text-xs text-[#80727B] mt-1">Este proyecto aún no tiene cotizaciones ni facturas.</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              {facturas.map(f => {
-                const abonado = f.totalAbonado ?? f.abonos?.reduce((s: any, a: any) => s + a.monto, 0) ?? 0
-                const saldo = f.saldoPendiente ?? (f.totalVenta - abonado)
+              {documentos.map(d => {
+                const saldo = d.saldoPendiente ?? 0
+                const esFacturaActiva = d.tipo === 'FACTURA' && d.estado === 'ACTIVA'
                 return (
-                  <div key={f.id} className="border border-[#E5E7EB] rounded p-3 bg-white flex flex-col gap-2 shadow-sm hover:border-[#022F40]/20 transition-colors">
+                  <Link key={d.id} to={`/documentos/${d.id}`} className="border border-[#E5E7EB] rounded p-3 bg-white flex flex-col gap-2 shadow-sm hover:border-[#022F40]/20 transition-colors">
                     <div className="flex justify-between items-start">
                       <div>
-                        <p className="text-sm font-semibold text-[#022F40] leading-none">{f.folioInterno}</p>
-                        <p className="text-[10px] text-[#705D56] mt-1">{formatDate(f.createdAt)}</p>
+                        <p className="text-sm font-semibold text-[#022F40] leading-none">{d.folio}</p>
+                        <p className="text-[10px] text-[#705D56] mt-1">{formatDate(d.fecha)}</p>
                       </div>
-                      <EstadoBadge estado={f.estado} />
+                      <EstadoDocumentoBadge documento={d} />
                     </div>
-                    
+
                     <div className="flex items-center justify-between mt-1 pt-2 border-t border-[#F3F4F6]">
                       <div>
                         <p className="text-[10px] text-[#80727B]">Total</p>
-                        <p className="text-xs font-bold text-[#022F40]">{formatCurrency(f.totalVenta)}</p>
+                        <p className="text-xs font-bold text-[#022F40]">{formatCurrency(d.total)}</p>
                       </div>
-                      {f.estado !== 'COTIZACION' && saldo > 0 && (
+                      {esFacturaActiva && saldo > 0 && (
                         <div className="text-right">
                           <p className="text-[10px] text-[#80727B]">Saldo pendiente</p>
                           <p className="text-xs font-bold text-amber-600">{formatCurrency(saldo)}</p>
                         </div>
                       )}
-                      {f.estado !== 'COTIZACION' && saldo <= 0 && (
-                        <div className="text-right">
-                          <p className="text-[10px] text-[#80727B]">Estado</p>
-                          <p className="text-xs font-bold text-[#558564]">Pagado</p>
-                        </div>
-                      )}
                     </div>
-                  </div>
+                  </Link>
                 )
               })}
             </div>

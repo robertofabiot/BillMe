@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, type ChangeEvent } from 'react'
-import type { Cliente, Factura } from '@/types'
+import type { Cliente, Documento } from '@/types'
 import { clienteService } from '@/services/clienteService'
-import { facturaService } from '@/services/facturaService'
+import { documentoService } from '@/services/documentoService'
 import { formatCurrency } from '@/lib/format'
 import { ClienteModal } from '@/components/clientes/ClienteModal'
 import { ClienteDetailSheet } from '@/components/clientes/ClienteDetailSheet'
@@ -29,7 +29,7 @@ function StatCard({ icon: Icon, label, value, accent }: {
 
 export function ClientesPage() {
   const [clientes, setClientes]         = useState<Cliente[]>([])
-  const [facturas, setFacturas]         = useState<Factura[]>([])
+  const [facturas, setFacturas]         = useState<Documento[]>([])
   const [loading, setLoading]           = useState(true)
   const [error, setError]               = useState<string | null>(null)
   const [selected, setSelected]         = useState<Cliente | null>(null)
@@ -43,7 +43,7 @@ export function ClientesPage() {
         setLoading(true)
         const [clientesData, facturasData] = await Promise.all([
           clienteService.listar(),
-          facturaService.listar()
+          documentoService.listar({ tipo: 'FACTURA', estado: 'ACTIVA' })
         ])
         setClientes(clientesData)
         setFacturas(facturasData)
@@ -60,10 +60,10 @@ export function ClientesPage() {
   const stats = useMemo(() => {
     const conPendientes = new Set(
       facturas
-        .filter(f => f.estado === 'PENDIENTE' || f.estado === 'PAGO_PARCIAL')
+        .filter(f => (f.saldoPendiente ?? 0) > 0)
         .map(f => f.clienteId)
     ).size
-    const totalFacturado = facturas.reduce((s, f) => s + f.totalVenta, 0)
+    const totalFacturado = facturas.reduce((s, f) => s + f.total, 0)
     const totalCobrado   = facturas.reduce((s, f) =>
       s + f.abonos.reduce((a, b) => a + b.monto, 0), 0
     )
@@ -83,7 +83,7 @@ export function ClientesPage() {
     facturas.filter(f => f.clienteId === clienteId)
 
   const totalPorCliente = (clienteId: string) =>
-    facturasPorCliente(clienteId).reduce((s, f) => s + f.totalVenta, 0)
+    facturasPorCliente(clienteId).reduce((s, f) => s + f.total, 0)
 
   /* ── Handlers ── */
   const openCreate = () => { setEditTarget(null); setShowModal(true) }
@@ -163,7 +163,7 @@ export function ClientesPage() {
           {filtered.map(cliente => {
             const facturas   = facturasPorCliente(cliente.id)
             const total      = totalPorCliente(cliente.id)
-            const pendientes = facturas.filter(f => f.estado === 'PENDIENTE' || f.estado === 'PAGO_PARCIAL').length
+            const pendientes = facturas.filter(f => (f.saldoPendiente ?? 0) > 0).length
             const inicial    = cliente.nombre.charAt(0).toUpperCase()
 
             return (

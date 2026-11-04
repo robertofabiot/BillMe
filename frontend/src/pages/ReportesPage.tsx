@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect } from 'react'
-import { facturaService } from '@/services/facturaService'
+import { documentoService, type FiltrosDocumento } from '@/services/documentoService'
 import { clienteService } from '@/services/clienteService'
 import { proyectoService } from '@/services/proyectoService'
-import type { Factura, Cliente, Proyecto } from '@/types'
+import type { Documento, Cliente, Proyecto } from '@/types'
 import { formatCurrency } from '@/lib/format'
 import {
   BarChart3, TrendingUp, Users, Package, FolderGit2, Calendar,
@@ -51,7 +51,7 @@ export function ReportesPage() {
 
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [proyectos, setProyectos] = useState<Proyecto[]>([])
-  const [facturas, setFacturas] = useState<Factura[]>([])
+  const [facturas, setFacturas] = useState<Documento[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -69,22 +69,20 @@ export function ReportesPage() {
 
   useEffect(() => {
     setLoading(true)
-    const filtros: any = {}
+    const filtros: FiltrosDocumento = { tipo: 'FACTURA', estado: 'ACTIVA' }
     if (clienteId !== 'ALL') filtros.clienteId = clienteId
     if (proyectoId !== 'ALL') filtros.proyectoId = proyectoId
     if (dateFrom) filtros.desde = dateFrom
     if (dateTo) filtros.hasta = dateTo
 
-    facturaService.listar(filtros)
+    documentoService.listar(filtros)
       .then(res => setFacturas(res))
       .catch(() => setError('Error al cargar facturas'))
       .finally(() => setLoading(false))
   }, [clienteId, proyectoId, dateFrom, dateTo])
 
   /* ── Core Data Processing ── */
-  const filteredFacturas = useMemo(() => {
-    return facturas.filter(f => f.estado !== 'COTIZACION')
-  }, [facturas])
+  const costoDe = (f: Documento) => f.lineas.reduce((s, l) => s + l.cantidad * (l.costoUnitConIva ?? 0), 0)
 
   // 1. General Metrics
   const metrics = useMemo(() => {
@@ -92,12 +90,10 @@ export function ReportesPage() {
     let totalCosto = 0
     let totalCobrado = 0
 
-    filteredFacturas.forEach(f => {
-      totalVenta += f.totalVenta
-      
-      const costoFac = f.costoRealEmpresa ?? f.detalles.reduce((s, d) => s + (d.cantidad * (d.costoUnitario || 0)), 0)
-      totalCosto += costoFac
-      
+    facturas.forEach(f => {
+      totalVenta += f.total
+      totalCosto += costoDe(f)
+
       totalCobrado += f.abonos.reduce((s, a) => s + a.monto, 0)
     })
 
@@ -106,75 +102,75 @@ export function ReportesPage() {
     const porCobrar = totalVenta - totalCobrado
 
     return { totalVenta, totalCosto, totalCobrado, porCobrar, ganancia, margen }
-  }, [filteredFacturas])
+  }, [facturas])
 
   // 2. Trend by Month (Fechas)
   const trendsByMonth = useMemo(() => {
     const months: Record<string, { month: string; ventas: number; costos: number; ganancia: number }> = {}
     
-    filteredFacturas.forEach(f => {
-      const date = new Date(f.createdAt)
+    facturas.forEach(f => {
+      const date = new Date(f.fecha)
       // Ajuste por zona horaria simple
       const month = date.toLocaleString('es-MX', { timeZone: 'UTC', month: 'short', year: '2-digit' }).toUpperCase()
       
       if (!months[month]) months[month] = { month, ventas: 0, costos: 0, ganancia: 0 }
       
-      const costo = f.costoRealEmpresa ?? f.detalles.reduce((s, d) => s + (d.cantidad * (d.costoUnitario || 0)), 0)
-      
-      months[month].ventas += f.totalVenta
+      const costo = costoDe(f)
+
+      months[month].ventas += f.total
       months[month].costos += costo
-      months[month].ganancia += (f.totalVenta - costo)
+      months[month].ganancia += (f.total - costo)
     })
 
-    return Object.values(months).reverse() // In mock data we are assuming chronological order.
-  }, [filteredFacturas])
+    return Object.values(months).reverse() // Las facturas vienen de la más reciente a la más antigua
+  }, [facturas])
 
   // 3. By Client
   const byClient = useMemo(() => {
     const clients: Record<string, { name: string; ventas: number; cobrado: number; facturas: number }> = {}
     
-    filteredFacturas.forEach(f => {
+    facturas.forEach(f => {
       const name = f.clienteNombre || 'Desconocido'
       
       if (!clients[name]) clients[name] = { name, ventas: 0, cobrado: 0, facturas: 0 }
       
-      clients[name].ventas += f.totalVenta
+      clients[name].ventas += f.total
       clients[name].cobrado += f.abonos.reduce((s, a) => s + a.monto, 0)
       clients[name].facturas += 1
     })
 
     return Object.values(clients).sort((a, b) => b.ventas - a.ventas)
-  }, [filteredFacturas])
+  }, [facturas])
 
   // 4. By Project
   const byProject = useMemo(() => {
     const projects: Record<string, { name: string; cliente: string; ventas: number; facturas: number }> = {}
     
-    filteredFacturas.forEach(f => {
+    facturas.forEach(f => {
       if (!f.proyectoId) return
       
       const name = f.proyectoNombre || 'Desconocido'
       
       if (!projects[name]) projects[name] = { name, cliente: f.clienteNombre || 'Desconocido', ventas: 0, facturas: 0 }
       
-      projects[name].ventas += f.totalVenta
+      projects[name].ventas += f.total
       projects[name].facturas += 1
     })
 
     return Object.values(projects).sort((a, b) => b.ventas - a.ventas)
-  }, [filteredFacturas])
+  }, [facturas])
 
   // 5. By Product
   const byProduct = useMemo(() => {
     const prods: Record<string, { name: string; cantidad: number; ingresos: number; ganancia: number }> = {}
     
-    filteredFacturas.forEach(f => {
-      f.detalles.forEach(d => {
-        const name = d.productoNombre
+    facturas.forEach(f => {
+      f.lineas.forEach(d => {
+        const name = d.descripcion
         if (!prods[name]) prods[name] = { name, cantidad: 0, ingresos: 0, ganancia: 0 }
         
-        const ingresos = d.cantidad * d.precioUnitarioVenta
-        const costo = d.cantidad * (d.costoUnitario || 0)
+        const ingresos = d.total
+        const costo = d.cantidad * (d.costoUnitConIva ?? 0)
         
         prods[name].cantidad += d.cantidad
         prods[name].ingresos += ingresos
@@ -183,7 +179,7 @@ export function ReportesPage() {
     })
 
     return Object.values(prods).sort((a, b) => b.ingresos - a.ingresos).slice(0, 10)
-  }, [filteredFacturas])
+  }, [facturas])
 
   const proyectosDisponibles = useMemo(() => {
     if (clienteId === 'ALL') return proyectos

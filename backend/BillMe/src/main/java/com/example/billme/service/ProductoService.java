@@ -6,7 +6,7 @@ import com.example.billme.model.AliasProducto;
 import com.example.billme.model.PrecioLista;
 import com.example.billme.model.Producto;
 import com.example.billme.repository.AliasProductoRepository;
-import com.example.billme.repository.DetalleFacturaRepository;
+import com.example.billme.repository.DocumentoLineaRepository;
 import com.example.billme.repository.ProductoRepository;
 import com.example.billme.util.NormalizadorTexto;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ public class ProductoService {
 
     private final ProductoRepository productoRepository;
     private final AliasProductoRepository aliasProductoRepository;
-    private final DetalleFacturaRepository detalleFacturaRepository;
+    private final DocumentoLineaRepository documentoLineaRepository;
     private final PrecioListaService precioListaService;
 
     /** Los 100 productos usados o editados más recientemente; el resto se encuentra con el buscador. */
@@ -97,9 +97,9 @@ public class ProductoService {
         if (producto.isGenerico()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Los productos genéricos no se pueden eliminar");
         }
-        if (detalleFacturaRepository.existsByProductoId(id)) {
+        if (documentoLineaRepository.existsByProductoId(id)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "No se puede eliminar un producto que aparece en facturas");
+                    "No se puede eliminar un producto que aparece en cotizaciones o facturas");
         }
         precioListaService.eliminarDeProducto(id);
         productoRepository.deleteById(id);

@@ -1,9 +1,10 @@
-import type { Cliente, Factura, Proyecto } from '@/types'
+import type { Cliente, Documento, Proyecto } from '@/types'
 import { useEffect, useState } from 'react'
-import { facturaService } from '@/services/facturaService'
+import { Link } from 'react-router-dom'
+import { documentoService } from '@/services/documentoService'
 import { proyectoService } from '@/services/proyectoService'
-import { formatCurrency, formatDate, getSaldo } from '@/lib/format'
-import { EstadoBadge } from '@/components/facturas/EstadoBadge'
+import { formatCurrency, formatDate } from '@/lib/format'
+import { EstadoDocumentoBadge } from '@/components/documentos/EstadoDocumentoBadge'
 import {
   Phone, StickyNote, FolderKanban, ReceiptText,
   X, Pencil, TrendingUp, Clock,
@@ -18,24 +19,23 @@ interface Props {
 }
 
 export function ClienteDetailSheet({ cliente, open, onOpenChange, onEdit }: Props) {
-  const [facturas, setFacturas] = useState<Factura[]>([])
+  const [documentos, setDocumentos] = useState<Documento[]>([])
   const [proyectos, setProyectos] = useState<Proyecto[]>([])
 
   useEffect(() => {
     if (!open || !cliente?.id) return
-    facturaService.listar({ clienteId: cliente.id }).then(setFacturas).catch(console.error)
+    documentoService.listar({ clienteId: cliente.id }).then(setDocumentos).catch(console.error)
     proyectoService.listar(cliente.id).then(setProyectos).catch(console.error)
   }, [open, cliente?.id])
 
   // Los hooks van antes de este return para que React los llame siempre en el mismo orden
   if (!open || !cliente) return null
 
-  const totalFacturado = facturas.reduce((s, f) => s + f.totalVenta, 0)
-  const totalCobrado   = facturas.reduce((s, f) => s + (f.totalAbonado ?? f.abonos?.reduce((a, b) => a + b.monto, 0) ?? 0), 0)
-  const porCobrar      = facturas.reduce((s, f) => {
-    if (f.estado === 'PAGADO' || f.estado === 'COTIZACION') return s
-    return s + (f.saldoPendiente ?? getSaldo(f.totalVenta, f.abonos || []))
-  }, 0)
+  // Cotizaciones y anuladas no cuentan como ventas
+  const facturas       = documentos.filter(d => d.tipo === 'FACTURA' && d.estado === 'ACTIVA')
+  const totalFacturado = facturas.reduce((s, f) => s + f.total, 0)
+  const totalCobrado   = facturas.reduce((s, f) => s + f.totalAbonado, 0)
+  const porCobrar      = facturas.reduce((s, f) => s + (f.saldoPendiente ?? 0), 0)
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
@@ -139,10 +139,10 @@ export function ClienteDetailSheet({ cliente, open, onOpenChange, onEdit }: Prop
           {/* Historial de facturas */}
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-[#80727B] mb-2 flex items-center gap-1.5">
-              <ReceiptText className="w-3.5 h-3.5" /> Historial de Compras ({facturas.length})
+              <ReceiptText className="w-3.5 h-3.5" /> Cotizaciones y facturas ({documentos.length})
             </h3>
-            {facturas.length === 0 ? (
-              <p className="text-xs text-[#80727B] py-2">Sin facturas registradas.</p>
+            {documentos.length === 0 ? (
+              <p className="text-xs text-[#80727B] py-2">Sin cotizaciones ni facturas.</p>
             ) : (
               <div className="border border-[#E5E7EB] rounded overflow-hidden">
                 <table className="w-full text-xs">
@@ -156,33 +156,29 @@ export function ClienteDetailSheet({ cliente, open, onOpenChange, onEdit }: Prop
                     </tr>
                   </thead>
                   <tbody>
-                    {facturas
-                      .slice()
-                      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-                      .map((f, i) => {
-                        const saldo = getSaldo(f.totalVenta, f.abonos)
-                        return (
-                          <tr
-                            key={f.id}
-                            className={`border-b border-[#E5E7EB] hover:bg-[#F9FAFB] transition-colors ${i === facturas.length - 1 ? 'border-b-0' : ''}`}
-                          >
-                            <td className="px-3 py-2.5 font-mono font-semibold text-[#022F40]">{f.folioInterno}</td>
-                            <td className="px-3 py-2.5 text-[#705D56]">{formatDate(f.createdAt)}</td>
-                            <td className="px-3 py-2.5 text-right font-semibold text-[#022F40]">{formatCurrency(f.totalVenta)}</td>
-                            <td className="px-3 py-2.5 text-right">
-                              {f.estado === 'PAGADO'
-                                ? <span className="text-[#558564]">Liquidado</span>
-                                : f.estado === 'COTIZACION'
-                                  ? <span className="text-[#80727B]">—</span>
-                                  : <span className="text-[#022F40] font-medium">{formatCurrency(saldo)}</span>
-                              }
-                            </td>
-                            <td className="px-3 py-2.5">
-                              <EstadoBadge estado={f.estado} />
-                            </td>
-                          </tr>
-                        )
-                      })}
+                    {documentos.map((d, i) => (
+                      <tr
+                        key={d.id}
+                        className={`border-b border-[#E5E7EB] hover:bg-[#F9FAFB] transition-colors ${i === documentos.length - 1 ? 'border-b-0' : ''}`}
+                      >
+                        <td className="px-3 py-2.5 font-mono font-semibold text-[#022F40]">
+                          <Link to={`/documentos/${d.id}`} className="underline underline-offset-2">{d.folio}</Link>
+                        </td>
+                        <td className="px-3 py-2.5 text-[#705D56]">{formatDate(d.fecha)}</td>
+                        <td className="px-3 py-2.5 text-right font-semibold text-[#022F40]">{formatCurrency(d.total)}</td>
+                        <td className="px-3 py-2.5 text-right">
+                          {d.tipo === 'COTIZACION' || d.estado === 'ANULADA'
+                            ? <span className="text-[#80727B]">—</span>
+                            : (d.saldoPendiente ?? 0) <= 0
+                              ? <span className="text-[#558564]">Liquidado</span>
+                              : <span className="text-[#022F40] font-medium">{formatCurrency(d.saldoPendiente ?? 0)}</span>
+                          }
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <EstadoDocumentoBadge documento={d} />
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>

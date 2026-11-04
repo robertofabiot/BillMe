@@ -1,11 +1,11 @@
 package com.example.billme.dto;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDate;
 
 public record PrecioHistorialResponse(
-    String folioInterno,
-    Instant fecha,
+    String folio,
+    LocalDate fecha,
     BigDecimal precioUnitario,
     BigDecimal cantidad
 ) {}

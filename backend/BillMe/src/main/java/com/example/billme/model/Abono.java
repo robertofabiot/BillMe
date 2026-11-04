@@ -9,6 +9,7 @@ import java.time.LocalDate;
 /**
  * Pago parcial o total registrado contra una factura.
  * Una factura puede acumular múltiples abonos hasta cubrir su total.
+ * (La columna sigue llamándose factura_id; los abonos pasarán a la cuenta del cliente.)
  */
 @Entity
 @Table(name = "abonos")
@@ -32,5 +33,5 @@ public class Abono extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factura_id", nullable = false)
-    private Factura factura;
+    private Documento documento;
 }

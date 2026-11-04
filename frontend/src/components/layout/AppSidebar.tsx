@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   ReceiptText,
+  FileText,
   Users,
   Package,
   FolderKanban,
@@ -16,6 +17,7 @@ import { useAuth } from '@/context/AuthContext'
 
 const navItems = [
   { to: '/',          label: 'Facturas',   icon: ReceiptText },
+  { to: '/cotizaciones', label: 'Cotizaciones', icon: FileText },
   { to: '/consolidados', label: 'Consolidados', icon: Layers },
   { to: '/clientes',  label: 'Clientes',   icon: Users },
   { to: '/productos', label: 'Productos',  icon: Package },

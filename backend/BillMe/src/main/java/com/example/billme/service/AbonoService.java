@@ -2,11 +2,12 @@ package com.example.billme.service;
 
 import com.example.billme.dto.AbonoRequest;
 import com.example.billme.dto.AbonoResponse;
+import com.example.billme.enums.EstadoDocumento;
+import com.example.billme.enums.TipoDocumento;
 import com.example.billme.model.Abono;
-import com.example.billme.enums.EstadoFactura;
-import com.example.billme.model.Factura;
+import com.example.billme.model.Documento;
 import com.example.billme.repository.AbonoRepository;
-import com.example.billme.repository.FacturaRepository;
+import com.example.billme.repository.DocumentoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,68 +24,34 @@ import java.util.stream.Collectors;
 public class AbonoService {
 
     private final AbonoRepository abonoRepository;
-    private final FacturaRepository facturaRepository;
+    private final DocumentoRepository documentoRepository;
 
-    public List<AbonoResponse> listarPorFactura(UUID facturaId) {
-        return abonoRepository.findByFacturaId(facturaId).stream()
+    public List<AbonoResponse> listarPorDocumento(UUID documentoId) {
+        return abonoRepository.findByDocumentoId(documentoId).stream()
                 .map(this::toAbonoResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional
-    public AbonoResponse registrarAbono(UUID facturaId, AbonoRequest request) {
-        Factura factura = facturaRepository.findById(facturaId)
+    public AbonoResponse registrarAbono(UUID documentoId, AbonoRequest request) {
+        Documento factura = documentoRepository.findById(documentoId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Factura no encontrada"));
-
-        if (factura.getEstado() == EstadoFactura.COTIZACION) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se pueden registrar abonos en cotizaciones");
+        if (factura.getTipo() != TipoDocumento.FACTURA || factura.getEstado() != EstadoDocumento.ACTIVA) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Solo se registran abonos en facturas activas");
         }
-        
-        if (factura.getEstado() == EstadoFactura.PAGADO) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La factura ya está pagada");
+        BigDecimal saldo = factura.getTotal().subtract(abonoRepository.sumMontoByDocumentoId(documentoId));
+        if (request.monto().compareTo(saldo) > 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "El abono es mayor que el saldo pendiente de " + saldo);
         }
-
-        if (request.monto() == null || request.monto().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El monto del abono debe ser mayor a cero");
-        }
-
-        BigDecimal totalAbonadoActual = abonoRepository.sumMontoByFacturaId(facturaId);
-        if (totalAbonadoActual == null) totalAbonadoActual = BigDecimal.ZERO;
-        BigDecimal totalVenta = factura.getTotalVenta() != null ? factura.getTotalVenta() : BigDecimal.ZERO;
-        BigDecimal saldoPendiente = totalVenta.subtract(totalAbonadoActual);
-
-        if (request.monto().compareTo(saldoPendiente) > 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El monto del abono excede el saldo pendiente de " + saldoPendiente);
-        }
-
         Abono abono = new Abono();
-        abono.setFactura(factura);
+        abono.setDocumento(factura);
         abono.setMonto(request.monto());
         abono.setFechaPago(request.fechaPago());
-        
-        Abono savedAbono = abonoRepository.save(abono);
-
-        BigDecimal totalAbonado = abonoRepository.sumMontoByFacturaId(facturaId);
-        if (totalAbonado == null) {
-            totalAbonado = BigDecimal.ZERO;
-        }
-
-        if (totalAbonado.compareTo(totalVenta) >= 0) {
-            factura.setEstado(EstadoFactura.PAGADO);
-        } else if (totalAbonado.compareTo(BigDecimal.ZERO) > 0) {
-            factura.setEstado(EstadoFactura.PAGO_PARCIAL);
-        }
-
-        facturaRepository.save(factura);
-
-        return toAbonoResponse(savedAbono);
+        return toAbonoResponse(abonoRepository.save(abono));
     }
 
     private AbonoResponse toAbonoResponse(Abono a) {
-        return new AbonoResponse(
-                a.getId(),
-                a.getMonto(),
-                a.getFechaPago()
-        );
+        return new AbonoResponse(a.getId(), a.getMonto(), a.getFechaPago());
     }
 }

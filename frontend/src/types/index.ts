@@ -1,6 +1,5 @@
 // ─── Tipos alineados con los DTOs del backend ───────────────────────
 
-export type EstadoFactura = 'COTIZACION' | 'PENDIENTE' | 'PAGO_PARCIAL' | 'PAGADO'
 export type EstadoProyecto = 'ACTIVO' | 'FINALIZADO'
 
 export interface Producto {
@@ -20,38 +19,10 @@ export interface Producto {
   createdAt?: string
 }
 
-export interface DetalleFactura {
-  id: string
-  productoId: string
-  productoNombre: string
-  productoCodigoInterno: string
-  cantidad: number
-  precioUnitarioVenta: number
-  costoUnitario?: number
-  pesoUnitario?: number
-}
-
 export interface Abono {
   id: string
   monto: number
   fechaPago: string
-}
-
-export interface Factura {
-  id: string
-  folioInterno: string
-  estado: EstadoFactura
-  costoRealEmpresa?: number
-  totalVenta: number
-  clienteId: string
-  clienteNombre?: string
-  proyectoId?: string
-  proyectoNombre?: string
-  createdAt: string
-  detalles: DetalleFactura[]
-  abonos: Abono[]
-  totalAbonado?: number
-  saldoPendiente?: number
 }
 
 export interface Cliente {
@@ -109,7 +80,7 @@ export interface ReporteData {
 }
 
 export interface PrecioHistorial {
-  folioInterno: string
+  folio: string
   fecha: string
   precioUnitario: number
   cantidad: number
@@ -173,4 +144,66 @@ export interface ImportacionLista {
   sinPrecio: number
   muestra: { codigo: string; descripcion: string; precioAnterior: number | null; precioNuevo: number | null }[]
   aplicada: boolean
+}
+
+// ─── Cotizaciones y facturas ────────────────────────────────────────────
+
+export type TipoDocumento = 'COTIZACION' | 'FACTURA'
+/** Cotización: PENDIENTE, ACEPTADA o RECHAZADA. Factura: ACTIVA o ANULADA. */
+export type EstadoDocumento = 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA' | 'ACTIVA' | 'ANULADA'
+export type MetodoPrecio = 'ULTIMO_PRECIO' | 'FORMULA_LISTA' | 'POR_PESO' | 'POR_METRO' | 'MANUAL'
+
+export interface LineaDocumento {
+  id: string
+  orden: number
+  productoId: string
+  productoCodigo: string
+  productoGenerico: boolean
+  descripcion: string
+  cantidad: number
+  pesoUnitKg?: number | null
+  pesoTotalKg?: number | null
+  /** Precio unitario con IVA. */
+  precioUnit: number
+  total: number
+  metodoPrecio: MetodoPrecio
+  parametros?: string | null
+  fechaEntrega?: string | null
+  lugarEntrega?: string | null
+  costoUnitConIva?: number | null
+}
+
+export interface Documento {
+  id: string
+  tipo: TipoDocumento
+  folio: string
+  estado: EstadoDocumento
+  fecha: string
+  clienteId: string
+  clienteNombre: string
+  proyectoId?: string | null
+  proyectoNombre?: string | null
+  notas?: string | null
+  mostrarEntrega: boolean
+  total: number
+  totalKg: number
+  cotizacionOrigenId?: string | null
+  cotizacionOrigenFolio?: string | null
+  facturaGeneradaId?: string | null
+  facturaGeneradaFolio?: string | null
+  lineas: LineaDocumento[]
+  abonos: Abono[]
+  totalAbonado: number
+  /** Solo en facturas. */
+  saldoPendiente?: number | null
+  createdAt: string
+  updatedAt: string
+}
+
+/** Cómo estaba un documento antes de una edición. */
+export interface RevisionDocumento {
+  numero: number
+  editadoEn: string
+  editadoPor?: string | null
+  documento: Documento
 }

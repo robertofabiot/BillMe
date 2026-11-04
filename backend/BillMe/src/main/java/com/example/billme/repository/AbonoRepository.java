@@ -11,12 +11,12 @@ import java.util.UUID;
 
 public interface AbonoRepository extends JpaRepository<Abono, UUID> {
 
-    List<Abono> findByFacturaId(UUID facturaId);
+    List<Abono> findByDocumentoId(UUID documentoId);
 
     /**
      * Suma total abonado a una factura.
      * Usada para calcular el saldo pendiente sin cargar todos los objetos.
      */
-    @Query("SELECT COALESCE(SUM(a.monto), 0) FROM Abono a WHERE a.factura.id = :facturaId")
-    BigDecimal sumMontoByFacturaId(@Param("facturaId") UUID facturaId);
+    @Query("SELECT COALESCE(SUM(a.monto), 0) FROM Abono a WHERE a.documento.id = :documentoId")
+    BigDecimal sumMontoByDocumentoId(@Param("documentoId") UUID documentoId);
 }
