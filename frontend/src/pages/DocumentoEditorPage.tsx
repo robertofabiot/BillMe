@@ -224,7 +224,7 @@ export function DocumentoEditorPage() {
 
   /** Guarda y devuelve el documento guardado, o null si hubo un problema. */
   const guardar = async (): Promise<Documento | null> => {
-    const problema = problemaDe(form)
+    const problema = nuevoProyecto?.trim() ? 'Termina de crear el proyecto o cancélalo.' : problemaDe(form)
     if (problema) {
       setAviso({ tipo: 'error', texto: problema })
       return null
@@ -441,6 +441,12 @@ export function DocumentoEditorPage() {
                   placeholder="Nombre del proyecto"
                   value={nuevoProyecto}
                   onChange={e => setNuevoProyecto(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      void crearProyecto()
+                    }
+                  }}
                 />
                 <Button type="button" variant="outline" disabled={!nuevoProyecto.trim()} onClick={crearProyecto} className="h-9">Crear</Button>
                 <Button type="button" variant="outline" onClick={() => setNuevoProyecto(null)} className="h-9">Cancelar</Button>
@@ -494,7 +500,7 @@ export function DocumentoEditorPage() {
 
             <dl className="text-right">
               <div className="flex items-baseline justify-end gap-3">
-                <dt className="text-sm text-[#705D56]">Total C$</dt>
+                <dt className="text-sm text-[#705D56]">Total</dt>
                 <dd className="text-2xl font-bold text-[#022F40]">{formatCurrency(totales.total)}</dd>
               </div>
               <div className="flex items-baseline justify-end gap-3">
