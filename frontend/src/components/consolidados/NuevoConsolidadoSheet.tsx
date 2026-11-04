@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import type { Consolidado, ConsolidadoGroup, Factura, Cliente } from '@/types'
-import { facturaService } from '@/services/facturaService'
+import type { Consolidado, ConsolidadoGroup, Documento, Cliente } from '@/types'
+import { documentoService } from '@/services/documentoService'
 import { formatCurrency } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,15 +25,15 @@ export function NuevoConsolidadoSheet({ clientes, open, onOpenChange, onSave }: 
   const [grupos, setGrupos] = useState<ConsolidadoGroup[]>([])
 
   // Derived
-  const [facturasCliente, setFacturasCliente] = useState<Factura[]>([])
+  const [facturasCliente, setFacturasCliente] = useState<Documento[]>([])
 
   useEffect(() => {
     if (!clienteId) {
       setFacturasCliente([])
       return
     }
-    facturaService.listar({ clienteId }).then(res => {
-      setFacturasCliente(res.filter(f => f.estado !== 'COTIZACION'))
+    documentoService.listar({ clienteId, tipo: 'FACTURA', estado: 'ACTIVA' }).then(res => {
+      setFacturasCliente(res)
     })
   }, [clienteId])
 
@@ -46,13 +46,13 @@ export function NuevoConsolidadoSheet({ clientes, open, onOpenChange, onSave }: 
         const fac = facturasCliente.find(f => f.id === fid)!
         return {
           id: `g-${fid}`,
-          nombre: `Factura ${fac.folioInterno}`,
-          items: fac.detalles.map(d => ({
+          nombre: `Factura ${fac.folio}`,
+          items: fac.lineas.map(d => ({
             id: `item-${Date.now()}-${Math.random()}`,
             facturaId: fac.id,
-            productoNombre: d.productoNombre,
+            productoNombre: d.descripcion.slice(0, 200),
             cantidad: d.cantidad,
-            precioUnitario: d.precioUnitarioVenta
+            precioUnitario: d.precioUnit
           }))
         }
       })
@@ -189,11 +189,11 @@ export function NuevoConsolidadoSheet({ clientes, open, onOpenChange, onSave }: 
                           <div className="flex items-center gap-3">
                             {selected ? <CheckSquare className="w-4 h-4 text-[#022F40]" /> : <Square className="w-4 h-4 text-[#80727B]" />}
                             <div>
-                              <p className="text-sm font-semibold text-[#022F40]">{f.folioInterno}</p>
-                              <p className="text-xs text-[#705D56]">{f.createdAt}</p>
+                              <p className="text-sm font-semibold text-[#022F40]">{f.folio}</p>
+                              <p className="text-xs text-[#705D56]">{f.fecha}</p>
                             </div>
                           </div>
-                          <p className="text-sm font-bold text-[#022F40]">{formatCurrency(f.totalVenta)}</p>
+                          <p className="text-sm font-bold text-[#022F40]">{formatCurrency(f.total)}</p>
                         </div>
                       )
                     })}

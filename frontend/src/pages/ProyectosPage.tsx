@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect, type ChangeEvent } from 'react'
-import type { Proyecto, Cliente, Factura } from '@/types'
+import type { Proyecto, Cliente, Documento } from '@/types'
 import { proyectoService } from '@/services/proyectoService'
 import { clienteService } from '@/services/clienteService'
-import { facturaService } from '@/services/facturaService'
+import { documentoService } from '@/services/documentoService'
 import { formatCurrency } from '@/lib/format'
 import { ProyectoModal } from '@/components/proyectos/ProyectoModal'
 import { ProyectoDetailSheet } from '@/components/proyectos/ProyectoDetailSheet'
@@ -29,7 +29,7 @@ function StatCard({ icon: Icon, label, value, accent }: {
 export function ProyectosPage() {
   const [proyectos, setProyectos]   = useState<Proyecto[]>([])
   const [clientes, setClientes]     = useState<Cliente[]>([])
-  const [facturas, setFacturas]     = useState<Factura[]>([])
+  const [facturas, setFacturas]     = useState<Documento[]>([])
   const [loading, setLoading]       = useState(true)
   const [error, setError]           = useState<string | null>(null)
   const [selected,  setSelected]    = useState<Proyecto | null>(null)
@@ -44,7 +44,7 @@ export function ProyectosPage() {
         const [proyectosData, clientesData, facturasData] = await Promise.all([
           proyectoService.listar(),
           clienteService.listar(),
-          facturaService.listar()
+          documentoService.listar({ tipo: 'FACTURA', estado: 'ACTIVA' })
         ])
         setProyectos(proyectosData)
         setClientes(clientesData)
@@ -62,8 +62,8 @@ export function ProyectosPage() {
   const stats = useMemo(() => {
     const activos = proyectos.filter(p => p.estado === 'ACTIVO').length
     const facturado = facturas
-      .filter(f => f.estado !== 'COTIZACION' && f.proyectoId)
-      .reduce((s, f) => s + f.totalVenta, 0)
+      .filter(f => f.proyectoId)
+      .reduce((s, f) => s + f.total, 0)
     
     return { total: proyectos.length, activos, facturado }
   }, [proyectos, facturas])
@@ -105,8 +105,8 @@ export function ProyectosPage() {
   /* ── Helpers ── */
   const getFacturado = (proyectoId: string) => 
     facturas
-      .filter(f => f.proyectoId === proyectoId && f.estado !== 'COTIZACION')
-      .reduce((s, f) => s + f.totalVenta, 0)
+      .filter(f => f.proyectoId === proyectoId)
+      .reduce((s, f) => s + f.total, 0)
 
   if (loading) return (
     <div className="p-8 flex items-center justify-center h-64">

@@ -1,6 +1,6 @@
-import type { FuentePrecio, PrecioLista, PreciosListaProducto, Producto } from '@/types'
+import type { Documento, FuentePrecio, PrecioLista, PreciosListaProducto, Producto } from '@/types'
 import { useCallback, useEffect, useState } from 'react'
-import { facturaService } from '@/services/facturaService'
+import { documentoService } from '@/services/documentoService'
 import { precioListaService } from '@/services/precioListaService'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { Button } from '@/components/ui/button'
@@ -30,36 +30,31 @@ interface PriceEntry {
   cantidadCompras: number
 }
 
-function processHistory(productoId: string, facturas: any[]): PriceEntry[] {
-  const map = new Map<string, { precio: number; fecha: string; count: number; clienteNombre: string }>()
+/** Último precio dado a cada cliente. Las cotizaciones cuentan; las facturas anuladas no. */
+function processHistory(productoId: string, documentos: Documento[]): PriceEntry[] {
+  const map = new Map<string, PriceEntry>()
 
-  facturas
-    .filter(f => f.estado !== 'COTIZACION')
-    .forEach(f => {
-      const d = f.detalles?.find((det: any) => det.productoId === productoId)
-      if (!d) return
-      const ex = map.get(f.clienteId)
-      if (!ex) {
-        map.set(f.clienteId, { precio: d.precioUnitarioVenta, fecha: f.createdAt, count: 1, clienteNombre: f.clienteNombre || '—' })
+  // Vienen de la más reciente a la más antigua
+  documentos
+    .filter(d => d.estado !== 'ANULADA')
+    .forEach(d => {
+      const linea = d.lineas.find(l => l.productoId === productoId)
+      if (!linea) return
+      const entrada = map.get(d.clienteId)
+      if (entrada) {
+        entrada.cantidadCompras += 1
       } else {
-        map.set(f.clienteId, {
-          precio: f.createdAt > ex.fecha ? d.precioUnitarioVenta : ex.precio,
-          fecha:  f.createdAt > ex.fecha ? f.createdAt : ex.fecha,
-          count:  ex.count + 1,
-          clienteNombre: f.clienteNombre || '—'
+        map.set(d.clienteId, {
+          clienteId: d.clienteId,
+          clienteNombre: d.clienteNombre,
+          ultimoPrecio: linea.precioUnit,
+          ultimaFecha: d.fecha,
+          cantidadCompras: 1,
         })
       }
     })
 
-  return Array.from(map.entries())
-    .map(([clienteId, data]) => ({
-      clienteId,
-      clienteNombre: data.clienteNombre,
-      ultimoPrecio:  data.precio,
-      ultimaFecha:   data.fecha,
-      cantidadCompras: data.count,
-    }))
-    .sort((a, b) => b.ultimaFecha.localeCompare(a.ultimaFecha))
+  return Array.from(map.values())
 }
 
 interface Props {
@@ -85,15 +80,14 @@ export function ProductoDetailSheet({ producto, open, onOpenChange, onEdit, onPr
   useEffect(() => {
     if (!producto?.id || !open) return
     cargarPrecios()
-    // Solo las facturas que incluyen este producto
-    facturaService.listar({ productoId: producto.id }).then(facturas => {
-      setHistory(processHistory(producto.id, facturas))
-      setTotalVentas(facturas
-        .filter(f => f.estado !== 'COTIZACION')
-        .reduce((s, f) => {
-          const d = f.detalles?.find((det: any) => det.productoId === producto.id)
-          return d ? s + d.cantidad : s
-        }, 0))
+    // Solo los documentos que incluyen este producto
+    documentoService.listar({ productoId: producto.id }).then(documentos => {
+      setHistory(processHistory(producto.id, documentos))
+      setTotalVentas(documentos
+        .filter(d => d.tipo === 'FACTURA' && d.estado === 'ACTIVA')
+        .flatMap(d => d.lineas)
+        .filter(l => l.productoId === producto.id)
+        .reduce((s, l) => s + l.cantidad, 0))
     }).catch(console.error)
   }, [producto?.id, open, cargarPrecios])
 
@@ -241,7 +235,7 @@ export function ProductoDetailSheet({ producto, open, onOpenChange, onEdit, onPr
                   <thead>
                     <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                       <th className="text-left px-3 py-2 font-medium text-[#705D56]">Cliente</th>
-                      <th className="text-center px-3 py-2 font-medium text-[#705D56]">Compras</th>
+                      <th className="text-center px-3 py-2 font-medium text-[#705D56]">Veces</th>
                       <th className="text-right px-3 py-2 font-medium text-[#705D56]">Último Precio</th>
                       <th className="text-right px-3 py-2 font-medium text-[#705D56]">Última Fecha</th>
                     </tr>

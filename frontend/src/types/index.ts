@@ -174,3 +174,65 @@ export interface ImportacionLista {
   muestra: { codigo: string; descripcion: string; precioAnterior: number | null; precioNuevo: number | null }[]
   aplicada: boolean
 }
+
+// ─── Cotizaciones y facturas ────────────────────────────────────────────
+
+export type TipoDocumento = 'COTIZACION' | 'FACTURA'
+/** Cotización: PENDIENTE, ACEPTADA o RECHAZADA. Factura: ACTIVA o ANULADA. */
+export type EstadoDocumento = 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA' | 'ACTIVA' | 'ANULADA'
+export type MetodoPrecio = 'ULTIMO_PRECIO' | 'FORMULA_LISTA' | 'POR_PESO' | 'POR_METRO' | 'MANUAL'
+
+export interface LineaDocumento {
+  id: string
+  orden: number
+  productoId: string
+  productoCodigo: string
+  productoGenerico: boolean
+  descripcion: string
+  cantidad: number
+  pesoUnitKg?: number | null
+  pesoTotalKg?: number | null
+  /** Precio unitario con IVA. */
+  precioUnit: number
+  total: number
+  metodoPrecio: MetodoPrecio
+  parametros?: string | null
+  fechaEntrega?: string | null
+  lugarEntrega?: string | null
+  costoUnitConIva?: number | null
+}
+
+export interface Documento {
+  id: string
+  tipo: TipoDocumento
+  folio: string
+  estado: EstadoDocumento
+  fecha: string
+  clienteId: string
+  clienteNombre: string
+  proyectoId?: string | null
+  proyectoNombre?: string | null
+  notas?: string | null
+  mostrarEntrega: boolean
+  total: number
+  totalKg: number
+  cotizacionOrigenId?: string | null
+  cotizacionOrigenFolio?: string | null
+  facturaGeneradaId?: string | null
+  facturaGeneradaFolio?: string | null
+  lineas: LineaDocumento[]
+  abonos: Abono[]
+  totalAbonado: number
+  /** Solo en facturas. */
+  saldoPendiente?: number | null
+  createdAt: string
+  updatedAt: string
+}
+
+/** Cómo estaba un documento antes de una edición. */
+export interface RevisionDocumento {
+  numero: number
+  editadoEn: string
+  editadoPor?: string | null
+  documento: Documento
+}
