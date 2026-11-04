@@ -109,7 +109,7 @@ export interface ReporteData {
 }
 
 export interface PrecioHistorial {
-  folioInterno: string
+  folio: string
   fecha: string
   precioUnitario: number
   cantidad: number

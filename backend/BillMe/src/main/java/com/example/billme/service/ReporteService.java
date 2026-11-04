@@ -1,16 +1,18 @@
 package com.example.billme.service;
 
 import com.example.billme.dto.ReporteResponse;
-import com.example.billme.enums.EstadoFactura;
+import com.example.billme.enums.EstadoDocumento;
+import com.example.billme.enums.TipoDocumento;
 import com.example.billme.model.Abono;
-import com.example.billme.model.Factura;
-import com.example.billme.repository.FacturaRepository;
+import com.example.billme.model.Documento;
+import com.example.billme.model.DocumentoLinea;
+import com.example.billme.repository.DocumentoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,38 +21,28 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class ReporteService {
 
-    private final FacturaRepository facturaRepository;
+    private final DocumentoRepository documentoRepository;
 
-    public ReporteResponse generarReporte(UUID clienteId, UUID proyectoId, Instant desde, Instant hasta) {
-        List<Factura> facturas = facturaRepository.filtrar(clienteId, proyectoId, desde, hasta, null, null);
-        
-        BigDecimal ingresosTotales = BigDecimal.ZERO;
-        BigDecimal totalCobrado = BigDecimal.ZERO;
-        int totalFacturas = 0;
+    /** Solo las facturas activas cuentan: las cotizaciones y las anuladas no son ingresos. */
+    public ReporteResponse generarReporte(UUID clienteId, UUID proyectoId, LocalDate desde, LocalDate hasta) {
+        List<Documento> facturas = documentoRepository.filtrar(TipoDocumento.FACTURA, EstadoDocumento.ACTIVA,
+                clienteId, proyectoId, null, desde, hasta);
 
-        BigDecimal costoTotal = BigDecimal.ZERO;
-
-        for (Factura factura : facturas) {
-            if (factura.getEstado() != EstadoFactura.COTIZACION) {
-                ingresosTotales = ingresosTotales.add(factura.getTotalVenta() != null ? factura.getTotalVenta() : BigDecimal.ZERO);
-                costoTotal = costoTotal.add(factura.getCostoRealEmpresa() != null ? factura.getCostoRealEmpresa() : BigDecimal.ZERO);
-                for (Abono abono : factura.getAbonos()) {
-                    totalCobrado = totalCobrado.add(abono.getMonto());
+        BigDecimal ingresos = BigDecimal.ZERO;
+        BigDecimal cobrado = BigDecimal.ZERO;
+        BigDecimal costo = BigDecimal.ZERO;
+        for (Documento factura : facturas) {
+            ingresos = ingresos.add(factura.getTotal());
+            for (Abono abono : factura.getAbonos()) {
+                cobrado = cobrado.add(abono.getMonto());
+            }
+            for (DocumentoLinea linea : factura.getLineas()) {
+                if (linea.getCostoUnitConIva() != null) {
+                    costo = costo.add(linea.getCantidad().multiply(linea.getCostoUnitConIva()));
                 }
-                totalFacturas++;
             }
         }
-
-        BigDecimal porCobrar = ingresosTotales.subtract(totalCobrado);
-        BigDecimal gananciaNeta = ingresosTotales.subtract(costoTotal);
-
-        return new ReporteResponse(
-                ingresosTotales,
-                totalCobrado,
-                porCobrar,
-                costoTotal,
-                gananciaNeta,
-                totalFacturas
-        );
+        return new ReporteResponse(ingresos, cobrado, ingresos.subtract(cobrado), costo,
+                ingresos.subtract(costo), facturas.size());
     }
 }

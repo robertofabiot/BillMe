@@ -1,11 +1,12 @@
 package com.example.billme.service;
 
 import com.example.billme.dto.ClienteRequest;
-import com.example.billme.dto.DetalleFacturaRequest;
-import com.example.billme.dto.FacturaRequest;
+import com.example.billme.dto.DocumentoRequest;
+import com.example.billme.dto.LineaRequest;
 import com.example.billme.dto.ProductoRequest;
 import com.example.billme.dto.ProductoResponse;
 import com.example.billme.enums.FuentePrecio;
+import com.example.billme.enums.TipoDocumento;
 import com.example.billme.model.PrecioLista;
 import com.example.billme.repository.PrecioListaRepository;
 import com.example.billme.repository.ProductoRepository;
@@ -37,7 +38,10 @@ class ProductoServiceTest extends IntegrationTest {
     ClienteService clienteService;
 
     @Autowired
-    FacturaService facturaService;
+    DocumentoService documentoService;
+
+    @Autowired
+    ReporteService reporteService;
 
     @Test
     void derivaFamiliaYNombreNormalizado() {
@@ -90,12 +94,13 @@ class ProductoServiceTest extends IntegrationTest {
         registrarLista(perlin, "1000.00", LocalDate.of(2025, 2, 1), FuentePrecio.LISTA_IMPORTADA, null);
         var cliente = clienteService.crear(new ClienteRequest("Cliente de prueba", null, null));
 
-        var factura = facturaService.crear(new FacturaRequest(cliente.id(), null, "PENDIENTE",
-                List.of(new DetalleFacturaRequest(perlin.id(), new BigDecimal("5"), new BigDecimal("1300.00")))));
+        var factura = documentoService.crear(new DocumentoRequest(TipoDocumento.FACTURA, cliente.id(), null,
+                LocalDate.of(2026, 10, 1), null, false, List.of(new LineaRequest(null, perlin.id(), null,
+                new BigDecimal("5"), null, new BigDecimal("1300.00"), null, null, null, null))));
 
         // 1000.00 × (1 − 0.20) × 1.15 = 920.00
-        assertThat(factura.detalles().get(0).costoUnitario()).isEqualByComparingTo("920.00");
-        assertThat(factura.costoRealEmpresa()).isEqualByComparingTo("4600.00");
+        assertThat(factura.lineas().get(0).costoUnitConIva()).isEqualByComparingTo("920.00");
+        assertThat(reporteService.generarReporte(cliente.id(), null, null, null).costoTotal()).isEqualByComparingTo("4600.00");
     }
 
     private ProductoResponse crear(String codigo, String nombre) {

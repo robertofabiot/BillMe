@@ -1,14 +1,12 @@
 package com.example.billme.service;
 
 import com.example.billme.dto.PrecioHistorialResponse;
-import com.example.billme.model.DetalleFactura;
-import com.example.billme.model.Factura;
-import com.example.billme.repository.FacturaRepository;
+import com.example.billme.enums.EstadoDocumento;
+import com.example.billme.repository.DocumentoLineaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,27 +15,15 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class PrecioHistorialService {
 
-    private final FacturaRepository facturaRepository;
+    private final DocumentoLineaRepository documentoLineaRepository;
 
     public List<PrecioHistorialResponse> obtenerHistorial(UUID clienteId, UUID productoId) {
-        List<Factura> facturas = facturaRepository.historialPreciosPorClienteYProducto(clienteId, productoId);
-        List<PrecioHistorialResponse> historial = new ArrayList<>();
-
-        for (Factura factura : facturas) {
-            if (factura.getDetalles() != null) {
-                for (DetalleFactura detalle : factura.getDetalles()) {
-                    if (productoId.equals(detalle.getProducto().getId())) {
-                        historial.add(new PrecioHistorialResponse(
-                                factura.getFolioInterno(),
-                                factura.getCreatedAt(),
-                                detalle.getPrecioUnitarioVenta(),
-                                detalle.getCantidad()
-                        ));
-                    }
-                }
-            }
-        }
-
-        return historial;
+        return documentoLineaRepository.historialDeCliente(clienteId, productoId, EstadoDocumento.ANULADA).stream()
+                .map(l -> new PrecioHistorialResponse(
+                        l.getDocumento().getFolio(),
+                        l.getDocumento().getFecha(),
+                        l.getPrecioUnit(),
+                        l.getCantidad()))
+                .toList();
     }
 }

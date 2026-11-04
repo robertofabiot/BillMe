@@ -46,7 +46,7 @@ public class ConsolidadoItem extends BaseEntity {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factura_id")
-    private Factura factura;
+    private Documento documento;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "grupo_id", nullable = false)

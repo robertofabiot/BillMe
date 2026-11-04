@@ -1,12 +1,10 @@
 import { useState, type ChangeEvent } from 'react'
 import type { ImportacionLista } from '@/types'
 import { importacionService } from '@/services'
-import { formatCurrency } from '@/lib/format'
+import { formatCurrency, hoyIso } from '@/lib/format'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { FileSpreadsheet, CheckCircle2 } from 'lucide-react'
-
-const hoy = () => new Date().toISOString().slice(0, 10)
 
 function Cifra({ etiqueta, valor, destacar }: { etiqueta: string; valor: number; destacar?: boolean }) {
   return (
@@ -23,7 +21,7 @@ function Cifra({ etiqueta, valor, destacar }: { etiqueta: string; valor: number;
  */
 export function ImportarListaPanel() {
   const [archivo, setArchivo] = useState<File | null>(null)
-  const [fecha, setFecha] = useState(hoy())
+  const [fecha, setFecha] = useState(hoyIso())
   const [resumen, setResumen] = useState<ImportacionLista | null>(null)
   const [trabajando, setTrabajando] = useState(false)
   const [error, setError] = useState<string | null>(null)

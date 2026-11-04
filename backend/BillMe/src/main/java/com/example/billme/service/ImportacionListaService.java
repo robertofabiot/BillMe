@@ -12,6 +12,7 @@ import com.example.billme.model.Proveedor;
 import com.example.billme.repository.PrecioListaRepository;
 import com.example.billme.repository.ProductoRepository;
 import com.example.billme.repository.ProveedorRepository;
+import com.example.billme.util.Fechas;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,7 +49,7 @@ public class ImportacionListaService {
 
     @Transactional
     public ImportacionListaResponse aplicar(InputStream archivo, LocalDate fecha) {
-        return procesar(lector.leer(archivo), fecha != null ? fecha : LocalDate.now());
+        return procesar(lector.leer(archivo), fecha != null ? fecha : Fechas.hoy());
     }
 
     /** Con {@code fecha} null solo analiza; con fecha también guarda. */

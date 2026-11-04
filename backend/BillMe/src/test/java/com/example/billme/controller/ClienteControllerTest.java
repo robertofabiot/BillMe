@@ -1,12 +1,13 @@
 package com.example.billme.controller;
 
 import com.example.billme.dto.ClienteRequest;
-import com.example.billme.dto.DetalleFacturaRequest;
-import com.example.billme.dto.FacturaRequest;
+import com.example.billme.dto.DocumentoRequest;
+import com.example.billme.dto.LineaRequest;
 import com.example.billme.dto.ProductoRequest;
 import com.example.billme.dto.ProyectoRequest;
+import com.example.billme.enums.TipoDocumento;
 import com.example.billme.service.ClienteService;
-import com.example.billme.service.FacturaService;
+import com.example.billme.service.DocumentoService;
 import com.example.billme.service.ProductoService;
 import com.example.billme.service.ProyectoService;
 import com.example.billme.support.IntegrationTest;
@@ -16,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,7 +42,7 @@ class ClienteControllerTest extends IntegrationTest {
     ProductoService productoService;
 
     @Autowired
-    FacturaService facturaService;
+    DocumentoService documentoService;
 
     @Test
     void crearSinNombreResponde400ConElCampoInvalido() throws Exception {
@@ -73,14 +75,15 @@ class ClienteControllerTest extends IntegrationTest {
         var cliente = clienteService.crear(new ClienteRequest("Cliente de prueba", null, null));
         var producto = productoService.crear(new ProductoRequest(
                 "009001271", "Tubo Estruct. Cua. 4 x 4", null, "UND", null, List.of()));
-        facturaService.crear(new FacturaRequest(cliente.id(), null, "PENDIENTE",
-                List.of(new DetalleFacturaRequest(producto.id(), BigDecimal.ONE, new BigDecimal("2000.00")))));
+        documentoService.crear(new DocumentoRequest(TipoDocumento.FACTURA, cliente.id(), null, LocalDate.of(2026, 10, 1),
+                null, false, List.of(new LineaRequest(null, producto.id(), null, BigDecimal.ONE, null,
+                new BigDecimal("2000.00"), null, null, null, null))));
 
         mockMvc.perform(delete("/api/clientes/{id}", cliente.id()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.mensaje", containsString("facturas")));
 
-        assertThat(facturaService.listarTodas()).hasSize(1);
+        assertThat(documentoService.filtrar(null, null, cliente.id(), null, null, null, null)).hasSize(1);
         mockMvc.perform(get("/api/clientes/{id}", cliente.id())).andExpect(status().isOk());
     }
 

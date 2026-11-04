@@ -8,6 +8,7 @@ import com.example.billme.model.PrecioLista;
 import com.example.billme.model.Producto;
 import com.example.billme.repository.PrecioListaRepository;
 import com.example.billme.repository.ProductoRepository;
+import com.example.billme.util.Fechas;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -17,7 +18,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -81,7 +81,7 @@ public class PrecioListaService {
         PrecioLista guardado = precioListaRepository.save(PrecioLista.builder()
                 .producto(producto)
                 .precioSinIva(lista)
-                .fecha(request.fecha() != null ? request.fecha() : LocalDate.now())
+                .fecha(request.fecha() != null ? request.fecha() : Fechas.hoy())
                 .fuente(request.fuente())
                 .descuentoPct(derivado ? request.descuentoPct() : null)
                 .precioOrigen(derivado ? request.precio() : null)

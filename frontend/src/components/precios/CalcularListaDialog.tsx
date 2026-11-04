@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Producto } from '@/types'
 import { precioListaService, type PrecioListaPayload } from '@/services/precioListaService'
-import { formatCurrency } from '@/lib/format'
+import { formatCurrency, hoyIso } from '@/lib/format'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Calculator, X } from 'lucide-react'
@@ -29,8 +29,6 @@ const OPCIONES: { fuente: Fuente; titulo: string; precio: string; descuento?: st
   },
 ]
 
-const hoy = () => new Date().toISOString().slice(0, 10)
-
 interface Props {
   producto: Producto
   descuentoSugerido: number | null
@@ -43,7 +41,7 @@ export function CalcularListaDialog({ producto, descuentoSugerido, open, onOpenC
   const [fuente, setFuente] = useState<Fuente>('FACTURA_PROVEEDOR')
   const [precio, setPrecio] = useState('')
   const [descuento, setDescuento] = useState('')
-  const [fecha, setFecha] = useState(hoy())
+  const [fecha, setFecha] = useState(hoyIso())
   const [nota, setNota] = useState('')
   const [resultado, setResultado] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -56,7 +54,7 @@ export function CalcularListaDialog({ producto, descuentoSugerido, open, onOpenC
     setFuente('FACTURA_PROVEEDOR')
     setPrecio('')
     setDescuento(descuentoSugerido != null ? String(descuentoSugerido) : '')
-    setFecha(hoy())
+    setFecha(hoyIso())
     setNota('')
     setError(null)
   }, [open, descuentoSugerido])

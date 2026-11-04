@@ -41,9 +41,12 @@ public abstract class IntegrationTest {
     @BeforeEach
     void vaciarDatos() {
         jdbc.execute("truncate table consolidado_items, consolidado_groups, consolidados, abonos, "
-                + "detalles_factura, facturas, precios_lista, alias_productos, proyectos, clientes, usuarios cascade");
+                + "documento_revisiones, documento_lineas, documentos, precios_lista, alias_productos, proyectos, "
+                + "clientes, usuarios cascade");
         jdbc.execute("delete from productos where not generico");
         jdbc.execute("delete from proveedores where nombre <> 'Proveedor principal'");
+        jdbc.execute("alter sequence seq_folio_cot restart");
+        jdbc.execute("alter sequence seq_folio_fac restart");
     }
 
     private static EmbeddedPostgres iniciarPostgres() {
