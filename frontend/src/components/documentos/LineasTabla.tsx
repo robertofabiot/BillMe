@@ -1,7 +1,7 @@
 import { formatCurrency } from '@/lib/format'
-import { calcularLinea, type LineaForm } from './lineaForm'
+import { calcularLinea, formatearTagPrecio, type LineaForm } from './lineaForm'
 import { Input } from '@/components/ui/input'
-import { X } from 'lucide-react'
+import { Calculator, Tag, X } from 'lucide-react'
 
 interface Props {
   lineas: LineaForm[]
@@ -11,11 +11,24 @@ interface Props {
   claveNueva: string | null
   onCambiar: (clave: string, cambios: Partial<LineaForm>) => void
   onQuitar: (clave: string) => void
+  onAbrirPrecio?: (clave: string) => void
+  onAbrirCalculadora?: (clave: string) => void
+  onBlurDescripcion?: (clave: string) => void
 }
 
 const CELDA = 'h-8 px-2 text-sm'
 
-export function LineasTabla({ lineas, verEntrega, soloLectura, claveNueva, onCambiar, onQuitar }: Props) {
+export function LineasTabla({
+  lineas,
+  verEntrega,
+  soloLectura,
+  claveNueva,
+  onCambiar,
+  onQuitar,
+  onAbrirPrecio,
+  onAbrirCalculadora,
+  onBlurDescripcion,
+}: Props) {
   if (lineas.length === 0) {
     return (
       <p className="text-sm text-[#80727B] border border-dashed border-[#E5E7EB] rounded px-4 py-8 text-center">
@@ -31,9 +44,9 @@ export function LineasTabla({ lineas, verEntrega, soloLectura, claveNueva, onCam
           <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB] text-xs text-[#705D56]">
             <th className="text-left font-medium px-2 py-2 w-20">Cantidad</th>
             <th className="text-left font-medium px-2 py-2 min-w-[260px]">Descripción</th>
-            <th className="text-left font-medium px-2 py-2 w-24">Peso unit. (kg)</th>
+            <th className="text-left font-medium px-2 py-2 w-32">Peso unit. (kg)</th>
             <th className="text-right font-medium px-2 py-2 w-24">Peso total (kg)</th>
-            <th className="text-left font-medium px-2 py-2 w-28">Precio unit. C$</th>
+            <th className="text-left font-medium px-2 py-2 w-36">Precio unit. C$</th>
             <th className="text-right font-medium px-2 py-2 w-28">Total C$</th>
             {verEntrega && <th className="text-left font-medium px-2 py-2 w-36">Fecha de entrega</th>}
             {verEntrega && <th className="text-left font-medium px-2 py-2 w-40">Lugar de entrega</th>}
@@ -43,6 +56,7 @@ export function LineasTabla({ lineas, verEntrega, soloLectura, claveNueva, onCam
         <tbody>
           {lineas.map((l, i) => {
             const { total, pesoTotal } = calcularLinea(l)
+            const tag = formatearTagPrecio(l)
             return (
               <tr key={l.clave} className="border-b border-[#E5E7EB] last:border-b-0 align-top">
                 <td className="px-2 py-1.5">
@@ -62,30 +76,67 @@ export function LineasTabla({ lineas, verEntrega, soloLectura, claveNueva, onCam
                     maxLength={500}
                     placeholder={l.productoGenerico ? 'Escribe la descripción…' : undefined}
                     onChange={e => onCambiar(l.clave, { descripcion: e.target.value })}
+                    onBlur={() => onBlurDescripcion?.(l.clave)}
                     className={CELDA}
                   />
                   {!l.productoGenerico && <p className="text-[11px] text-[#80727B] font-mono mt-0.5 px-1">{l.productoCodigo}</p>}
                 </td>
                 <td className="px-2 py-1.5">
-                  <Input
-                    aria-label={`Peso unitario de la línea ${i + 1}`}
-                    type="number" min="0" step="any"
-                    value={l.pesoUnitKg}
-                    onChange={e => onCambiar(l.clave, { pesoUnitKg: e.target.value })}
-                    className={CELDA}
-                  />
+                  <div className="flex items-center gap-1">
+                    <Input
+                      aria-label={`Peso unitario de la línea ${i + 1}`}
+                      type="number" min="0" step="any"
+                      value={l.pesoUnitKg}
+                      onChange={e => onCambiar(l.clave, { pesoUnitKg: e.target.value })}
+                      className={CELDA}
+                    />
+                    {!soloLectura && onAbrirCalculadora && (
+                      <button
+                        type="button"
+                        aria-label={`Calcular peso de la línea ${i + 1}`}
+                        onClick={() => onAbrirCalculadora(l.clave)}
+                        className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#705D56]"
+                        title="Calcular peso"
+                      >
+                        <Calculator className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </td>
                 <td className="px-2 py-2.5 text-right text-[#705D56] whitespace-nowrap">
                   {pesoTotal === null ? '—' : pesoTotal.toFixed(2)}
                 </td>
                 <td className="px-2 py-1.5">
-                  <Input
-                    aria-label={`Precio unitario de la línea ${i + 1}`}
-                    type="number" min="0" step="any"
-                    value={l.precioUnit}
-                    onChange={e => onCambiar(l.clave, { precioUnit: e.target.value, metodoPrecio: 'MANUAL' })}
-                    className={CELDA}
-                  />
+                  <div className="flex items-center gap-1">
+                    <Input
+                      aria-label={`Precio unitario de la línea ${i + 1}`}
+                      type="number" min="0" step="any"
+                      value={l.precioUnit}
+                      onChange={e => onCambiar(l.clave, { precioUnit: e.target.value, metodoPrecio: 'MANUAL', parametros: null })}
+                      className={CELDA}
+                    />
+                    {!soloLectura && onAbrirPrecio && (
+                      <button
+                        type="button"
+                        aria-label={`Elegir precio de la línea ${i + 1}`}
+                        onClick={() => onAbrirPrecio(l.clave)}
+                        className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#705D56]"
+                        title="Elegir precio"
+                      >
+                        <Tag className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  {tag && (
+                    <div className="mt-1 flex flex-col text-[11px] leading-tight text-[#705D56]">
+                      <span>{tag.texto}</span>
+                      {tag.viejo && (
+                        <span className="text-amber-600 font-medium">
+                          Tiene {tag.dias} días: revísalo
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </td>
                 <td className="px-2 py-2.5 text-right font-semibold text-[#022F40] whitespace-nowrap">
                   {formatCurrency(total)}

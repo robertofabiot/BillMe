@@ -81,11 +81,61 @@ export interface ReporteData {
   totalFacturas: number
 }
 
-export interface PrecioHistorial {
+export type UnidadLongitud = 'PULGADA' | 'PIE' | 'METRO' | 'CM' | 'MM'
+
+export interface Medida {
+  texto: string
+  unidad: UnidadLongitud
+}
+
+export interface CalculoPesoRequest {
+  forma: 'PLACA' | 'PLATINA' | 'ANGULAR'
+  ancho: Medida
+  largo: Medida
+  espesor: Medida
+  ala2?: Medida | null
+}
+
+export interface CalculoPesoResponse {
+  pesoUnitKg: number
+  descripcion: string
+}
+
+export interface PrecioCalculadoResponse {
+  precioUnit: number
+}
+
+export interface PrecioSugerido {
+  precioUnit?: number | null
+  origen?: 'ESTE_CLIENTE' | 'OTRO_CLIENTE' | null
+  clienteNombre?: string | null
+  folio?: string | null
+  fecha?: string | null
+  diasAntiguedad?: number | null
+  viejo?: boolean
+  precioLista?: number | null
+  descuentoPct?: number | null
+  precioFormula?: number | null
+  tarifaKgUsd?: number | null
+  origenTarifa?: 'ULTIMA' | 'CLIENTE' | 'CONFIGURACION' | null
+}
+
+export interface PrecioFormula {
+  precioLista: number
+  descuentoPct: number
+  precioUnit: number
+}
+
+export interface PrecioHistorialFila {
+  documentoId: string
   folio: string
+  tipo: TipoDocumento
   fecha: string
-  precioUnitario: number
+  clienteNombre: string
+  descripcion: string
   cantidad: number
+  precioUnit: number
+  viejo: boolean
 }
 
 // ─── Tipos de Autenticación ─────────────────────────────────────────────
@@ -161,6 +211,7 @@ export interface LineaDocumento {
   productoId: string
   productoCodigo: string
   productoGenerico: boolean
+  productoForma?: 'NINGUNA' | 'PLACA' | 'PLATINA' | 'ANGULAR'
   descripcion: string
   cantidad: number
   pesoUnitKg?: number | null
