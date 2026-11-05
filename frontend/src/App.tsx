@@ -7,6 +7,7 @@ import { LoginPage } from '@/pages/LoginPage'
 import { DocumentosPage } from '@/pages/DocumentosPage'
 import { DocumentoEditorPage } from '@/pages/DocumentoEditorPage'
 import { ClientesPage } from '@/pages/ClientesPage'
+import { ClienteDetallePage } from '@/pages/ClienteDetallePage'
 import { ProductosPage } from '@/pages/ProductosPage'
 import { ProyectosPage } from '@/pages/ProyectosPage'
 import { ReportesPage } from '@/pages/ReportesPage'
@@ -30,7 +31,8 @@ export default function App() {
                 <Route path="precios" element={<PreciosPage />} />
                 <Route path="documentos/nuevo" element={<DocumentoEditorPage />} />
                 <Route path="documentos/:id" element={<DocumentoEditorPage />} />
-                <Route path="clientes"  element={<ClientesPage />}  />
+                <Route path="clientes"      element={<ClientesPage />}  />
+                <Route path="clientes/:id"  element={<ClienteDetallePage />} />
                 <Route path="productos" element={<ProductosPage />} />
                 <Route path="proyectos" element={<ProyectosPage />} />
                 <Route path="consolidados" element={<ConsolidadosPage />} />

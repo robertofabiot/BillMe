@@ -49,4 +49,21 @@ public interface DocumentoRepository extends JpaRepository<Documento, UUID> {
 
     @Query(value = "select nextval('seq_folio_fac')", nativeQuery = true)
     long siguienteFolioFactura();
+
+    @Query("SELECT d FROM Documento d WHERE d.cliente.id = :clienteId " +
+           "AND d.tipo = com.example.billme.enums.TipoDocumento.FACTURA " +
+           "AND d.estado = com.example.billme.enums.EstadoDocumento.ACTIVA AND d.importKey IS NULL " +
+           "AND (cast(:proyectoId as uuid) IS NULL OR d.proyecto.id = :proyectoId) " +
+           "AND (cast(:desde as date) IS NULL OR d.fecha >= :desde) " +
+           "AND (cast(:hasta as date) IS NULL OR d.fecha <= :hasta) " +
+           "ORDER BY d.fecha ASC, d.createdAt ASC")
+    List<Documento> facturasDeCuenta(@Param("clienteId") UUID clienteId, @Param("proyectoId") UUID proyectoId,
+                                     @Param("desde") LocalDate desde, @Param("hasta") LocalDate hasta);
+
+    @Query(value = "SELECT d.cliente_id AS clienteid, COALESCE(SUM(d.total), 0) AS suma " +
+                   "FROM documentos d JOIN clientes c ON c.id = d.cliente_id " +
+                   "WHERE d.tipo = 'FACTURA' AND d.estado = 'ACTIVA' AND d.import_key IS NULL " +
+                   "AND (c.fecha_inicio_cuenta IS NULL OR d.fecha >= c.fecha_inicio_cuenta) " +
+                   "GROUP BY d.cliente_id", nativeQuery = true)
+    List<SumaPorCliente> sumaFacturasPorCliente();
 }

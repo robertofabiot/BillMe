@@ -6,6 +6,10 @@ import java.util.UUID;
 
 public record AbonoResponse(
         UUID id,
+        UUID clienteId,
+        UUID proyectoId,
+        String proyectoNombre,
         BigDecimal monto,
-        LocalDate fechaPago
+        LocalDate fechaPago,
+        String nota
 ) {}

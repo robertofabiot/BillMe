@@ -2,7 +2,6 @@ package com.example.billme.service;
 
 import com.example.billme.calculo.CalculoDocumento;
 import com.example.billme.calculo.CalculoDocumento.LineaCalculada;
-import com.example.billme.dto.AbonoResponse;
 import com.example.billme.dto.DocumentoRequest;
 import com.example.billme.dto.DocumentoResponse;
 import com.example.billme.dto.LineaRequest;
@@ -14,7 +13,6 @@ import com.example.billme.enums.TipoDocumento;
 import com.example.billme.exportacion.ArchivoExcel;
 import com.example.billme.exportacion.DocumentoExcel;
 import com.example.billme.exportacion.NombreArchivo;
-import com.example.billme.model.Abono;
 import com.example.billme.model.Cliente;
 import com.example.billme.model.Documento;
 import com.example.billme.model.DocumentoLinea;
@@ -224,9 +222,6 @@ public class DocumentoService {
         if (documento.getTipo() != TipoDocumento.FACTURA || documento.getEstado() != EstadoDocumento.ACTIVA) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo se puede anular una factura activa");
         }
-        if (!documento.getAbonos().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "No se puede anular una factura con abonos registrados");
-        }
         documento.setEstado(EstadoDocumento.ANULADA);
         return toResponse(documento, null);
     }
@@ -350,7 +345,6 @@ public class DocumentoService {
     }
 
     private DocumentoResponse toResponse(Documento d, Documento facturaGenerada) {
-        BigDecimal abonado = d.getAbonos().stream().map(Abono::getMonto).reduce(BigDecimal.ZERO, BigDecimal::add);
         Documento origen = d.getCotizacionOrigen();
         return new DocumentoResponse(
                 d.getId(),
@@ -371,9 +365,6 @@ public class DocumentoService {
                 facturaGenerada != null ? facturaGenerada.getId() : null,
                 facturaGenerada != null ? facturaGenerada.getFolio() : null,
                 d.getLineas().stream().map(this::toLineaResponse).toList(),
-                d.getAbonos().stream().map(a -> new AbonoResponse(a.getId(), a.getMonto(), a.getFechaPago())).toList(),
-                abonado,
-                d.getTipo() == TipoDocumento.FACTURA ? d.getTotal().subtract(abonado) : null,
                 d.getCreatedAt(),
                 d.getUpdatedAt());
     }

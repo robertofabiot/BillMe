@@ -1,14 +1,11 @@
 package com.example.billme.controller;
 
-import com.example.billme.dto.AbonoRequest;
-import com.example.billme.dto.AbonoResponse;
 import com.example.billme.dto.CambioEstadoRequest;
 import com.example.billme.dto.DocumentoRequest;
 import com.example.billme.dto.DocumentoResponse;
 import com.example.billme.dto.RevisionResponse;
 import com.example.billme.enums.EstadoDocumento;
 import com.example.billme.enums.TipoDocumento;
-import com.example.billme.service.AbonoService;
 import com.example.billme.service.DocumentoService;
 import com.example.billme.exportacion.ArchivoExcel;
 import jakarta.validation.Valid;
@@ -31,7 +28,6 @@ import java.util.UUID;
 public class DocumentoController {
 
     private final DocumentoService documentoService;
-    private final AbonoService abonoService;
 
     @GetMapping
     public ResponseEntity<List<DocumentoResponse>> listar(
@@ -93,15 +89,5 @@ public class DocumentoController {
     @PostMapping("/{id}/anular")
     public ResponseEntity<DocumentoResponse> anular(@PathVariable UUID id) {
         return ResponseEntity.ok(documentoService.anular(id));
-    }
-
-    @GetMapping("/{id}/abonos")
-    public ResponseEntity<List<AbonoResponse>> listarAbonos(@PathVariable UUID id) {
-        return ResponseEntity.ok(abonoService.listarPorDocumento(id));
-    }
-
-    @PostMapping("/{id}/abonos")
-    public ResponseEntity<AbonoResponse> registrarAbono(@PathVariable UUID id, @Valid @RequestBody AbonoRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(abonoService.registrarAbono(id, request));
     }
 }

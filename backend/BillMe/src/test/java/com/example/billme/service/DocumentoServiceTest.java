@@ -1,6 +1,5 @@
 package com.example.billme.service;
 
-import com.example.billme.dto.AbonoRequest;
 import com.example.billme.dto.ClienteRequest;
 import com.example.billme.dto.ClienteResponse;
 import com.example.billme.dto.DocumentoRequest;
@@ -14,7 +13,13 @@ import com.example.billme.dto.RevisionResponse;
 import com.example.billme.enums.EstadoDocumento;
 import com.example.billme.enums.MetodoPrecio;
 import com.example.billme.enums.TipoDocumento;
+import com.example.billme.model.Abono;
+import com.example.billme.model.DocumentoRevision;
 import com.example.billme.model.Usuario;
+import com.example.billme.repository.AbonoRepository;
+import com.example.billme.repository.ClienteRepository;
+import com.example.billme.repository.DocumentoRepository;
+import com.example.billme.repository.DocumentoRevisionRepository;
 import com.example.billme.repository.ProductoRepository;
 import com.example.billme.repository.UsuarioRepository;
 import com.example.billme.support.IntegrationTest;
@@ -58,7 +63,16 @@ class DocumentoServiceTest extends IntegrationTest {
     ProductoRepository productoRepository;
 
     @Autowired
-    AbonoService abonoService;
+    AbonoRepository abonoRepository;
+
+    @Autowired
+    ClienteRepository clienteRepository;
+
+    @Autowired
+    DocumentoRepository documentoRepository;
+
+    @Autowired
+    DocumentoRevisionRepository revisionRepository;
 
     @Autowired
     ReporteService reporteService;
@@ -234,11 +248,49 @@ class DocumentoServiceTest extends IntegrationTest {
     }
 
     @Test
-    void noSeAnulaUnaFacturaConAbonos() {
+    void anularFacturaActivaConAbonosSeAnula() {
         DocumentoResponse factura = crear(TipoDocumento.FACTURA);
-        abonoService.registrarAbono(factura.id(), new AbonoRequest(new BigDecimal("100"), FECHA));
+        abonoRepository.save(Abono.builder()
+                .cliente(clienteRepository.findById(cliente.id()).orElseThrow())
+                .monto(new BigDecimal("100.00"))
+                .fechaPago(FECHA)
+                .build());
 
-        assertEstado(HttpStatus.CONFLICT, () -> documentoService.anular(factura.id()));
+        assertThat(documentoService.anular(factura.id()).estado()).isEqualTo("ANULADA");
+    }
+
+    @Test
+    void revisionConCamposAntiguosDeAbonosSeLeeCorrectamente() {
+        DocumentoResponse factura = crear(TipoDocumento.FACTURA);
+        String snapshotConCamposAntiguos = """
+                {
+                  "id": "%s",
+                  "tipo": "FACTURA",
+                  "folio": "%s",
+                  "estado": "ACTIVA",
+                  "fecha": "%s",
+                  "clienteId": "%s",
+                  "clienteNombre": "Cliente de prueba",
+                  "total": 100.00,
+                  "totalKg": 0.00,
+                  "mostrarEntrega": false,
+                  "lineas": [],
+                  "abonos": [{"id": "%s", "monto": 50.00, "fechaPago": "%s"}],
+                  "totalAbonado": 50.00,
+                  "saldoPendiente": 50.00,
+                  "createdAt": "2026-11-05T00:00:00Z"
+                }
+                """.formatted(factura.id(), factura.folio(), FECHA, cliente.id(), UUID.randomUUID(), FECHA);
+
+        revisionRepository.save(DocumentoRevision.builder()
+                .documento(documentoRepository.findById(factura.id()).orElseThrow())
+                .numero(1)
+                .snapshot(snapshotConCamposAntiguos)
+                .build());
+
+        List<RevisionResponse> revisiones = documentoService.revisiones(factura.id());
+        assertThat(revisiones).hasSize(1);
+        assertThat(revisiones.get(0).documento().total()).isEqualByComparingTo("100.00");
     }
 
     // ── Edición ──────────────────────────────────────────────────────────────
@@ -343,19 +395,16 @@ class DocumentoServiceTest extends IntegrationTest {
     // ── Consultas, abonos y reportes (con open-in-view desactivado) ──────────
 
     @Test
-    void listarIncluyeLineasProyectoYAbonos() {
+    void listarIncluyeLineasYProyecto() {
         var proyecto = proyectoService.crear(new ProyectoRequest(cliente.id(), "Obra centro", null));
-        DocumentoResponse factura = documentoService.crear(new DocumentoRequest(TipoDocumento.FACTURA, cliente.id(), proyecto.id(),
+        documentoService.crear(new DocumentoRequest(TipoDocumento.FACTURA, cliente.id(), proyecto.id(),
                 FECHA, null, false, List.of(linea(tubo.id(), "2", "1500"))));
-        abonoService.registrarAbono(factura.id(), new AbonoRequest(new BigDecimal("1000"), FECHA));
 
         DocumentoResponse listada = documentoService.filtrar(null, null, null, null, null, null, null).get(0);
 
         assertThat(listada.proyectoNombre()).isEqualTo("Obra centro");
         assertThat(listada.lineas()).hasSize(1);
         assertThat(listada.total()).isEqualByComparingTo("3000");
-        assertThat(listada.totalAbonado()).isEqualByComparingTo("1000");
-        assertThat(listada.saldoPendiente()).isEqualByComparingTo("2000");
     }
 
     @Test
@@ -374,8 +423,12 @@ class DocumentoServiceTest extends IntegrationTest {
     @Test
     void elReporteSoloCuentaFacturasActivas() {
         crear(TipoDocumento.COTIZACION);
-        DocumentoResponse factura = crear(TipoDocumento.FACTURA);
-        abonoService.registrarAbono(factura.id(), new AbonoRequest(new BigDecimal("40"), FECHA));
+        crear(TipoDocumento.FACTURA);
+        abonoRepository.save(Abono.builder()
+                .cliente(clienteRepository.findById(cliente.id()).orElseThrow())
+                .monto(new BigDecimal("40"))
+                .fechaPago(FECHA)
+                .build());
 
         var reporte = reporteService.generarReporte(null, null, null, null);
 
@@ -383,15 +436,6 @@ class DocumentoServiceTest extends IntegrationTest {
         assertThat(reporte.ingresosTotales()).isEqualByComparingTo("100");
         assertThat(reporte.totalCobrado()).isEqualByComparingTo("40");
         assertThat(reporte.porCobrar()).isEqualByComparingTo("60");
-    }
-
-    @Test
-    void losAbonosSoloVanAFacturasActivasYSinPasarseDelSaldo() {
-        DocumentoResponse cotizacion = crear(TipoDocumento.COTIZACION);
-        DocumentoResponse factura = crear(TipoDocumento.FACTURA);
-
-        assertEstado(HttpStatus.BAD_REQUEST, () -> abonoService.registrarAbono(cotizacion.id(), new AbonoRequest(BigDecimal.TEN, FECHA)));
-        assertEstado(HttpStatus.BAD_REQUEST, () -> abonoService.registrarAbono(factura.id(), new AbonoRequest(new BigDecimal("101"), FECHA)));
     }
 
     @Test

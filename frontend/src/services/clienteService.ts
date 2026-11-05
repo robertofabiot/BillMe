@@ -1,5 +1,5 @@
 import { api } from './api'
-import type { Cliente } from '@/types'
+import type { Cliente, CuentaCliente } from '@/types'
 
 export interface ClientePayload {
   nombre: string
@@ -7,6 +7,8 @@ export interface ClientePayload {
   detalles?: string
   descuentoPct?: number
   tarifaKgUsd?: number | null
+  saldoInicial?: number
+  fechaInicioCuenta?: string | null
 }
 
 export const clienteService = {
@@ -15,6 +17,9 @@ export const clienteService = {
 
   obtener: (id: string) =>
     api.get<Cliente>(`/clientes/${id}`),
+
+  cuenta: (id: string) =>
+    api.get<CuentaCliente>(`/clientes/${id}/cuenta`),
 
   crear: (data: ClientePayload) =>
     api.post<Cliente>('/clientes', data),

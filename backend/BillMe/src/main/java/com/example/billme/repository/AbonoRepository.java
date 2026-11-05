@@ -6,17 +6,26 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 public interface AbonoRepository extends JpaRepository<Abono, UUID> {
 
-    List<Abono> findByDocumentoId(UUID documentoId);
+    boolean existsByClienteId(UUID clienteId);
 
-    /**
-     * Suma total abonado a una factura.
-     * Usada para calcular el saldo pendiente sin cargar todos los objetos.
-     */
-    @Query("SELECT COALESCE(SUM(a.monto), 0) FROM Abono a WHERE a.documento.id = :documentoId")
-    BigDecimal sumMontoByDocumentoId(@Param("documentoId") UUID documentoId);
+    List<Abono> findByClienteIdOrderByFechaPagoAscCreatedAtAsc(UUID clienteId);
+
+    @Query("SELECT COALESCE(SUM(a.monto), 0) FROM Abono a WHERE (cast(:clienteId as uuid) IS NULL OR a.cliente.id = :clienteId) " +
+           "AND (cast(:proyectoId as uuid) IS NULL OR a.proyecto.id = :proyectoId) " +
+           "AND (cast(:desde as date) IS NULL OR a.fechaPago >= :desde) " +
+           "AND (cast(:hasta as date) IS NULL OR a.fechaPago <= :hasta)")
+    BigDecimal sumar(@Param("clienteId") UUID clienteId, @Param("proyectoId") UUID proyectoId,
+                     @Param("desde") LocalDate desde, @Param("hasta") LocalDate hasta);
+
+    @Query(value = "SELECT a.cliente_id AS clienteid, COALESCE(SUM(a.monto), 0) AS suma " +
+                   "FROM abonos a JOIN clientes c ON c.id = a.cliente_id " +
+                   "WHERE (c.fecha_inicio_cuenta IS NULL OR a.fecha_pago >= c.fecha_inicio_cuenta) " +
+                   "GROUP BY a.cliente_id", nativeQuery = true)
+    List<SumaPorCliente> sumaAbonosPorCliente();
 }

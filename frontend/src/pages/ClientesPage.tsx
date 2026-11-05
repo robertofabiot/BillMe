@@ -1,14 +1,13 @@
 import { useState, useMemo, useEffect, type ChangeEvent } from 'react'
-import type { Cliente, Documento } from '@/types'
+import { useNavigate } from 'react-router-dom'
+import type { Cliente } from '@/types'
 import { clienteService } from '@/services/clienteService'
-import { documentoService } from '@/services/documentoService'
-import { formatCurrency } from '@/lib/format'
+import { formatCurrency, textoSaldo } from '@/lib/format'
 import { ClienteModal } from '@/components/clientes/ClienteModal'
-import { ClienteDetailSheet } from '@/components/clientes/ClienteDetailSheet'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
-  Users, Plus, Search, TrendingUp, Banknote, UserCheck,
+  Users, Plus, Search, UserCheck, Clock,
 } from 'lucide-react'
 
 function StatCard({ icon: Icon, label, value, accent }: {
@@ -28,47 +27,37 @@ function StatCard({ icon: Icon, label, value, accent }: {
 }
 
 export function ClientesPage() {
-  const [clientes, setClientes]         = useState<Cliente[]>([])
-  const [facturas, setFacturas]         = useState<Documento[]>([])
-  const [loading, setLoading]           = useState(true)
-  const [error, setError]               = useState<string | null>(null)
-  const [selected, setSelected]         = useState<Cliente | null>(null)
-  const [editTarget, setEditTarget]     = useState<Cliente | null>(null)
-  const [showModal, setShowModal]       = useState(false)
-  const [search, setSearch]             = useState('')
+  const navigate = useNavigate()
+  const [clientes, setClientes]   = useState<Cliente[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState<string | null>(null)
+  const [showModal, setShowModal] = useState(false)
+  const [search, setSearch]       = useState('')
+
+  const cargarClientes = async () => {
+    try {
+      setLoading(true)
+      const data = await clienteService.listar()
+      setClientes(data)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al cargar datos')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true)
-        const [clientesData, facturasData] = await Promise.all([
-          clienteService.listar(),
-          documentoService.listar({ tipo: 'FACTURA', estado: 'ACTIVA' })
-        ])
-        setClientes(clientesData)
-        setFacturas(facturasData)
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Error al cargar datos')
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
+    cargarClientes()
   }, [])
 
   /* ── Stats ── */
   const stats = useMemo(() => {
-    const conPendientes = new Set(
-      facturas
-        .filter(f => (f.saldoPendiente ?? 0) > 0)
-        .map(f => f.clienteId)
-    ).size
-    const totalFacturado = facturas.reduce((s, f) => s + f.total, 0)
-    const totalCobrado   = facturas.reduce((s, f) =>
-      s + f.abonos.reduce((a, b) => a + b.monto, 0), 0
-    )
-    return { total: clientes.length, conPendientes, totalFacturado, totalCobrado }
-  }, [clientes, facturas])
+    const conPendientes = clientes.filter(c => (c.saldo ?? 0) > 0).length
+    const totalPorCobrar = clientes
+      .filter(c => (c.saldo ?? 0) > 0)
+      .reduce((s, c) => s + (c.saldo ?? 0), 0)
+    return { total: clientes.length, conPendientes, totalPorCobrar }
+  }, [clientes])
 
   /* ── Filter ── */
   const filtered = useMemo(() => {
@@ -78,16 +67,8 @@ export function ClientesPage() {
     )
   }, [clientes, search])
 
-  /* ── Helpers ── */
-  const facturasPorCliente = (clienteId: string) =>
-    facturas.filter(f => f.clienteId === clienteId)
-
-  const totalPorCliente = (clienteId: string) =>
-    facturasPorCliente(clienteId).reduce((s, f) => s + f.total, 0)
-
   /* ── Handlers ── */
-  const openCreate = () => { setEditTarget(null); setShowModal(true) }
-  const openEdit   = (c: Cliente) => { setEditTarget(c); setShowModal(true); setSelected(null) }
+  const openCreate = () => { setShowModal(true) }
 
   const handleSave = async (data: Omit<Cliente, 'id'> & { id?: string }) => {
     try {
@@ -96,8 +77,7 @@ export function ClientesPage() {
       } else {
         await clienteService.crear(data)
       }
-      const newData = await clienteService.listar()
-      setClientes(newData)
+      await cargarClientes()
     } catch (e) {
       console.error(e)
     }
@@ -123,7 +103,7 @@ export function ClientesPage() {
           <h1 className="text-xl font-semibold text-[#022F40] flex items-center gap-2">
             <Users className="w-5 h-5" /> Clientes
           </h1>
-          <p className="text-sm text-[#705D56] mt-0.5">Directorio y historial de compras</p>
+          <p className="text-sm text-[#705D56] mt-0.5">Directorio y cuentas corrientes</p>
         </div>
         <Button
           onClick={openCreate}
@@ -134,11 +114,10 @@ export function ClientesPage() {
       </div>
 
       {/* ── Stats ── */}
-      <div className="grid grid-cols-4 gap-4">
-        <StatCard icon={Users}     label="Total Clientes"           value={String(stats.total)} />
-        <StatCard icon={UserCheck} label="Con Facturas Pendientes"   value={String(stats.conPendientes)} />
-        <StatCard icon={TrendingUp} label="Total Facturado"          value={formatCurrency(stats.totalFacturado)} accent="bg-[#022F40]" />
-        <StatCard icon={Banknote}  label="Total Cobrado"             value={formatCurrency(stats.totalCobrado)}   accent="bg-[#558564]" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatCard icon={Users}     label="Total clientes"        value={String(stats.total)} />
+        <StatCard icon={UserCheck} label="Con saldo pendiente"   value={String(stats.conPendientes)} />
+        <StatCard icon={Clock}     label="Total por cobrar"      value={formatCurrency(stats.totalPorCobrar)} accent="bg-[#022F40]" />
       </div>
 
       {/* ── Search ── */}
@@ -161,23 +140,21 @@ export function ClientesPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(cliente => {
-            const facturas   = facturasPorCliente(cliente.id)
-            const total      = totalPorCliente(cliente.id)
-            const pendientes = facturas.filter(f => (f.saldoPendiente ?? 0) > 0).length
-            const inicial    = cliente.nombre.charAt(0).toUpperCase()
+            const inicial = cliente.nombre.charAt(0).toUpperCase()
+            const saldo = cliente.saldo ?? 0
 
             return (
               <button
                 key={cliente.id}
-                onClick={() => setSelected(cliente)}
-                className="bg-white border border-[#E5E7EB] rounded p-4 text-left hover:border-[#022F40]/20 hover:shadow-sm transition-all group flex flex-col gap-3"
+                onClick={() => navigate(`/clientes/${cliente.id}`)}
+                className="bg-white border border-[#E5E7EB] rounded p-4 text-left hover:border-[#022F40]/40 hover:shadow-sm transition-all group flex flex-col gap-3"
               >
                 {/* Avatar + nombre */}
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded bg-[#022F40] flex items-center justify-center shrink-0">
                     <span className="text-[#91E5F6] font-bold text-sm">{inicial}</span>
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-[#022F40] truncate group-hover:text-[#022F40]">
                       {cliente.nombre}
                     </p>
@@ -194,24 +171,20 @@ export function ClientesPage() {
                 {/* Divider */}
                 <div className="h-px bg-[#E5E7EB]" />
 
-                {/* Stats row */}
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <p className="text-[10px] text-[#80727B] uppercase tracking-wide">Facturas</p>
-                    <p className="text-sm font-bold text-[#022F40]">{facturas.length}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-[#80727B] uppercase tracking-wide">Pendientes</p>
-                    <p className={`text-sm font-bold ${pendientes > 0 ? 'text-amber-600' : 'text-[#80727B]'}`}>
-                      {pendientes}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-[#80727B] uppercase tracking-wide">Facturado</p>
-                    <p className="text-xs font-bold text-[#022F40]">
-                      {total > 0 ? formatCurrency(total) : '—'}
-                    </p>
-                  </div>
+                {/* Saldo row */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#705D56]">Estado:</span>
+                  <span
+                    className={`text-sm font-bold ${
+                      saldo > 0
+                        ? 'text-[#022F40]'
+                        : saldo < 0
+                          ? 'text-[#558564]'
+                          : 'text-[#558564]'
+                    }`}
+                  >
+                    {textoSaldo(saldo)}
+                  </span>
                 </div>
               </button>
             )
@@ -223,14 +196,7 @@ export function ClientesPage() {
       <ClienteModal
         open={showModal}
         onOpenChange={setShowModal}
-        initial={editTarget}
         onSave={handleSave}
-      />
-      <ClienteDetailSheet
-        cliente={selected}
-        open={selected !== null}
-        onOpenChange={v => { if (!v) setSelected(null) }}
-        onEdit={openEdit}
       />
     </div>
   )

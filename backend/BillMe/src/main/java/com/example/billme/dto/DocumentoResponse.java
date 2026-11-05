@@ -1,11 +1,14 @@
 package com.example.billme.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record DocumentoResponse(
         UUID id,
         String tipo,
@@ -27,10 +30,6 @@ public record DocumentoResponse(
         UUID facturaGeneradaId,
         String facturaGeneradaFolio,
         List<LineaResponse> lineas,
-        List<AbonoResponse> abonos,
-        BigDecimal totalAbonado,
-        /** Solo en facturas. */
-        BigDecimal saldoPendiente,
         Instant createdAt,
         Instant updatedAt
 ) {}

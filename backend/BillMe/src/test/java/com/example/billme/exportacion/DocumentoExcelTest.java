@@ -302,7 +302,7 @@ class DocumentoExcelTest {
     @DisplayName("DocumentoController exportarExcel retorna ResponseEntity con headers y body correctos")
     void controllerExportarExcel() {
         DocumentoService service = Mockito.mock(DocumentoService.class);
-        DocumentoController controller = new DocumentoController(service, null);
+        DocumentoController controller = new DocumentoController(service);
         UUID id = UUID.randomUUID();
         byte[] bytes = new byte[]{1, 2, 3};
         Mockito.when(service.exportarExcel(id, "Mi Encabezado"))

@@ -44,3 +44,19 @@ export function formatFechaCorta(fecha: string): string {
   return fecha
 }
 
+/**
+ * Muestra el estado del saldo de la cuenta:
+ * - Debe C$X cuando es positivo.
+ * - Saldo a favor C$X cuando es negativo.
+ * - Al día cuando es cero o nulo.
+ */
+export function textoSaldo(saldo?: number | null): string {
+  if (saldo == null || saldo === 0) return 'Al día'
+  const formatted = Math.abs(saldo).toLocaleString('es-NI', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+  if (saldo > 0) return `Debe C$${formatted}`
+  return `Saldo a favor C$${formatted}`
+}
+

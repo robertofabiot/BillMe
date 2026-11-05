@@ -7,9 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * Pago parcial o total registrado contra una factura.
- * Una factura puede acumular múltiples abonos hasta cubrir su total.
- * (La columna sigue llamándose factura_id; los abonos pasarán a la cuenta del cliente.)
+ * Pago registrado a la cuenta del cliente (con proyecto opcional).
  */
 @Entity
 @Table(name = "abonos")
@@ -20,7 +18,7 @@ import java.time.LocalDate;
 @Builder
 public class Abono extends BaseEntity {
 
-    @Column(name = "monto", nullable = false, precision = 12, scale = 2)
+    @Column(name = "monto", nullable = false, precision = 14, scale = 2)
     private BigDecimal monto;
 
     /**
@@ -29,9 +27,16 @@ public class Abono extends BaseEntity {
     @Column(name = "fecha_pago", nullable = false)
     private LocalDate fechaPago;
 
+    @Column(name = "nota", columnDefinition = "TEXT")
+    private String nota;
+
     // ── Relaciones ──────────────────────────────────────────────────────────
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "factura_id", nullable = false)
-    private Documento documento;
+    @JoinColumn(name = "cliente_id", nullable = false)
+    private Cliente cliente;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "proyecto_id")
+    private Proyecto proyecto;
 }
