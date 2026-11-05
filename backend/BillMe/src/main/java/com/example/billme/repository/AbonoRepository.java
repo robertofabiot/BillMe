@@ -22,4 +22,10 @@ public interface AbonoRepository extends JpaRepository<Abono, UUID> {
            "AND (cast(:hasta as date) IS NULL OR a.fechaPago <= :hasta)")
     BigDecimal sumar(@Param("clienteId") UUID clienteId, @Param("proyectoId") UUID proyectoId,
                      @Param("desde") LocalDate desde, @Param("hasta") LocalDate hasta);
+
+    @Query(value = "SELECT a.cliente_id AS clienteid, COALESCE(SUM(a.monto), 0) AS suma " +
+                   "FROM abonos a JOIN clientes c ON c.id = a.cliente_id " +
+                   "WHERE (c.fecha_inicio_cuenta IS NULL OR a.fecha_pago >= c.fecha_inicio_cuenta) " +
+                   "GROUP BY a.cliente_id", nativeQuery = true)
+    List<SumaPorCliente> sumaAbonosPorCliente();
 }

@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -27,23 +28,26 @@ public class ClienteService {
     private final DocumentoRepository documentoRepository;
     private final ConsolidadoRepository consolidadoRepository;
     private final AbonoRepository abonoRepository;
+    private final CuentaClienteService cuentaClienteService;
 
     public List<ClienteResponse> listarTodos() {
+        Map<UUID, BigDecimal> saldos = cuentaClienteService.saldos();
         return clienteRepository.findAll().stream()
-                .map(this::toResponse)
+                .map(c -> toResponse(c, saldos.getOrDefault(c.getId(), BigDecimal.ZERO)))
                 .collect(Collectors.toList());
     }
 
     public List<ClienteResponse> buscar(String q) {
+        Map<UUID, BigDecimal> saldos = cuentaClienteService.saldos();
         return clienteRepository.buscar(q).stream()
-                .map(this::toResponse)
+                .map(c -> toResponse(c, saldos.getOrDefault(c.getId(), BigDecimal.ZERO)))
                 .collect(Collectors.toList());
     }
 
     public ClienteResponse obtenerPorId(UUID id) {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
-        return toResponse(cliente);
+        return toResponse(cliente, cuentaClienteService.cuenta(id).saldo());
     }
 
     @Transactional
@@ -57,7 +61,7 @@ public class ClienteService {
         cliente.setSaldoInicial(request.saldoInicial() != null ? request.saldoInicial() : BigDecimal.ZERO);
         cliente.setFechaInicioCuenta(request.fechaInicioCuenta());
         cliente = clienteRepository.save(cliente);
-        return toResponse(cliente);
+        return toResponse(cliente, cliente.getSaldoInicial());
     }
 
     @Transactional
@@ -72,7 +76,7 @@ public class ClienteService {
         cliente.setSaldoInicial(request.saldoInicial() != null ? request.saldoInicial() : BigDecimal.ZERO);
         cliente.setFechaInicioCuenta(request.fechaInicioCuenta());
         cliente = clienteRepository.save(cliente);
-        return toResponse(cliente);
+        return toResponse(cliente, cuentaClienteService.cuenta(id).saldo());
     }
 
     @Transactional
@@ -89,7 +93,7 @@ public class ClienteService {
         clienteRepository.deleteById(id);
     }
 
-    private ClienteResponse toResponse(Cliente entity) {
+    private ClienteResponse toResponse(Cliente entity, BigDecimal saldo) {
         return new ClienteResponse(
                 entity.getId(),
                 entity.getNombre(),
@@ -99,7 +103,8 @@ public class ClienteService {
                 entity.getDescuentoPct(),
                 entity.getTarifaKgUsd(),
                 entity.getSaldoInicial(),
-                entity.getFechaInicioCuenta()
+                entity.getFechaInicioCuenta(),
+                saldo
         );
     }
 }

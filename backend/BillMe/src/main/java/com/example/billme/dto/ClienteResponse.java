@@ -14,5 +14,6 @@ public record ClienteResponse(
         BigDecimal descuentoPct,
         BigDecimal tarifaKgUsd,
         BigDecimal saldoInicial,
-        LocalDate fechaInicioCuenta
+        LocalDate fechaInicioCuenta,
+        BigDecimal saldo
 ) {}
