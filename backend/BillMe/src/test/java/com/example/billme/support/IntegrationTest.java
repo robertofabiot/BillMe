@@ -40,7 +40,7 @@ public abstract class IntegrationTest {
     /** Vacía los datos de cada test; conserva lo que siembran las migraciones (genéricos, proveedores, configuración). */
     @BeforeEach
     void vaciarDatos() {
-        jdbc.execute("truncate table consolidado_grupos, consolidados, abonos, "
+        jdbc.execute("truncate table compras, consolidado_grupos, consolidados, abonos, "
                 + "documento_revisiones, documento_lineas, documentos, precios_lista, alias_productos, proyectos, "
                 + "clientes, usuarios cascade");
         jdbc.execute("delete from productos where not generico");

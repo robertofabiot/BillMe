@@ -80,6 +80,10 @@ public class DocumentoLinea extends BaseEntity {
     @JoinColumn(name = "producto_id", nullable = false)
     private Producto producto;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "compra_id")
+    private Compra compra;
+
     @PrePersist
     @PreUpdate
     void normalizar() {
