@@ -63,7 +63,7 @@ export function ReportesPage() {
   }, [desde, hasta, clienteId, proyectoId])
 
   return (
-    <div className="p-8 flex flex-col gap-6 w-full max-w-7xl mx-auto">
+    <div className="p-4 md:p-8 flex flex-col gap-6 w-full max-w-7xl mx-auto">
       {/* ── Encabezado ── */}
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl font-semibold text-[#022F40] flex items-center gap-2">

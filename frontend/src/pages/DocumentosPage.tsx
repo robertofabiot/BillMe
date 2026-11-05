@@ -58,7 +58,7 @@ export function DocumentosPage({ tipo }: { tipo: TipoDocumento }) {
   const Icono = textos.icono
 
   return (
-    <div className="p-8 flex flex-col gap-5">
+    <div className="p-4 md:p-8 flex flex-col gap-5">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold text-[#022F40] flex items-center gap-2">

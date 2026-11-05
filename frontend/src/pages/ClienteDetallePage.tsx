@@ -109,7 +109,7 @@ export function ClienteDetallePage() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center h-64">
+      <div className="p-4 md:p-8 flex items-center justify-center h-64">
         <div className="text-sm text-[#705D56]">Cargando cuenta del cliente…</div>
       </div>
     )
@@ -117,7 +117,7 @@ export function ClienteDetallePage() {
 
   if (error && !cliente) {
     return (
-      <div className="p-8 flex flex-col items-center justify-center h-64 gap-3">
+      <div className="p-4 md:p-8 flex flex-col items-center justify-center h-64 gap-3">
         <div className="text-sm text-red-600">{error}</div>
         <Link to="/clientes" className="text-xs text-[#022F40] underline">
           Volver a clientes
@@ -131,7 +131,7 @@ export function ClienteDetallePage() {
   const movimientosRecientes = [...cuenta.movimientos].reverse()
 
   return (
-    <div className="p-8 flex flex-col gap-6 max-w-5xl mx-auto">
+    <div className="p-4 md:p-8 flex flex-col gap-6 max-w-5xl mx-auto">
       {/* ── Breadcrumb / Volver ── */}
       <div>
         <Link

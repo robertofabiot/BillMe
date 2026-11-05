@@ -4,7 +4,7 @@ import { ImportarCotizacionesPanel } from '@/components/importacion/ImportarCoti
 
 export function ImportarPage() {
   return (
-    <div className="p-8 flex flex-col gap-6 max-w-4xl mx-auto w-full">
+    <div className="p-4 md:p-8 flex flex-col gap-6 max-w-4xl mx-auto w-full">
       <div>
         <h1 className="text-xl font-semibold text-[#022F40] flex items-center gap-2">
           <Upload className="w-5 h-5" /> Importar

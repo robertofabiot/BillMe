@@ -109,18 +109,18 @@ export function ProyectosPage() {
       .reduce((s, f) => s + f.total, 0)
 
   if (loading) return (
-    <div className="p-8 flex items-center justify-center h-64">
+    <div className="p-4 md:p-8 flex items-center justify-center h-64">
       <div className="text-sm text-[#705D56]">Cargando...</div>
     </div>
   )
   if (error) return (
-    <div className="p-8 flex items-center justify-center h-64">
+    <div className="p-4 md:p-8 flex items-center justify-center h-64">
       <div className="text-sm text-red-600">{error}</div>
     </div>
   )
 
   return (
-    <div className="p-8 flex flex-col gap-6">
+    <div className="p-4 md:p-8 flex flex-col gap-6">
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between">

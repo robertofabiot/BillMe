@@ -433,11 +433,11 @@ export function DocumentoEditorPage() {
   }
 
   if (cargando) {
-    return <div className="p-8 text-sm text-[#705D56]">Cargando…</div>
+    return <div className="p-4 md:p-8 text-sm text-[#705D56]">Cargando…</div>
   }
   if (id && !documento) {
     return (
-      <div className="p-8 flex flex-col gap-3 items-start">
+      <div className="p-4 md:p-8 flex flex-col gap-3 items-start">
         <p className="text-sm text-red-600">{aviso?.texto ?? 'No se encontró el documento.'}</p>
         <Button variant="outline" onClick={() => navigate(titulos.ruta)}>Volver a {titulos.lista}</Button>
       </div>
@@ -447,7 +447,7 @@ export function DocumentoEditorPage() {
   const Icono = tipo === 'COTIZACION' ? FileText : ReceiptText
 
   return (
-    <div className="p-8 flex flex-col gap-5 w-full max-w-7xl mx-auto">
+    <div className="p-4 md:p-8 flex flex-col gap-5 w-full max-w-7xl mx-auto">
       {/* ── Encabezado ── */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>

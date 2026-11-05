@@ -59,14 +59,14 @@ export function ConsolidadosPage() {
   }
 
   if (loading) {
-    return <div className="p-8 text-center text-[#705D56]">Cargando consolidados...</div>
+    return <div className="p-4 md:p-8 text-center text-[#705D56]">Cargando consolidados...</div>
   }
   if (error) {
-    return <div className="p-8 text-center text-red-500">{error}</div>
+    return <div className="p-4 md:p-8 text-center text-red-500">{error}</div>
   }
 
   return (
-    <div className="p-8 flex flex-col gap-6">
+    <div className="p-4 md:p-8 flex flex-col gap-6">
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
