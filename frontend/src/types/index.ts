@@ -198,6 +198,43 @@ export interface ImportacionLista {
   aplicada: boolean
 }
 
+export interface FilaProblema {
+  fila: number
+  motivo: string
+}
+
+export interface CandidatoConciliacion {
+  id: string
+  codigo: string
+  nombre: string
+}
+
+export interface PorConciliar {
+  descripcion: string
+  filas: number
+  propuestaProductoId: string
+  propuestaNombre: string
+  candidatos: CandidatoConciliacion[]
+}
+
+export interface ImportacionCotizaciones {
+  hoja: string
+  filasLeidas: number
+  filasNuevas: number
+  filasYaImportadas: number
+  facturasNuevas: number
+  facturasConLineasNuevas: number
+  clientesNuevos: string[]
+  filasIncompletas: FilaProblema[]
+  porConciliar: PorConciliar[]
+  aplicada: boolean
+}
+
+export interface DecisionConciliacion {
+  descripcion: string
+  productoId: string
+}
+
 // ─── Cotizaciones y facturas ────────────────────────────────────────────
 
 export type TipoDocumento = 'COTIZACION' | 'FACTURA'

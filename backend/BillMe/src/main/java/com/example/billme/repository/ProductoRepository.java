@@ -13,6 +13,8 @@ public interface ProductoRepository extends JpaRepository<Producto, UUID> {
 
     Optional<Producto> findByCodigoInterno(String codigoInterno);
 
+    Optional<Producto> findFirstByNombreNormAndActivoTrue(String nombreNorm);
+
     boolean existsByCodigoInterno(String codigoInterno);
 
     List<Producto> findByCodigoInternoIn(java.util.Collection<String> codigos);

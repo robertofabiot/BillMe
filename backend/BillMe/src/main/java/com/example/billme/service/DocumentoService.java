@@ -236,14 +236,14 @@ public class DocumentoService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Documento no encontrado"));
     }
 
-    private String siguienteFolio(TipoDocumento tipo) {
+    String siguienteFolio(TipoDocumento tipo) {
         return tipo == TipoDocumento.COTIZACION
                 ? "COT-%04d".formatted(documentoRepository.siguienteFolioCotizacion())
                 : "FAC-%04d".formatted(documentoRepository.siguienteFolioFactura());
     }
 
     /** El usuario en sesión; null si no corresponde a un usuario guardado. */
-    private Usuario usuarioActual() {
+    Usuario usuarioActual() {
         Authentication sesion = SecurityContextHolder.getContext().getAuthentication();
         return sesion == null ? null : usuarioRepository.findByUsername(sesion.getName()).orElse(null);
     }

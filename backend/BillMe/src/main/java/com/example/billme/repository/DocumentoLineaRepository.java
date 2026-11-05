@@ -6,12 +6,17 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public interface DocumentoLineaRepository extends JpaRepository<DocumentoLinea, UUID> {
 
     boolean existsByProductoId(UUID productoId);
+
+    @Query("SELECT l.importKey FROM DocumentoLinea l WHERE l.importKey IN :keys")
+    Set<String> findImportKeysIn(@Param("keys") Collection<String> keys);
 
     @Query("SELECT l FROM DocumentoLinea l JOIN FETCH l.documento d JOIN FETCH d.cliente " +
            "WHERE l.producto.id = :productoId AND d.estado <> com.example.billme.enums.EstadoDocumento.ANULADA " +

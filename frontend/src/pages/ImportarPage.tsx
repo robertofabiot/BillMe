@@ -1,5 +1,6 @@
 import { Upload } from 'lucide-react'
 import { ImportarListaPanel } from '@/components/importacion/ImportarListaPanel'
+import { ImportarCotizacionesPanel } from '@/components/importacion/ImportarCotizacionesPanel'
 
 export function ImportarPage() {
   return (
@@ -12,6 +13,7 @@ export function ImportarPage() {
       </div>
 
       <ImportarListaPanel />
+      <ImportarCotizacionesPanel />
     </div>
   )
 }
