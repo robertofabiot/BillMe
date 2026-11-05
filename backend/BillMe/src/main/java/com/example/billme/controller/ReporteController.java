@@ -1,6 +1,6 @@
 package com.example.billme.controller;
 
-import com.example.billme.dto.ReporteResponse;
+import com.example.billme.dto.GananciasResponse;
 import com.example.billme.service.ReporteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -20,14 +20,12 @@ public class ReporteController {
 
     private final ReporteService reporteService;
 
-    @GetMapping("/general")
-    public ResponseEntity<ReporteResponse> general(
+    @GetMapping("/ganancias")
+    public ResponseEntity<GananciasResponse> ganancias(
             @RequestParam(required = false) UUID clienteId,
             @RequestParam(required = false) UUID proyectoId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
-        
-        ReporteResponse reporte = reporteService.generarReporte(clienteId, proyectoId, desde, hasta);
-        return ResponseEntity.ok(reporte);
+        return ResponseEntity.ok(reporteService.ganancias(clienteId, proyectoId, desde, hasta));
     }
 }
