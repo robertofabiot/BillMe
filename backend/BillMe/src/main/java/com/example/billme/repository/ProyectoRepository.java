@@ -5,9 +5,12 @@ import com.example.billme.model.Proyecto;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ProyectoRepository extends JpaRepository<Proyecto, UUID> {
+
+    Optional<Proyecto> findFirstByClienteIdAndNombreIgnoreCase(UUID clienteId, String nombre);
 
     /** Todos los proyectos de un cliente. */
     List<Proyecto> findByClienteId(UUID clienteId);

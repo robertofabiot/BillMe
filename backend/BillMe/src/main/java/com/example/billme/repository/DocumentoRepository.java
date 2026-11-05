@@ -19,6 +19,8 @@ public interface DocumentoRepository extends JpaRepository<Documento, UUID> {
     /** La factura que salió de una cotización. */
     Optional<Documento> findFirstByCotizacionOrigenId(UUID cotizacionId);
 
+    Optional<Documento> findByImportKey(String importKey);
+
     /**
      * Listado con filtros opcionales (null = sin filtro), por fecha del documento,
      * los más recientes primero.
