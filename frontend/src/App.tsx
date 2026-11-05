@@ -13,6 +13,7 @@ import { ProyectosPage } from '@/pages/ProyectosPage'
 import { ReportesPage } from '@/pages/ReportesPage'
 import { ConfiguracionPage } from '@/pages/ConfiguracionPage'
 import { ConsolidadosPage } from '@/pages/ConsolidadosPage'
+import { ConsolidadoEditorPage } from '@/pages/ConsolidadoEditorPage'
 import { ImportarPage } from '@/pages/ImportarPage'
 import { PreciosPage } from '@/pages/PreciosPage'
 
@@ -36,6 +37,8 @@ export default function App() {
                 <Route path="productos" element={<ProductosPage />} />
                 <Route path="proyectos" element={<ProyectosPage />} />
                 <Route path="consolidados" element={<ConsolidadosPage />} />
+                <Route path="consolidados/nuevo" element={<ConsolidadoEditorPage />} />
+                <Route path="consolidados/:id" element={<ConsolidadoEditorPage />} />
                 <Route path="reportes"  element={<ReportesPage />}  />
                 <Route path="configuracion" element={<ConfiguracionPage />} />
                 <Route path="importar" element={<ImportarPage />} />
