@@ -3,6 +3,8 @@ package com.example.billme.service;
 import com.example.billme.dto.ConsolidadoGuardarRequest;
 import com.example.billme.dto.ConsolidadoRangoRequest;
 import com.example.billme.dto.ConsolidadoResponse;
+import com.example.billme.exportacion.ArchivoExcel;
+import com.example.billme.exportacion.ConsolidadoExcel;
 import com.example.billme.model.*;
 import com.example.billme.repository.*;
 import com.example.billme.util.Fechas;
@@ -29,6 +31,16 @@ public class ConsolidadoService {
     private final DocumentoRepository documentoRepository;
     private final AbonoRepository abonoRepository;
     private final CuentaClienteService cuentaClienteService;
+    private final ConsolidadoExcel consolidadoExcel;
+
+    public ArchivoExcel exportarExcel(UUID id, String encabezado) {
+        ConsolidadoResponse consolidado = obtener(id);
+        byte[] contenido = consolidadoExcel.generar(consolidado, encabezado);
+        String folio = consolidado.folio() != null ? consolidado.folio() : "CONS";
+        String clienteSanitizado = consolidado.clienteNombre().replaceAll("[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]+", "-");
+        String nombre = folio + "_" + clienteSanitizado + ".xlsx";
+        return new ArchivoExcel(nombre, contenido);
+    }
 
     public List<ConsolidadoResponse> listar(UUID clienteId) {
         List<Consolidado> lista = clienteId != null

@@ -3,10 +3,13 @@ package com.example.billme.controller;
 import com.example.billme.dto.ConsolidadoGuardarRequest;
 import com.example.billme.dto.ConsolidadoRangoRequest;
 import com.example.billme.dto.ConsolidadoResponse;
+import com.example.billme.exportacion.ArchivoExcel;
 import com.example.billme.service.ConsolidadoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -53,5 +56,16 @@ public class ConsolidadoController {
     public ResponseEntity<Void> eliminar(@PathVariable UUID id) {
         consolidadoService.eliminar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/excel")
+    public ResponseEntity<byte[]> exportarExcel(
+            @PathVariable UUID id,
+            @RequestParam(required = false) String encabezado) {
+        ArchivoExcel archivo = consolidadoService.exportarExcel(id, encabezado);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + archivo.nombre() + "\"")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(archivo.contenido());
     }
 }
