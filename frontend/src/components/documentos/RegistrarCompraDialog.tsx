@@ -218,7 +218,7 @@ export function RegistrarCompraDialog({
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="compra-proveedor" className="text-xs font-medium text-[#705D56]">
+              <label htmlFor="compra-proveedor" className="text-sm font-medium text-[#705D56]">
                 Proveedor
               </label>
               {nuevoProveedor === null ? (
@@ -242,7 +242,7 @@ export function RegistrarCompraDialog({
                     aria-label="Registrar proveedor nuevo"
                     title="Registrar proveedor nuevo"
                     onClick={() => setNuevoProveedor('')}
-                    className="h-9 px-2.5"
+                    className="px-2.5"
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
@@ -266,7 +266,7 @@ export function RegistrarCompraDialog({
                     variant="outline"
                     disabled={!nuevoProveedor.trim() || creandoProveedor}
                     onClick={() => void crearProveedor()}
-                    className="h-9"
+                    
                   >
                     {creandoProveedor ? 'Creando…' : 'Crear'}
                   </Button>
@@ -274,7 +274,7 @@ export function RegistrarCompraDialog({
                     type="button"
                     variant="outline"
                     onClick={() => setNuevoProveedor(null)}
-                    className="h-9"
+                    
                   >
                     Cancelar
                   </Button>
@@ -283,7 +283,7 @@ export function RegistrarCompraDialog({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="compra-fecha" className="text-xs font-medium text-[#705D56]">
+              <label htmlFor="compra-fecha" className="text-sm font-medium text-[#705D56]">
                 Fecha
               </label>
               <Input
@@ -295,7 +295,7 @@ export function RegistrarCompraDialog({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="compra-numero" className="text-xs font-medium text-[#705D56]">
+              <label htmlFor="compra-numero" className="text-sm font-medium text-[#705D56]">
                 Número de factura (opcional)
               </label>
               <Input
@@ -311,7 +311,7 @@ export function RegistrarCompraDialog({
           <div className="border border-[#E5E7EB] rounded overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB] text-xs font-semibold text-[#705D56]">
+                <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB] text-sm font-semibold text-[#705D56]">
                   <th className="p-2.5 text-center w-12">Incluir</th>
                   <th className="p-2.5">Descripción</th>
                   <th className="p-2.5 text-right w-20">Cantidad</th>
@@ -341,7 +341,7 @@ export function RegistrarCompraDialog({
                     <td className="p-2 text-sm text-[#022F40]">
                       <div className="font-medium">{l.descripcion}</div>
                       {l.compraId && (
-                        <span className="text-xs text-[#558564] font-normal">
+                        <span className="text-sm text-[#558564] font-normal">
                           (ya tiene compra asignada)
                         </span>
                       )}
@@ -360,13 +360,13 @@ export function RegistrarCompraDialog({
                         onChange={e =>
                           actualizarLinea(l.lineaId, { precioSinIva: e.target.value })
                         }
-                        className="h-8 w-28 text-right text-xs ml-auto font-mono"
+                        className="w-28 text-right text-sm ml-auto font-mono"
                       />
                     </td>
                     {hasNonGenericos && (
                       <td className="p-2 text-right">
                         {l.productoGenerico ? (
-                          <span className="text-[#80727B] text-xs pr-4">—</span>
+                          <span className="text-[#80727B] text-sm pr-4">—</span>
                         ) : (
                           <Input
                             type="number"
@@ -379,7 +379,7 @@ export function RegistrarCompraDialog({
                             onChange={e =>
                               actualizarLinea(l.lineaId, { descuentoPct: e.target.value })
                             }
-                            className="h-8 w-24 text-right text-xs ml-auto font-mono"
+                            className="w-24 text-right text-sm ml-auto font-mono"
                           />
                         )}
                       </td>
@@ -395,7 +395,7 @@ export function RegistrarCompraDialog({
                         onChange={e =>
                           actualizarLinea(l.lineaId, { pesoUnitKg: e.target.value })
                         }
-                        className="h-8 w-28 text-right text-xs ml-auto font-mono"
+                        className="w-28 text-right text-sm ml-auto font-mono"
                       />
                     </td>
                   </tr>
@@ -409,14 +409,14 @@ export function RegistrarCompraDialog({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="h-9"
+              
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={guardando}
-              className="h-9 bg-[#022F40] hover:bg-[#022F40]/90 text-white"
+              className="bg-[#022F40] hover:bg-[#022F40]/90 text-white"
             >
               {guardando ? 'Guardando…' : 'Guardar compra'}
             </Button>

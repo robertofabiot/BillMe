@@ -15,13 +15,13 @@ export function ConciliacionTabla({ items, decisiones, onChange }: Props) {
         <h3 className="text-sm font-semibold text-[#022F40]">
           Conciliación de productos ({items.length} pendientes)
         </h3>
-        <p className="text-xs text-[#705D56] mt-0.5">
+        <p className="text-sm text-[#705D56] mt-0.5">
           Si no eliges nada, la línea se guarda con su descripción y su precio.
         </p>
       </div>
 
       <div className="border border-[#E5E7EB] rounded overflow-hidden">
-        <table className="w-full text-xs">
+        <table className="w-full text-sm">
           <thead>
             <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
               <th className="text-left px-3 py-2 font-medium text-[#705D56]">Descripción</th>
@@ -40,7 +40,7 @@ export function ConciliacionTabla({ items, decisiones, onChange }: Props) {
                     <select
                       value={valorActual}
                       onChange={e => onChange(item.descripcion, e.target.value)}
-                      className="h-8 w-full max-w-md rounded border border-[#E5E7EB] bg-white px-2 text-xs text-[#022F40] outline-none focus:border-[#022F40]"
+                      className="w-full max-w-md rounded border border-[#E5E7EB] bg-white px-2 text-sm text-[#022F40] outline-none focus:border-[#022F40]"
                     >
                       <option value={item.propuestaProductoId}>
                         {item.propuestaNombre} (propuesta genérica)

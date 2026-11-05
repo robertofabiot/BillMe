@@ -17,7 +17,7 @@ Hoja de ruta acordada el 2026-11-01 después de auditar los Excel del negocio (l
 
 **Fuera de alcance:** roles, modo sin conexión, ajustes de precio excepcionales de un cliente, grupos de precio, área de pintado, calculadoras de perlín/viga/tubo/barra, inventario, USD, numeración DGI y aprobaciones de precio.
 
-Los supuestos que quedaban abiertos ya se cerraron. Están, junto con el resto de decisiones de los PR que faltan, en [PRsPendientes.md](PRsPendientes.md).
+Todos los requerimientos operativos y decisiones de diseño fueron ejecutados e incorporados al sistema a través de los 13 Pull Requests planificados.
 
 ## 2. Fórmulas oficiales
 
@@ -56,8 +56,6 @@ Saldo      saldo_inicial + Σ facturas activas no importadas (desde fecha_inicio
 
 Todos los PR comparten este DoD: CI en verde (`./mvnw verify`, `npm run lint`, `npm run build`), la migración aplica sobre el esquema anterior y cada commit compila. Los tests de integración usan un Postgres 17 embebido, así que no hace falta Docker.
 
-Los PR que faltan están especificados uno por uno, con commits y DoD, en [PRsPendientes.md](PRsPendientes.md).
-
 | # | Rama | Objetivo | Migración | Estado |
 |---|---|---|---|---|
 | 1 | `chore/fundaciones` | Flyway, validación y errores, transacciones, sin cascadas peligrosas, tests de integración y CI | V1 | Hecho |
@@ -66,13 +64,13 @@ Los PR que faltan están especificados uno por uno, con commits y DoD, en [PRsPe
 | 4 | `feat/catalogo-precios-lista` | Configuración real, proveedores, búsqueda por similitud, historial de lista y su cálculo | V3 | Hecho |
 | 5 | `feat/importar-lista-proveedor` | Importar la lista del proveedor cuantas veces haga falta | — | Hecho |
 | 6 | `feat/documentos` | Cotizaciones y facturas: series, fecha real, líneas libres, editor, revisiones, conversión y anulación | V4 | Hecho |
-| 7 | `feat/precio-sugerido-y-calculadora` | Último precio, fórmula, calculadora de peso, precio por peso y por metro, página Precios | V5 | Pendiente |
-| 8 | `feat/exportacion-documentos` | PNG, PDF y Excel con el formato actual | — | Pendiente |
-| 9 | `feat/importar-cotizaciones` | Importar `cotizaciones1` con conciliación asistida (hito MVP) | — | Pendiente |
-| 10 | `feat/cuenta-corriente` | Abonos a la cuenta, saldo a favor, estado de cuenta por proyecto | V6 | Pendiente |
-| 11 | `feat/consolidados-por-entrega` | Consolidado en vivo por fecha de entrega con saldo anterior y abonos | V7 | Pendiente |
-| 12 | `feat/compras-y-ganancias` | Compra al proveedor ligada a la venta y reporte de ganancias | V8 | Pendiente |
-| 13 | `chore/pulido-movil-y-docs` | Celular, legibilidad, paginación, limpieza, manual de uso | — | Pendiente |
+| 7 | `feat/precio-sugerido-y-calculadora` | Último precio, fórmula, calculadora de peso, precio por peso y por metro, página Precios | V5 | Hecho |
+| 8 | `feat/exportacion-documentos` | PNG, PDF y Excel con el formato actual | — | Hecho |
+| 9 | `feat/importar-cotizaciones` | Importar `cotizaciones1` con conciliación asistida (hito MVP) | — | Hecho |
+| 10 | `feat/cuenta-corriente` | Abonos a la cuenta, saldo a favor, estado de cuenta por proyecto | V6 | Hecho |
+| 11 | `feat/consolidados-por-entrega` | Consolidado en vivo por fecha de entrega con saldo anterior y abonos | V7 | Hecho |
+| 12 | `feat/compras-y-ganancias` | Compra al proveedor ligada a la venta y reporte de ganancias | V8 | Hecho |
+| 13 | `chore/pulido-movil-y-docs` | Celular, legibilidad, paginación, limpieza, manual de uso | — | Hecho |
 
 ### Casos de prueba (números de ejemplo)
 

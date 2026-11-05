@@ -19,7 +19,7 @@ function StatCard({ icon: Icon, label, value, accent }: {
         <Icon className={`w-4 h-4 ${accent ? 'text-white' : 'text-[#80727B]'}`} />
       </div>
       <div>
-        <p className="text-xs text-[#705D56]">{label}</p>
+        <p className="text-sm text-[#705D56]">{label}</p>
         <p className="text-lg font-bold text-[#022F40] leading-tight">{value}</p>
       </div>
     </div>
@@ -84,18 +84,18 @@ export function ClientesPage() {
   }
 
   if (loading) return (
-    <div className="p-8 flex items-center justify-center h-64">
+    <div className="p-4 md:p-8 flex items-center justify-center h-64">
       <div className="text-sm text-[#705D56]">Cargando...</div>
     </div>
   )
   if (error) return (
-    <div className="p-8 flex items-center justify-center h-64">
+    <div className="p-4 md:p-8 flex items-center justify-center h-64">
       <div className="text-sm text-red-600">{error}</div>
     </div>
   )
 
   return (
-    <div className="p-8 flex flex-col gap-6">
+    <div className="p-4 md:p-8 flex flex-col gap-6">
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
@@ -107,9 +107,9 @@ export function ClientesPage() {
         </div>
         <Button
           onClick={openCreate}
-          className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-2"
+          className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm gap-2"
         >
-          <Plus className="w-4 h-4" /> Nuevo Cliente
+          <Plus className="w-4 h-4" /> Nuevo cliente
         </Button>
       </div>
 
@@ -133,9 +133,12 @@ export function ClientesPage() {
 
       {/* ── Grid de clientes ── */}
       {filtered.length === 0 ? (
-        <div className="bg-white border border-[#E5E7EB] rounded p-12 text-center shadow-sm">
-          <Users className="w-10 h-10 mx-auto text-[#80727B] mb-3" />
-          <p className="text-sm text-[#705D56]">No se encontraron clientes.</p>
+        <div className="bg-white border border-[#E5E7EB] rounded p-12 text-center shadow-sm flex flex-col items-center justify-center gap-3">
+          <Users className="w-10 h-10 mx-auto text-[#80727B]" />
+          <p className="text-sm text-[#705D56]">{clientes.length === 0 ? 'Todavía no hay clientes.' : 'No se encontraron clientes.'}</p>
+          <Button onClick={openCreate}>
+            <Plus className="w-4 h-4" /> Nuevo cliente
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -159,11 +162,11 @@ export function ClientesPage() {
                       {cliente.nombre}
                     </p>
                     {cliente.telefono
-                      ? <p className="text-xs text-[#705D56]">{cliente.telefono}</p>
-                      : <p className="text-xs text-[#80727B]">Sin teléfono</p>
+                      ? <p className="text-sm text-[#705D56]">{cliente.telefono}</p>
+                      : <p className="text-sm text-[#80727B]">Sin teléfono</p>
                     }
                     {cliente.detalles && (
-                      <p className="text-xs text-[#80727B] truncate mt-0.5">{cliente.detalles}</p>
+                      <p className="text-sm text-[#80727B] truncate mt-0.5">{cliente.detalles}</p>
                     )}
                   </div>
                 </div>
@@ -173,7 +176,7 @@ export function ClientesPage() {
 
                 {/* Saldo row */}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#705D56]">Estado:</span>
+                  <span className="text-sm text-[#705D56]">Estado:</span>
                   <span
                     className={`text-sm font-bold ${
                       saldo > 0

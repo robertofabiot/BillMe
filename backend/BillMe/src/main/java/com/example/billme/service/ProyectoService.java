@@ -2,18 +2,22 @@ package com.example.billme.service;
 
 import com.example.billme.dto.ProyectoRequest;
 import com.example.billme.dto.ProyectoResponse;
-import com.example.billme.model.Cliente;
 import com.example.billme.enums.EstadoProyecto;
+import com.example.billme.model.Cliente;
 import com.example.billme.model.Proyecto;
 import com.example.billme.repository.ClienteRepository;
+import com.example.billme.repository.DocumentoRepository;
 import com.example.billme.repository.ProyectoRepository;
+import com.example.billme.repository.SumaPorProyecto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -24,29 +28,34 @@ public class ProyectoService {
 
     private final ProyectoRepository proyectoRepository;
     private final ClienteRepository clienteRepository;
+    private final DocumentoRepository documentoRepository;
 
     public List<ProyectoResponse> listarTodos() {
+        Map<UUID, BigDecimal> totales = mapaTotales();
         return proyectoRepository.findAll().stream()
-                .map(this::toResponse)
+                .map(p -> toResponse(p, totales.getOrDefault(p.getId(), BigDecimal.ZERO)))
                 .collect(Collectors.toList());
     }
 
     public List<ProyectoResponse> listarPorCliente(UUID clienteId) {
+        Map<UUID, BigDecimal> totales = mapaTotales();
         return proyectoRepository.findByClienteId(clienteId).stream()
-                .map(this::toResponse)
+                .map(p -> toResponse(p, totales.getOrDefault(p.getId(), BigDecimal.ZERO)))
                 .collect(Collectors.toList());
     }
 
     public List<ProyectoResponse> listarActivosPorCliente(UUID clienteId) {
+        Map<UUID, BigDecimal> totales = mapaTotales();
         return proyectoRepository.findByClienteIdAndEstado(clienteId, EstadoProyecto.ACTIVO).stream()
-                .map(this::toResponse)
+                .map(p -> toResponse(p, totales.getOrDefault(p.getId(), BigDecimal.ZERO)))
                 .collect(Collectors.toList());
     }
 
     public ProyectoResponse obtenerPorId(UUID id) {
         Proyecto proyecto = proyectoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proyecto no encontrado"));
-        return toResponse(proyecto);
+        Map<UUID, BigDecimal> totales = mapaTotales();
+        return toResponse(proyecto, totales.getOrDefault(id, BigDecimal.ZERO));
     }
 
     @Transactional
@@ -68,7 +77,8 @@ public class ProyectoService {
         }
         
         Proyecto saved = proyectoRepository.save(proyecto);
-        return toResponse(saved);
+        Map<UUID, BigDecimal> totales = mapaTotales();
+        return toResponse(saved, totales.getOrDefault(saved.getId(), BigDecimal.ZERO));
     }
 
     @Transactional
@@ -91,7 +101,17 @@ public class ProyectoService {
         }
         
         Proyecto updated = proyectoRepository.save(proyecto);
-        return toResponse(updated);
+        Map<UUID, BigDecimal> totales = mapaTotales();
+        return toResponse(updated, totales.getOrDefault(id, BigDecimal.ZERO));
+    }
+
+    private Map<UUID, BigDecimal> mapaTotales() {
+        return documentoRepository.sumaFacturasPorProyecto().stream()
+                .filter(s -> s.getProyectoId() != null)
+                .collect(Collectors.toMap(
+                        SumaPorProyecto::getProyectoId,
+                        SumaPorProyecto::getSuma,
+                        (a, b) -> a));
     }
 
     private EstadoProyecto parseEstado(String estado) {
@@ -102,14 +122,15 @@ public class ProyectoService {
         }
     }
 
-    private ProyectoResponse toResponse(Proyecto entity) {
+    private ProyectoResponse toResponse(Proyecto entity, BigDecimal totalFacturado) {
         return new ProyectoResponse(
                 entity.getId(),
                 entity.getCliente().getId(),
                 entity.getCliente().getNombre(),
                 entity.getNombre(),
                 entity.getEstado() != null ? entity.getEstado().name() : null,
-                entity.getCreatedAt()
+                entity.getCreatedAt(),
+                totalFacturado != null ? totalFacturado : BigDecimal.ZERO
         );
     }
 }

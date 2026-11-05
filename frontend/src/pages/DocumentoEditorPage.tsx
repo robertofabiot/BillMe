@@ -433,11 +433,11 @@ export function DocumentoEditorPage() {
   }
 
   if (cargando) {
-    return <div className="p-8 text-sm text-[#705D56]">Cargando…</div>
+    return <div className="p-4 md:p-8 text-sm text-[#705D56]">Cargando…</div>
   }
   if (id && !documento) {
     return (
-      <div className="p-8 flex flex-col gap-3 items-start">
+      <div className="p-4 md:p-8 flex flex-col gap-3 items-start">
         <p className="text-sm text-red-600">{aviso?.texto ?? 'No se encontró el documento.'}</p>
         <Button variant="outline" onClick={() => navigate(titulos.ruta)}>Volver a {titulos.lista}</Button>
       </div>
@@ -447,11 +447,11 @@ export function DocumentoEditorPage() {
   const Icono = tipo === 'COTIZACION' ? FileText : ReceiptText
 
   return (
-    <div className="p-8 flex flex-col gap-5 w-full max-w-7xl mx-auto">
+    <div className="p-4 md:p-8 flex flex-col gap-5 w-full max-w-7xl mx-auto">
       {/* ── Encabezado ── */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <button type="button" onClick={volver} className="text-xs text-[#705D56] hover:text-[#022F40] flex items-center gap-1 mb-1">
+          <button type="button" onClick={volver} className="text-sm text-[#705D56] hover:text-[#022F40] flex items-center gap-1 mb-1">
             <ArrowLeft className="w-3.5 h-3.5" /> {titulos.lista}
           </button>
           <h1 className="text-xl font-semibold text-[#022F40] flex items-center gap-2">
@@ -463,20 +463,20 @@ export function DocumentoEditorPage() {
 
         {documento && (
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" onClick={abrirExportar} className="h-9 gap-2">
+            <Button variant="outline" onClick={abrirExportar} className="gap-2">
               <FileDown className="w-4 h-4" /> Exportar
             </Button>
-            <Button variant="outline" onClick={() => setViendoCambios(true)} className="h-9 gap-2">
+            <Button variant="outline" onClick={() => setViendoCambios(true)} className="gap-2">
               <History className="w-4 h-4" /> Ver cambios
             </Button>
             {documento.estado === 'PENDIENTE' && (
               <>
-                <Button variant="outline" disabled={trabajando} onClick={rechazar} className="h-9">Rechazar</Button>
-                <Button disabled={trabajando} onClick={convertir} className="h-9 bg-[#558564] hover:bg-[#558564]/90 text-white">Convertir en factura</Button>
+                <Button variant="outline" disabled={trabajando} onClick={rechazar} >Rechazar</Button>
+                <Button disabled={trabajando} onClick={convertir} className="bg-[#558564] hover:bg-[#558564]/90 text-white">Convertir en factura</Button>
               </>
             )}
             {documento.estado === 'RECHAZADA' && (
-              <Button variant="outline" disabled={trabajando} onClick={reabrir} className="h-9">Reabrir</Button>
+              <Button variant="outline" disabled={trabajando} onClick={reabrir} >Reabrir</Button>
             )}
             {documento.estado === 'ACTIVA' && (
               <>
@@ -485,12 +485,12 @@ export function DocumentoEditorPage() {
                     variant="outline"
                     disabled={trabajando || cambiosSinGuardar}
                     onClick={() => setRegistrandoCompra(true)}
-                    className="h-9 gap-2"
+                    className="gap-2"
                   >
                     <ShoppingCart className="w-4 h-4" /> Registrar compra
                   </Button>
                 </span>
-                <Button variant="outline" disabled={trabajando} onClick={anular} className="h-9 text-red-600 hover:text-red-700">Anular</Button>
+                <Button variant="outline" disabled={trabajando} onClick={anular} className="text-red-600 hover:text-red-700">Anular</Button>
               </>
             )}
           </div>
@@ -526,7 +526,7 @@ export function DocumentoEditorPage() {
       <fieldset disabled={soloLectura} className="contents">
         <section className="bg-white border border-[#E5E7EB] rounded shadow-sm p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="cliente" className="text-xs font-medium text-[#705D56]">Cliente</label>
+            <label htmlFor="cliente" className="text-sm font-medium text-[#705D56]">Cliente</label>
             <select
               id="cliente"
               value={form.clienteId}
@@ -543,7 +543,7 @@ export function DocumentoEditorPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="proyecto" className="text-xs font-medium text-[#705D56]">Proyecto (opcional)</label>
+            <label htmlFor="proyecto" className="text-sm font-medium text-[#705D56]">Proyecto (opcional)</label>
             {nuevoProyecto === null ? (
               <div className="flex gap-2">
                 <select
@@ -563,7 +563,7 @@ export function DocumentoEditorPage() {
                   title="Crear un proyecto nuevo"
                   disabled={!form.clienteId}
                   onClick={() => setNuevoProyecto('')}
-                  className="h-9 px-2.5"
+                  className="px-2.5"
                 >
                   <Plus className="w-4 h-4" />
                 </Button>
@@ -583,14 +583,14 @@ export function DocumentoEditorPage() {
                     }
                   }}
                 />
-                <Button type="button" variant="outline" disabled={!nuevoProyecto.trim()} onClick={crearProyecto} className="h-9">Crear</Button>
-                <Button type="button" variant="outline" onClick={() => setNuevoProyecto(null)} className="h-9">Cancelar</Button>
+                <Button type="button" variant="outline" disabled={!nuevoProyecto.trim()} onClick={crearProyecto} >Crear</Button>
+                <Button type="button" variant="outline" onClick={() => setNuevoProyecto(null)} >Cancelar</Button>
               </div>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="fecha" className="text-xs font-medium text-[#705D56]">Fecha</label>
+            <label htmlFor="fecha" className="text-sm font-medium text-[#705D56]">Fecha</label>
             <Input id="fecha" type="date" value={form.fecha} onChange={e => setForm(f => ({ ...f, fecha: e.target.value }))} />
           </div>
         </section>
@@ -657,7 +657,7 @@ export function DocumentoEditorPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="notas" className="text-xs font-medium text-[#705D56]">Notas (opcional)</label>
+            <label htmlFor="notas" className="text-sm font-medium text-[#705D56]">Notas (opcional)</label>
             <textarea
               id="notas"
               rows={2}

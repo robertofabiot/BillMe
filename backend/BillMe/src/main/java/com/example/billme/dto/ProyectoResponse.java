@@ -1,5 +1,6 @@
 package com.example.billme.dto;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -9,5 +10,6 @@ public record ProyectoResponse(
     String clienteNombre,
     String nombre,
     String estado,
-    Instant createdAt
+    Instant createdAt,
+    BigDecimal totalFacturado
 ) {}

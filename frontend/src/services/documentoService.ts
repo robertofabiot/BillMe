@@ -1,5 +1,5 @@
 import { api } from './api'
-import type { Documento, EstadoDocumento, MetodoPrecio, RevisionDocumento, TipoDocumento } from '@/types'
+import type { Documento, EstadoDocumento, MetodoPrecio, PaginaResponse, RevisionDocumento, TipoDocumento } from '@/types'
 
 export interface LineaPayload {
   id?: string
@@ -33,16 +33,19 @@ export interface FiltrosDocumento {
   productoId?: string
   desde?: string
   hasta?: string
+  q?: string
+  pagina?: number
+  tamano?: number
 }
 
 export const documentoService = {
   listar: (filtros: FiltrosDocumento = {}) => {
     const params = new URLSearchParams()
     Object.entries(filtros).forEach(([k, v]) => {
-      if (v) params.set(k, v)
+      if (v !== undefined && v !== null && v !== '') params.set(k, String(v))
     })
     const qs = params.toString()
-    return api.get<Documento[]>(qs ? `/documentos?${qs}` : '/documentos')
+    return api.get<PaginaResponse<Documento>>(qs ? `/documentos?${qs}` : '/documentos')
   },
 
   obtener: (id: string) =>

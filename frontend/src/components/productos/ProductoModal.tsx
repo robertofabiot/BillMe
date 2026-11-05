@@ -89,7 +89,7 @@ export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
               <Package className="w-3.5 h-3.5 text-[#91E5F6]" />
             </div>
             <h2 className="text-sm font-semibold text-[#022F40]">
-              {isEdit ? 'Editar Producto' : 'Nuevo Producto'}
+              {isEdit ? 'Editar producto' : 'Nuevo producto'}
             </h2>
           </div>
           <button onClick={() => onOpenChange(false)} className="w-7 h-7 flex items-center justify-center rounded hover:bg-[#F9FAFB] text-[#80727B] transition-colors">
@@ -103,38 +103,38 @@ export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
           {/* Código + Peso */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-[#705D56]">Código Interno *</label>
+              <label className="text-sm font-medium text-[#705D56]">Código Interno *</label>
               <Input value={codigo} onChange={(e: ChangeEvent<HTMLInputElement>) => setCodigo(e.target.value.toUpperCase())} placeholder="Ej. TUB-001" className="font-mono" autoFocus />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-[#705D56]">Peso (kg)</label>
+              <label className="text-sm font-medium text-[#705D56]">Peso (kg)</label>
               <Input type="number" min={0} step={0.01} value={peso} onChange={(e: ChangeEvent<HTMLInputElement>) => setPeso(e.target.value)} placeholder="0.00" />
             </div>
           </div>
 
           {/* Nombre */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Nombre Principal *</label>
+            <label className="text-sm font-medium text-[#705D56]">Nombre Principal *</label>
             <Input value={nombre} onChange={(e: ChangeEvent<HTMLInputElement>) => setNombre(e.target.value)} placeholder='Ej. Tubo Galvanizado 1/2"' />
           </div>
 
           {/* Unidad */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Unidad</label>
+            <label className="text-sm font-medium text-[#705D56]">Unidad</label>
             <Input value={unidad} onChange={(e: ChangeEvent<HTMLInputElement>) => setUnidad(e.target.value.toUpperCase())} placeholder="UND, KG, METRO…" />
-            <p className="text-[11px] text-[#80727B]">El precio de lista se registra en la ficha del producto, con su fecha.</p>
+            <p className="text-sm text-[#80727B]">El precio de lista se registra en la ficha del producto, con su fecha.</p>
           </div>
 
           {/* Descripción */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Descripción</label>
+            <label className="text-sm font-medium text-[#705D56]">Descripción</label>
             <textarea value={desc} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDesc(e.target.value)} placeholder="Opcional — especificaciones técnicas…" rows={2}
               className="w-full rounded border border-[#E5E7EB] px-3 py-2 text-sm text-[#022F40] placeholder:text-[#80727B] outline-none focus:border-[#022F40] focus:ring-2 focus:ring-[#022F40]/10 resize-none" />
           </div>
 
           {/* Alias */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56] flex items-center gap-1">
+            <label className="text-sm font-medium text-[#705D56] flex items-center gap-1">
               <Tag className="w-3 h-3" /> Alias / Nombres Alternativos
             </label>
             <div
@@ -142,7 +142,7 @@ export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
               onClick={() => aliasRef.current?.focus()}
             >
               {aliases.map(a => (
-                <span key={a} className="inline-flex items-center gap-1 bg-[#022F40]/8 text-[#022F40] text-xs px-2 py-0.5 rounded border border-[#022F40]/15 font-medium">
+                <span key={a} className="inline-flex items-center gap-1 bg-[#022F40]/8 text-[#022F40] text-sm px-2 py-0.5 rounded border border-[#022F40]/15 font-medium">
                   {a}
                   <button type="button" onClick={(e) => { e.stopPropagation(); removeAlias(a) }} className="text-[#80727B] hover:text-[#022F40]">
                     <X className="w-2.5 h-2.5" />
@@ -160,11 +160,11 @@ export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
 
         {/* Footer */}
         <div className="flex items-center justify-end px-5 py-4 border-t border-[#E5E7EB] bg-[#F9FAFB] shrink-0 gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded border-[#E5E7EB] text-sm h-9">Cancelar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded border-[#E5E7EB] text-sm">Cancelar</Button>
           <Button onClick={handleSave} disabled={!codigo.trim() || !nombre.trim()}
             className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-1">
             <Plus className="w-3.5 h-3.5" />
-            {isEdit ? 'Guardar Cambios' : 'Crear Producto'}
+            {isEdit ? 'Guardar cambios' : 'Crear producto'}
           </Button>
         </div>
       </div>

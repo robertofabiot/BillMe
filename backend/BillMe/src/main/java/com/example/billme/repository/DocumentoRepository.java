@@ -3,6 +3,8 @@ package com.example.billme.repository;
 import com.example.billme.enums.EstadoDocumento;
 import com.example.billme.enums.TipoDocumento;
 import com.example.billme.model.Documento;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -25,7 +27,7 @@ public interface DocumentoRepository extends JpaRepository<Documento, UUID> {
      * Listado con filtros opcionales (null = sin filtro), por fecha del documento,
      * los más recientes primero.
      */
-    @Query("SELECT d FROM Documento d WHERE " +
+    @Query("SELECT d FROM Documento d LEFT JOIN d.proyecto p WHERE " +
            "(:tipo IS NULL OR d.tipo = :tipo) AND " +
            "(:estado IS NULL OR d.estado = :estado) AND " +
            "(cast(:clienteId as uuid) IS NULL OR d.cliente.id = :clienteId) AND " +
@@ -33,16 +35,20 @@ public interface DocumentoRepository extends JpaRepository<Documento, UUID> {
            "(cast(:desde as date) IS NULL OR d.fecha >= :desde) AND " +
            "(cast(:hasta as date) IS NULL OR d.fecha <= :hasta) AND " +
            "(cast(:productoId as uuid) IS NULL OR EXISTS " +
-           "  (SELECT 1 FROM DocumentoLinea l WHERE l.documento = d AND l.producto.id = :productoId)) " +
+           "  (SELECT 1 FROM DocumentoLinea l WHERE l.documento = d AND l.producto.id = :productoId)) AND " +
+           "(:q = '' OR lower(d.folio) LIKE :contiene OR lower(d.cliente.nombre) LIKE :contiene OR lower(p.nombre) LIKE :contiene) " +
            "ORDER BY d.fecha DESC, d.createdAt DESC")
-    List<Documento> filtrar(
+    Page<Documento> filtrar(
             @Param("tipo") TipoDocumento tipo,
             @Param("estado") EstadoDocumento estado,
             @Param("clienteId") UUID clienteId,
             @Param("proyectoId") UUID proyectoId,
             @Param("productoId") UUID productoId,
             @Param("desde") LocalDate desde,
-            @Param("hasta") LocalDate hasta);
+            @Param("hasta") LocalDate hasta,
+            @Param("q") String q,
+            @Param("contiene") String contiene,
+            Pageable pageable);
 
     @Query(value = "select nextval('seq_folio_cot')", nativeQuery = true)
     long siguienteFolioCotizacion();
@@ -66,6 +72,12 @@ public interface DocumentoRepository extends JpaRepository<Documento, UUID> {
                    "AND (c.fecha_inicio_cuenta IS NULL OR d.fecha >= c.fecha_inicio_cuenta) " +
                    "GROUP BY d.cliente_id", nativeQuery = true)
     List<SumaPorCliente> sumaFacturasPorCliente();
+
+    @Query(value = "SELECT d.proyecto_id AS proyectoid, COALESCE(SUM(d.total), 0) AS suma " +
+                   "FROM documentos d " +
+                   "WHERE d.tipo = 'FACTURA' AND d.estado = 'ACTIVA' AND d.proyecto_id IS NOT NULL " +
+                   "GROUP BY d.proyecto_id", nativeQuery = true)
+    List<SumaPorProyecto> sumaFacturasPorProyecto();
 
     @Query(value = """
             select d.id as id, d.folio as folio, d.fecha as fecha, c.nombre as cliente, d.total as total,

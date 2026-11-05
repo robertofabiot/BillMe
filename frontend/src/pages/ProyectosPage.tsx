@@ -1,25 +1,31 @@
-import { useState, useMemo, useEffect, type ChangeEvent } from 'react'
-import type { Proyecto, Cliente, Documento } from '@/types'
+import { useState, useEffect, useMemo, type ChangeEvent } from 'react'
+import type { Proyecto, Cliente } from '@/types'
 import { proyectoService } from '@/services/proyectoService'
 import { clienteService } from '@/services/clienteService'
-import { documentoService } from '@/services/documentoService'
 import { formatCurrency } from '@/lib/format'
 import { ProyectoModal } from '@/components/proyectos/ProyectoModal'
 import { ProyectoDetailSheet } from '@/components/proyectos/ProyectoDetailSheet'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { FolderGit2, Plus, Search, Building2, CheckCircle2, TrendingUp } from 'lucide-react'
+import { 
+  FolderGit2, 
+  Plus, 
+  Search, 
+  Building2, 
+  CheckCircle2, 
+  TrendingUp, 
+} from 'lucide-react'
 
-function StatCard({ icon: Icon, label, value, accent }: {
-  icon: React.ElementType; label: string; value: string; accent?: string
+function StatCard({ icon: Icon, label, value, accent }: { 
+  icon: React.ElementType; label: string; value: string; accent?: string 
 }) {
   return (
-    <div className="bg-white border border-[#E5E7EB] rounded p-4 flex items-start gap-3 shadow-sm">
+    <div className="bg-white border border-[#E5E7EB] rounded p-4 flex items-center gap-3 shadow-xs">
       <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${accent ?? 'bg-[#F9FAFB]'}`}>
-        <Icon className={`w-4 h-4 ${accent ? 'text-white' : 'text-[#80727B]'}`} />
+        <Icon className={`w-4 h-4 ${accent ? 'text-white' : 'text-[#705D56]'}`} />
       </div>
       <div>
-        <p className="text-xs text-[#705D56]">{label}</p>
+        <p className="text-sm text-[#705D56]">{label}</p>
         <p className="text-lg font-bold text-[#022F40] leading-tight">{value}</p>
       </div>
     </div>
@@ -29,7 +35,6 @@ function StatCard({ icon: Icon, label, value, accent }: {
 export function ProyectosPage() {
   const [proyectos, setProyectos]   = useState<Proyecto[]>([])
   const [clientes, setClientes]     = useState<Cliente[]>([])
-  const [facturas, setFacturas]     = useState<Documento[]>([])
   const [loading, setLoading]       = useState(true)
   const [error, setError]           = useState<string | null>(null)
   const [selected,  setSelected]    = useState<Proyecto | null>(null)
@@ -41,14 +46,12 @@ export function ProyectosPage() {
     const load = async () => {
       try {
         setLoading(true)
-        const [proyectosData, clientesData, facturasData] = await Promise.all([
+        const [proyectosData, clientesData] = await Promise.all([
           proyectoService.listar(),
           clienteService.listar(),
-          documentoService.listar({ tipo: 'FACTURA', estado: 'ACTIVA' })
         ])
         setProyectos(proyectosData)
         setClientes(clientesData)
-        setFacturas(facturasData)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Error al cargar datos')
       } finally {
@@ -61,12 +64,9 @@ export function ProyectosPage() {
   /* ── Stats ── */
   const stats = useMemo(() => {
     const activos = proyectos.filter(p => p.estado === 'ACTIVO').length
-    const facturado = facturas
-      .filter(f => f.proyectoId)
-      .reduce((s, f) => s + f.total, 0)
-    
+    const facturado = proyectos.reduce((s, p) => s + (p.totalFacturado ?? 0), 0)
     return { total: proyectos.length, activos, facturado }
-  }, [proyectos, facturas])
+  }, [proyectos])
 
   /* ── Filter ── */
   const filtered = useMemo(() => {
@@ -102,25 +102,19 @@ export function ProyectosPage() {
     }
   }
 
-  /* ── Helpers ── */
-  const getFacturado = (proyectoId: string) => 
-    facturas
-      .filter(f => f.proyectoId === proyectoId)
-      .reduce((s, f) => s + f.total, 0)
-
   if (loading) return (
-    <div className="p-8 flex items-center justify-center h-64">
+    <div className="p-4 md:p-8 flex items-center justify-center h-64">
       <div className="text-sm text-[#705D56]">Cargando...</div>
     </div>
   )
   if (error) return (
-    <div className="p-8 flex items-center justify-center h-64">
+    <div className="p-4 md:p-8 flex items-center justify-center h-64">
       <div className="text-sm text-red-600">{error}</div>
     </div>
   )
 
   return (
-    <div className="p-8 flex flex-col gap-6">
+    <div className="p-4 md:p-8 flex flex-col gap-6">
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
@@ -132,17 +126,17 @@ export function ProyectosPage() {
         </div>
         <Button
           onClick={openCreate}
-          className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-2"
+          className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm gap-2"
         >
-          <Plus className="w-4 h-4" /> Nuevo Proyecto
+          <Plus className="w-4 h-4" /> Nuevo proyecto
         </Button>
       </div>
 
       {/* ── Stats ── */}
       <div className="grid grid-cols-3 gap-4 max-w-4xl">
-        <StatCard icon={FolderGit2} label="Total Proyectos" value={String(stats.total)} />
-        <StatCard icon={CheckCircle2} label="Proyectos Activos" value={String(stats.activos)} accent="bg-[#558564]" />
-        <StatCard icon={TrendingUp} label="Facturado en Obras" value={formatCurrency(stats.facturado)} accent="bg-[#022F40]" />
+        <StatCard icon={FolderGit2} label="Total de proyectos" value={String(stats.total)} />
+        <StatCard icon={CheckCircle2} label="Proyectos activos" value={String(stats.activos)} accent="bg-[#558564]" />
+        <StatCard icon={TrendingUp} label="Total facturado" value={formatCurrency(stats.facturado)} accent="bg-[#022F40]" />
       </div>
 
       {/* ── Search ── */}
@@ -158,15 +152,18 @@ export function ProyectosPage() {
 
       {/* ── Grid de Proyectos ── */}
       {filtered.length === 0 ? (
-        <div className="bg-white border border-[#E5E7EB] rounded p-12 text-center shadow-sm">
-          <FolderGit2 className="w-10 h-10 mx-auto text-[#80727B] mb-3" />
-          <p className="text-sm text-[#705D56]">No se encontraron proyectos.</p>
+        <div className="bg-white border border-[#E5E7EB] rounded p-12 text-center shadow-sm flex flex-col items-center justify-center gap-3">
+          <FolderGit2 className="w-10 h-10 mx-auto text-[#80727B]" />
+          <p className="text-sm text-[#705D56]">{proyectos.length === 0 ? 'Todavía no hay proyectos.' : 'No se encontraron proyectos.'}</p>
+          <Button onClick={openCreate}>
+            <Plus className="w-4 h-4" /> Nuevo proyecto
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map(p => {
             const clienteNombre = p.clienteNombre || clientes.find(c => c.id === p.clienteId)?.nombre
-            const facturado = getFacturado(p.id)
+            const facturado = p.totalFacturado ?? 0
             
             const estadoColors = {
               ACTIVO: 'bg-emerald-100 text-emerald-800 border-emerald-200',
@@ -183,19 +180,21 @@ export function ProyectosPage() {
                 <div className="flex justify-between items-start gap-2">
                   <div className="min-w-0">
                     <h3 className="text-sm font-semibold text-[#022F40] truncate group-hover:text-[#022F40]">{p.nombre}</h3>
-                    <p className="text-xs text-[#705D56] truncate mt-0.5 flex items-center gap-1">
+                    <p className="text-sm text-[#705D56] truncate mt-0.5 flex items-center gap-1">
                       <Building2 className="w-3 h-3" /> {clienteNombre ?? 'Desconocido'}
                     </p>
                   </div>
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${estadoColors[p.estado]}`}>
+                  <span className={`text-sm font-bold px-1.5 py-0.5 rounded border ${estadoColors[p.estado]}`}>
                     {p.estado}
                   </span>
                 </div>
 
                 {/* Footer (Facturado) */}
                 <div className="mt-auto pt-3 border-t border-[#E5E7EB]">
-                  <p className="text-[10px] text-[#705D56]">Total Facturado</p>
-                  <p className="text-lg font-bold text-[#022F40] leading-tight mt-0.5">{formatCurrency(facturado)}</p>
+                  <p className="text-sm text-[#705D56]">Total facturado</p>
+                  <p className="text-base font-bold text-[#022F40] mt-0.5">
+                    {formatCurrency(facturado)}
+                  </p>
                 </div>
               </button>
             )
@@ -203,20 +202,22 @@ export function ProyectosPage() {
         </div>
       )}
 
-      {/* ── Modales ── */}
+      {/* ── Modals / Sheets ── */}
       <ProyectoModal
         open={showModal}
         onOpenChange={setShowModal}
         initial={editTarget}
-        onSave={handleSave}
         clientes={clientes}
+        onSave={handleSave}
       />
+
       <ProyectoDetailSheet
         proyecto={selected}
         open={selected !== null}
-        onOpenChange={v => { if (!v) setSelected(null) }}
+        onOpenChange={(op) => !op && setSelected(null)}
         onEdit={openEdit}
       />
+
     </div>
   )
 }

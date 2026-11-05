@@ -82,7 +82,7 @@ export function ProductoBuscador({ onElegir, deshabilitado }: Props) {
                 className="w-full text-left px-3 py-2 hover:bg-[#F9FAFB] border-b border-[#E5E7EB] last:border-b-0"
               >
                 <p className="text-sm font-medium text-[#022F40]">{p.nombrePrincipal}</p>
-                <p className="text-xs text-[#80727B] font-mono">{p.codigoInterno}</p>
+                <p className="text-sm text-[#80727B] font-mono">{p.codigoInterno}</p>
               </button>
             ))}
             {resultados.length === 0 && !buscando && (
@@ -94,7 +94,7 @@ export function ProductoBuscador({ onElegir, deshabilitado }: Props) {
         )}
       </div>
 
-      <Button type="button" variant="outline" disabled={deshabilitado} onClick={agregarLineaLibre} className="h-9 gap-2">
+      <Button type="button" variant="outline" disabled={deshabilitado} onClick={agregarLineaLibre} className="gap-2">
         <PenLine className="w-4 h-4" /> Línea libre
       </Button>
     </div>

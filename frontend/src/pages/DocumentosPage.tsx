@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { Documento, EstadoDocumento, TipoDocumento } from '@/types'
 import { documentoService } from '@/services/documentoService'
@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button'
 import { FileText, Plus, ReceiptText, Search } from 'lucide-react'
 
 const TEXTOS = {
-  COTIZACION: { titulo: 'Cotizaciones', subtitulo: 'Precios que se le dan a un cliente antes de la venta', nuevo: 'Nueva cotización', vacio: 'No hay cotizaciones.', icono: FileText },
-  FACTURA: { titulo: 'Facturas', subtitulo: 'Ventas confirmadas', nuevo: 'Nueva factura', vacio: 'No hay facturas.', icono: ReceiptText },
+  COTIZACION: { titulo: 'Cotizaciones', subtitulo: 'Precios que se le dan a un cliente antes de la venta', nuevo: 'Nueva cotización', vacio: 'Todavía no hay cotizaciones.', icono: FileText },
+  FACTURA: { titulo: 'Facturas', subtitulo: 'Ventas confirmadas', nuevo: 'Nueva factura', vacio: 'Todavía no hay facturas.', icono: ReceiptText },
 }
 
 const ESTADOS: Record<TipoDocumento, { valor: EstadoDocumento; texto: string }[]> = {
@@ -33,32 +33,58 @@ export function DocumentosPage({ tipo }: { tipo: TipoDocumento }) {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busqueda, setBusqueda] = useState('')
+  const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
   const [estado, setEstado] = useState<EstadoDocumento | ''>('')
+  const [pagina, setPagina] = useState(0)
+  const [totalPaginas, setTotalPaginas] = useState(1)
+  const [, setTotalElementos] = useState(0)
 
+  // Espera de 300 ms en la búsqueda y vuelve a la primera página
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedBusqueda(busqueda)
+      setPagina(0)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [busqueda])
+
+  // Al cambiar de tipo, resetea todo a página 0
+  useEffect(() => {
+    setBusqueda('')
+    setDebouncedBusqueda('')
+    setEstado('')
+    setPagina(0)
+  }, [tipo])
+
+  // Carga con paginación y búsqueda en servidor
   useEffect(() => {
     setCargando(true)
     setError(null)
-    setBusqueda('')
-    setEstado('')
-    documentoService.listar({ tipo })
-      .then(setDocumentos)
+    documentoService.listar({
+      tipo,
+      estado: estado || undefined,
+      q: debouncedBusqueda.trim() || undefined,
+      pagina,
+      tamano: 50,
+    })
+      .then(res => {
+        setDocumentos(res.contenido)
+        setTotalPaginas(res.totalPaginas)
+        setTotalElementos(res.totalElementos)
+      })
       .catch(e => setError(e instanceof Error ? e.message : 'No se pudieron cargar los datos'))
       .finally(() => setCargando(false))
-  }, [tipo])
+  }, [tipo, estado, debouncedBusqueda, pagina])
 
-  const filtrados = useMemo(() => {
-    const q = busqueda.trim().toLowerCase()
-    return documentos.filter(d =>
-      (!estado || d.estado === estado) &&
-      (!q || d.folio.toLowerCase().includes(q)
-        || d.clienteNombre.toLowerCase().includes(q)
-        || (d.proyectoNombre?.toLowerCase().includes(q) ?? false)))
-  }, [documentos, busqueda, estado])
+  const handleEstadoChange = (nuevoEstado: EstadoDocumento | '') => {
+    setEstado(nuevoEstado)
+    setPagina(0)
+  }
 
   const Icono = textos.icono
 
   return (
-    <div className="p-8 flex flex-col gap-5">
+    <div className="p-4 md:p-8 flex flex-col gap-5">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold text-[#022F40] flex items-center gap-2">
@@ -67,8 +93,8 @@ export function DocumentosPage({ tipo }: { tipo: TipoDocumento }) {
           <p className="text-sm text-[#705D56] mt-0.5">{textos.subtitulo}</p>
         </div>
         <Button
-          onClick={() => navigate(`/documentos/nuevo?tipo=${tipo}`)}
-          className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white h-9 gap-2 shrink-0"
+          onClick={() => navigate(tipo === 'COTIZACION' ? '/documentos/nuevo?tipo=COTIZACION' : '/documentos/nuevo')}
+          className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white gap-2 shrink-0"
         >
           <Plus className="w-4 h-4" /> {textos.nuevo}
         </Button>
@@ -87,8 +113,8 @@ export function DocumentosPage({ tipo }: { tipo: TipoDocumento }) {
         <select
           aria-label="Filtrar por estado"
           value={estado}
-          onChange={e => setEstado(e.target.value as EstadoDocumento | '')}
-          className="h-9 rounded border border-[#E5E7EB] bg-white px-3 text-sm text-[#022F40] outline-none focus:border-[#022F40]"
+          onChange={e => handleEstadoChange(e.target.value as EstadoDocumento | '')}
+          className="rounded border border-[#E5E7EB] bg-white px-3 h-11 text-sm text-[#022F40] outline-none focus:border-[#022F40]"
         >
           <option value="">Todos los estados</option>
           {ESTADOS[tipo].map(e => <option key={e.valor} value={e.valor}>{e.texto}</option>)}
@@ -112,16 +138,29 @@ export function DocumentosPage({ tipo }: { tipo: TipoDocumento }) {
             {cargando && (
               <tr><td colSpan={5} className="px-4 py-8 text-center text-[#80727B]">Cargando…</td></tr>
             )}
-            {!cargando && filtrados.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-[#80727B]">{textos.vacio}</td></tr>
+            {!cargando && documentos.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-[#80727B]">
+                  {!busqueda && !estado ? (
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <p className="text-sm text-[#705D56]">{textos.vacio}</p>
+                      <Button onClick={() => navigate(tipo === 'COTIZACION' ? '/documentos/nuevo?tipo=COTIZACION' : '/documentos/nuevo')}>
+                        <Plus className="w-4 h-4" /> {textos.nuevo}
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-[#80727B]">No se encontraron documentos.</p>
+                  )}
+                </td>
+              </tr>
             )}
-            {!cargando && filtrados.map(d => (
+            {!cargando && documentos.map(d => (
               <tr
                 key={d.id}
                 onClick={() => navigate(`/documentos/${d.id}`)}
                 className="border-b border-[#E5E7EB] last:border-b-0 hover:bg-[#F9FAFB] cursor-pointer transition-colors"
               >
-                <td className="px-4 py-3 font-mono text-xs font-semibold text-[#022F40]">
+                <td className="px-4 py-3 font-mono text-sm font-semibold text-[#022F40]">
                   <Link to={`/documentos/${d.id}`} onClick={e => e.stopPropagation()}>{d.folio}</Link>
                 </td>
                 <td className="px-4 py-3 text-[#705D56] whitespace-nowrap">{formatDate(d.fecha)}</td>
@@ -135,6 +174,29 @@ export function DocumentosPage({ tipo }: { tipo: TipoDocumento }) {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* ── Paginación ── */}
+      <div className="flex items-center justify-between px-4 py-3 bg-white border border-[#E5E7EB] rounded shadow-xs">
+        <Button
+          variant="outline"
+          disabled={pagina <= 0 || cargando}
+          onClick={() => setPagina(p => Math.max(0, p - 1))}
+          className="text-sm"
+        >
+          Anterior
+        </Button>
+        <span className="text-sm text-[#705D56]">
+          Página {totalPaginas === 0 ? 0 : pagina + 1} de {Math.max(1, totalPaginas)}
+        </span>
+        <Button
+          variant="outline"
+          disabled={pagina >= totalPaginas - 1 || cargando}
+          onClick={() => setPagina(p => p + 1)}
+          className="text-sm"
+        >
+          Siguiente
+        </Button>
       </div>
     </div>
   )

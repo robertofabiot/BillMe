@@ -9,7 +9,7 @@ import { ConciliacionTabla } from './ConciliacionTabla'
 function Cifra({ etiqueta, valor, destacar }: { etiqueta: string; valor: number; destacar?: boolean }) {
   return (
     <div className="border border-[#E5E7EB] rounded px-4 py-3">
-      <p className="text-xs text-[#705D56]">{etiqueta}</p>
+      <p className="text-sm text-[#705D56]">{etiqueta}</p>
       <p className={`text-xl font-bold ${destacar ? 'text-[#022F40]' : 'text-[#80727B]'}`}>
         {valor.toLocaleString('es-NI')}
       </p>
@@ -98,7 +98,7 @@ export function ImportarCotizacionesPanel() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="archivo-cotizaciones" className="text-xs font-medium text-[#705D56]">
+            <label htmlFor="archivo-cotizaciones" className="text-sm font-medium text-[#705D56]">
               Archivo de Excel (.xlsx o .xlsm)
             </label>
             <Input
@@ -109,14 +109,14 @@ export function ImportarCotizacionesPanel() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="cliente-cotizaciones" className="text-xs font-medium text-[#705D56]">
+            <label htmlFor="cliente-cotizaciones" className="text-sm font-medium text-[#705D56]">
               Cliente de las filas sin columna cliente
             </label>
             <select
               id="cliente-cotizaciones"
               value={clienteId}
               onChange={elegirCliente}
-              className="h-9 w-full rounded border border-[#E5E7EB] bg-white px-3 text-sm text-[#022F40] outline-none focus:border-[#022F40]"
+              className="w-full rounded border border-[#E5E7EB] bg-white px-3 text-sm text-[#022F40] outline-none focus:border-[#022F40]"
             >
               <option value="">Elige un cliente…</option>
               {clientes.map(c => (
@@ -148,12 +148,12 @@ export function ImportarCotizacionesPanel() {
               </p>
             )}
 
-            <p className="text-xs text-[#80727B]">
+            <p className="text-sm text-[#80727B]">
               Hoja "{resumen.hoja}": {resumen.filasLeidas.toLocaleString('es-NI')} filas leídas.
             </p>
 
             {resumen.clientesNuevos.length > 0 && (
-              <div className="rounded border border-[#E5E7EB] bg-[#F9FAFB] p-3 text-xs text-[#705D56]">
+              <div className="rounded border border-[#E5E7EB] bg-[#F9FAFB] p-3 text-sm text-[#705D56]">
                 <span className="font-medium text-[#022F40]">
                   Clientes que se crearán automáticamente ({resumen.clientesNuevos.length}):{' '}
                 </span>
@@ -169,7 +169,7 @@ export function ImportarCotizacionesPanel() {
             </div>
 
             {resumen.facturasConLineasNuevas > 0 && (
-              <p className="text-xs text-[#705D56]">
+              <p className="text-sm text-[#705D56]">
                 {resumen.facturasConLineasNuevas === 1
                   ? '1 factura existente recibirá líneas nuevas.'
                   : `${resumen.facturasConLineasNuevas} facturas existentes recibirán líneas nuevas.`}
@@ -177,7 +177,7 @@ export function ImportarCotizacionesPanel() {
             )}
 
             {resumen.filasIncompletas.length > 0 && (
-              <div className="rounded border border-amber-200 bg-amber-50 p-3 flex flex-col gap-1 text-xs text-amber-900">
+              <div className="rounded border border-amber-200 bg-amber-50 p-3 flex flex-col gap-1 text-sm text-amber-900">
                 <p className="font-semibold text-amber-950">
                   Filas incompletas no importadas ({resumen.filasIncompletas.length}):
                 </p>

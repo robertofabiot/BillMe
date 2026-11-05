@@ -1,18 +1,7 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
-import type { AuthResponse, AuthRequest } from '@/types'
-
-/** Datos del usuario en sesión (el token se guarda aparte). */
-type UsuarioSesion = Omit<AuthResponse, 'token'>
+import { useState, useEffect, type ReactNode } from 'react'
+import type { AuthRequest } from '@/types'
 import { authService } from '@/services'
-
-interface AuthContextType {
-  user: UsuarioSesion | null
-  loading: boolean
-  login: (credentials: AuthRequest) => Promise<void>
-  logout: () => void
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+import { AuthContext, type UsuarioSesion } from './auth-context'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UsuarioSesion | null>(null)
@@ -26,7 +15,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token && savedUser) {
       try {
         setUser(JSON.parse(savedUser))
-      } catch (e) {
+      } catch {
         localStorage.removeItem('billme_token')
         localStorage.removeItem('billme_user')
       }
@@ -54,12 +43,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   )
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth debe usarse dentro de un AuthProvider')
-  }
-  return context
 }

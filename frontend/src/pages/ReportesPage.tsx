@@ -63,7 +63,7 @@ export function ReportesPage() {
   }, [desde, hasta, clienteId, proyectoId])
 
   return (
-    <div className="p-8 flex flex-col gap-6 w-full max-w-7xl mx-auto">
+    <div className="p-4 md:p-8 flex flex-col gap-6 w-full max-w-7xl mx-auto">
       {/* ── Encabezado ── */}
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl font-semibold text-[#022F40] flex items-center gap-2">
@@ -74,7 +74,7 @@ export function ReportesPage() {
       {/* ── Filtros ── */}
       <section className="bg-white border border-[#E5E7EB] rounded shadow-sm p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="filtro-desde" className="text-xs font-medium text-[#705D56]">
+          <label htmlFor="filtro-desde" className="text-sm font-medium text-[#705D56]">
             Desde
           </label>
           <Input
@@ -86,7 +86,7 @@ export function ReportesPage() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="filtro-hasta" className="text-xs font-medium text-[#705D56]">
+          <label htmlFor="filtro-hasta" className="text-sm font-medium text-[#705D56]">
             Hasta
           </label>
           <Input
@@ -98,7 +98,7 @@ export function ReportesPage() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="filtro-cliente" className="text-xs font-medium text-[#705D56]">
+          <label htmlFor="filtro-cliente" className="text-sm font-medium text-[#705D56]">
             Cliente
           </label>
           <select
@@ -117,7 +117,7 @@ export function ReportesPage() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="filtro-proyecto" className="text-xs font-medium text-[#705D56]">
+          <label htmlFor="filtro-proyecto" className="text-sm font-medium text-[#705D56]">
             Proyecto
           </label>
           <select
@@ -146,7 +146,7 @@ export function ReportesPage() {
       {/* ── Tarjetas de métricas ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white border border-[#E5E7EB] rounded shadow-sm p-5 flex flex-col">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#705D56] mb-1">
+          <span className="text-sm font-semibold uppercase tracking-wider text-[#705D56] mb-1">
             Facturado
           </span>
           <span className="text-2xl font-bold text-[#022F40]">
@@ -155,7 +155,7 @@ export function ReportesPage() {
         </div>
 
         <div className="bg-white border border-[#E5E7EB] rounded shadow-sm p-5 flex flex-col">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#705D56] mb-1">
+          <span className="text-sm font-semibold uppercase tracking-wider text-[#705D56] mb-1">
             Costo
           </span>
           <span className="text-2xl font-bold text-[#022F40]">
@@ -164,7 +164,7 @@ export function ReportesPage() {
         </div>
 
         <div className="bg-white border border-[#E5E7EB] rounded shadow-sm p-5 flex flex-col">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#705D56] mb-1">
+          <span className="text-sm font-semibold uppercase tracking-wider text-[#705D56] mb-1">
             Ganancia
           </span>
           <span className="text-2xl font-bold text-[#558564]">
@@ -189,7 +189,7 @@ export function ReportesPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB] text-xs font-semibold text-[#705D56]">
+              <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB] text-sm font-semibold text-[#705D56]">
                 <th className="p-3">Folio</th>
                 <th className="p-3">Fecha</th>
                 <th className="p-3">Cliente</th>
