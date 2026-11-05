@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import type { Cliente, Documento, Producto, Proyecto, TipoDocumento } from '@/types'
+import type { Cliente, Documento, MetodoPrecio, Producto, Proyecto, TipoDocumento } from '@/types'
 import { clienteService } from '@/services/clienteService'
 import { documentoService, type DocumentoPayload } from '@/services/documentoService'
+import { precioService } from '@/services/precioService'
 import { proyectoService } from '@/services/proyectoService'
 import { formatCurrency, hoyIso } from '@/lib/format'
 import { AbonosSeccion } from '@/components/documentos/AbonosSeccion'
@@ -12,6 +13,8 @@ import { LineasTabla } from '@/components/documentos/LineasTabla'
 import { calcularLinea, type LineaForm } from '@/components/documentos/lineaForm'
 import { ProductoBuscador } from '@/components/documentos/ProductoBuscador'
 import { RevisionesDialog } from '@/components/documentos/RevisionesDialog'
+import { PrecioLineaDialog } from '@/components/documentos/PrecioLineaDialog'
+import { CalculadoraPesoDialog } from '@/components/documentos/CalculadoraPesoDialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, FileDown, FileText, History, Plus, ReceiptText, Save } from 'lucide-react'
@@ -51,6 +54,7 @@ function formularioDe(d: Documento): Formulario {
       productoId: l.productoId,
       productoCodigo: l.productoCodigo,
       productoGenerico: l.productoGenerico,
+      productoForma: l.productoForma ?? 'NINGUNA',
       descripcion: l.descripcion,
       cantidad: String(l.cantidad),
       pesoUnitKg: l.pesoUnitKg != null ? String(l.pesoUnitKg) : '',
@@ -123,6 +127,18 @@ export function DocumentoEditorPage() {
   const [aviso, setAviso] = useState<Aviso>(null)
   const [exportando, setExportando] = useState(false)
   const [viendoCambios, setViendoCambios] = useState(false)
+  const [lineaParaPrecio, setLineaParaPrecio] = useState<string | null>(null)
+  const [lineaParaCalculadora, setLineaParaCalculadora] = useState<string | null>(null)
+  const [modoCalculadoraSoloPeso, setModoCalculadoraSoloPeso] = useState(false)
+
+  const lineaActivaPrecio = useMemo(
+    () => form.lineas.find(l => l.clave === lineaParaPrecio) ?? null,
+    [form.lineas, lineaParaPrecio],
+  )
+  const lineaActivaCalculadora = useMemo(
+    () => form.lineas.find(l => l.clave === lineaParaCalculadora) ?? null,
+    [form.lineas, lineaParaCalculadora],
+  )
 
   const tipo: TipoDocumento = documento?.tipo
     ?? (parametros.get('tipo') === 'COTIZACION' ? 'COTIZACION' : 'FACTURA')
@@ -203,9 +219,45 @@ export function DocumentoEditorPage() {
     return { total: acum.total + total, kilos: acum.kilos + (pesoTotal ?? 0) }
   }, { total: 0, kilos: 0 }), [form.lineas])
 
-  const agregarProducto = (p: Producto) => {
+  const agregarProducto = async (p: Producto) => {
     const clave = `nueva-${Date.now()}-${Math.random()}`
     setClaveNueva(clave)
+
+    const forma = (p.formaCalculo || 'NINGUNA') as 'NINGUNA' | 'PLACA' | 'PLATINA' | 'ANGULAR'
+    const esPlacaOPlatinaGenerica = p.generico && (forma === 'PLACA' || forma === 'PLATINA')
+    const esLibre = p.codigoInterno === 'GEN-LIBRE'
+
+    let precioUnit = ''
+    let metodoPrecio: MetodoPrecio = 'MANUAL'
+    let parametros: string | null = null
+
+    if (!esPlacaOPlatinaGenerica && !esLibre && form.clienteId) {
+      try {
+        const res = await precioService.sugerido(form.clienteId, p.id)
+        if (res.precioUnit != null) {
+          precioUnit = String(res.precioUnit)
+          metodoPrecio = 'ULTIMO_PRECIO'
+          parametros = JSON.stringify({
+            folio: res.folio,
+            fecha: res.fecha,
+            clienteNombre: res.clienteNombre,
+            otroCliente: res.origen === 'OTRO_CLIENTE',
+            dias: res.diasAntiguedad,
+            viejo: res.viejo,
+          })
+        } else if (res.precioFormula != null) {
+          precioUnit = String(res.precioFormula)
+          metodoPrecio = 'FORMULA_LISTA'
+          parametros = JSON.stringify({
+            lista: res.precioLista,
+            descuentoPct: res.descuentoPct,
+          })
+        }
+      } catch {
+        // Si la consulta falla, el precio queda vacío, sin mensaje de error
+      }
+    }
+
     setForm(f => ({
       ...f,
       lineas: [...f.lineas, {
@@ -213,15 +265,48 @@ export function DocumentoEditorPage() {
         productoId: p.id,
         productoCodigo: p.codigoInterno,
         productoGenerico: p.generico,
+        productoForma: forma,
         descripcion: p.generico ? '' : p.nombrePrincipal,
         cantidad: '1',
         pesoUnitKg: p.peso ? String(p.peso) : '',
-        precioUnit: '',
-        metodoPrecio: 'MANUAL',
+        precioUnit,
+        metodoPrecio,
+        parametros,
         fechaEntrega: '',
         lugarEntrega: '',
       }],
     }))
+
+    if (esPlacaOPlatinaGenerica) {
+      setModoCalculadoraSoloPeso(false)
+      setLineaParaCalculadora(clave)
+    }
+  }
+
+  const alSalirDescripcion = async (clave: string) => {
+    const l = form.lineas.find(x => x.clave === clave)
+    if (!l || !form.clienteId) return
+    if (l.productoCodigo === 'GEN-LIBRE' && l.descripcion.trim() && !l.precioUnit.trim()) {
+      try {
+        const res = await precioService.sugerido(form.clienteId, l.productoId, l.descripcion.trim())
+        if (res.precioUnit != null) {
+          cambiarLinea(clave, {
+            precioUnit: String(res.precioUnit),
+            metodoPrecio: 'ULTIMO_PRECIO',
+            parametros: JSON.stringify({
+              folio: res.folio,
+              fecha: res.fecha,
+              clienteNombre: res.clienteNombre,
+              otroCliente: res.origen === 'OTRO_CLIENTE',
+              dias: res.diasAntiguedad,
+              viejo: res.viejo,
+            }),
+          })
+        }
+      } catch {
+        // Silencio en error
+      }
+    }
   }
 
   const cambiarLinea = (clave: string, cambios: Partial<LineaForm>) =>
@@ -483,7 +568,12 @@ export function DocumentoEditorPage() {
 
         {/* ── Líneas ── */}
         <section className="bg-white border border-[#E5E7EB] rounded shadow-sm p-5 flex flex-col gap-4">
-          {!soloLectura && <ProductoBuscador onElegir={agregarProducto} />}
+          {!soloLectura && (
+            <ProductoBuscador
+              onElegir={agregarProducto}
+              deshabilitado={!form.clienteId}
+            />
+          )}
 
           <LineasTabla
             lineas={form.lineas}
@@ -492,6 +582,12 @@ export function DocumentoEditorPage() {
             claveNueva={claveNueva}
             onCambiar={cambiarLinea}
             onQuitar={quitarLinea}
+            onAbrirPrecio={clave => setLineaParaPrecio(clave)}
+            onAbrirCalculadora={clave => {
+              setModoCalculadoraSoloPeso(true)
+              setLineaParaCalculadora(clave)
+            }}
+            onBlurDescripcion={alSalirDescripcion}
           />
 
           <div className="flex flex-wrap items-start justify-between gap-6">
@@ -570,6 +666,41 @@ export function DocumentoEditorPage() {
 
       <DocumentoExportSheet documento={documento} open={exportando} onOpenChange={setExportando} />
       {documento && <RevisionesDialog documentoId={documento.id} open={viendoCambios} onOpenChange={setViendoCambios} />}
+
+      <PrecioLineaDialog
+        open={lineaParaPrecio !== null}
+        onOpenChange={v => { if (!v) setLineaParaPrecio(null) }}
+        clienteId={form.clienteId}
+        linea={lineaActivaPrecio}
+        onAplicar={(precioUnit, metodoPrecio, parametros) => {
+          if (lineaParaPrecio) {
+            cambiarLinea(lineaParaPrecio, { precioUnit, metodoPrecio, parametros })
+          }
+        }}
+        onAbrirCalculadoraPeso={() => {
+          setModoCalculadoraSoloPeso(false)
+          setLineaParaCalculadora(lineaParaPrecio)
+          setLineaParaPrecio(null)
+        }}
+      />
+
+      <CalculadoraPesoDialog
+        open={lineaParaCalculadora !== null}
+        onOpenChange={v => { if (!v) setLineaParaCalculadora(null) }}
+        clienteId={form.clienteId}
+        linea={lineaActivaCalculadora}
+        soloPeso={modoCalculadoraSoloPeso}
+        onAplicar={datos => {
+          if (lineaParaCalculadora) {
+            const cambios: Partial<LineaForm> = { pesoUnitKg: datos.pesoUnitKg }
+            if (datos.descripcion) cambios.descripcion = datos.descripcion
+            if (datos.precioUnit) cambios.precioUnit = datos.precioUnit
+            if (datos.metodoPrecio) cambios.metodoPrecio = datos.metodoPrecio
+            if (datos.parametros !== undefined) cambios.parametros = datos.parametros
+            cambiarLinea(lineaParaCalculadora, cambios)
+          }
+        }}
+      />
     </div>
   )
 }

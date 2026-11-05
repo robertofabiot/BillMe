@@ -1,5 +1,5 @@
 import { api } from './api'
-import type { ReporteData, PrecioHistorial } from '@/types'
+import type { ReporteData } from '@/types'
 
 export const reporteService = {
   general: (filtros?: {
@@ -17,9 +17,4 @@ export const reporteService = {
     const qs = params.toString()
     return api.get<ReporteData>(qs ? `/reportes/general?${qs}` : '/reportes/general')
   },
-
-  historialPrecios: (clienteId: string, productoId: string) =>
-    api.get<PrecioHistorial[]>(
-      `/precios/historial?clienteId=${clienteId}&productoId=${productoId}`
-    ),
 }

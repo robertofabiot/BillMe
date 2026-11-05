@@ -354,6 +354,7 @@ public class DocumentoService {
                 l.getProducto().getId(),
                 l.getProducto().getCodigoInterno(),
                 l.getProducto().isGenerico(),
+                l.getProducto().getFormaCalculo().name(),
                 l.getDescripcion(),
                 l.getCantidad(),
                 l.getPesoUnitKg(),

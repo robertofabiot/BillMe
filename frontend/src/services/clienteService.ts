@@ -5,6 +5,8 @@ export interface ClientePayload {
   nombre: string
   telefono?: string
   detalles?: string
+  descuentoPct?: number
+  tarifaKgUsd?: number | null
 }
 
 export const clienteService = {

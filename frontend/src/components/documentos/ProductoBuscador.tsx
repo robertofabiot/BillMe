@@ -68,7 +68,7 @@ export function ProductoBuscador({ onElegir, deshabilitado }: Props) {
               if (resultados[0]) elegir(resultados[0])
             }
           }}
-          placeholder="Agregar producto: escribe el nombre o el código…"
+          placeholder={deshabilitado ? 'Elige primero el cliente' : 'Agregar producto: escribe el nombre o el código…'}
           className="pl-8"
         />
 

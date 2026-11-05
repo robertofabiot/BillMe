@@ -10,7 +10,8 @@ import {
   Layers,
   LogOut,
   UserCircle,
-  Upload
+  Upload,
+  Tags
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
@@ -18,6 +19,7 @@ import { useAuth } from '@/context/AuthContext'
 const navItems = [
   { to: '/',          label: 'Facturas',   icon: ReceiptText },
   { to: '/cotizaciones', label: 'Cotizaciones', icon: FileText },
+  { to: '/precios',   label: 'Precios',    icon: Tags },
   { to: '/consolidados', label: 'Consolidados', icon: Layers },
   { to: '/clientes',  label: 'Clientes',   icon: Users },
   { to: '/productos', label: 'Productos',  icon: Package },

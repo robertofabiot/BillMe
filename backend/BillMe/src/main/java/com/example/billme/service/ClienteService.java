@@ -49,6 +49,8 @@ public class ClienteService {
         cliente.setNombre(request.nombre());
         cliente.setTelefono(request.telefono());
         cliente.setDetalles(request.detalles());
+        cliente.setDescuentoPct(request.descuentoPct() != null ? request.descuentoPct() : java.math.BigDecimal.ZERO);
+        cliente.setTarifaKgUsd(request.tarifaKgUsd());
         cliente = clienteRepository.save(cliente);
         return toResponse(cliente);
     }
@@ -60,6 +62,8 @@ public class ClienteService {
         cliente.setNombre(request.nombre());
         cliente.setTelefono(request.telefono());
         cliente.setDetalles(request.detalles());
+        cliente.setDescuentoPct(request.descuentoPct() != null ? request.descuentoPct() : java.math.BigDecimal.ZERO);
+        cliente.setTarifaKgUsd(request.tarifaKgUsd());
         cliente = clienteRepository.save(cliente);
         return toResponse(cliente);
     }
@@ -83,7 +87,9 @@ public class ClienteService {
                 entity.getNombre(),
                 entity.getTelefono(),
                 entity.getDetalles(),
-                entity.getCreatedAt()
+                entity.getCreatedAt(),
+                entity.getDescuentoPct(),
+                entity.getTarifaKgUsd()
         );
     }
 }

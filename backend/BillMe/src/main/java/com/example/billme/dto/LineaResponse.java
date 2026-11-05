@@ -10,6 +10,7 @@ public record LineaResponse(
         UUID productoId,
         String productoCodigo,
         boolean productoGenerico,
+        String productoForma,
         String descripcion,
         BigDecimal cantidad,
         BigDecimal pesoUnitKg,
