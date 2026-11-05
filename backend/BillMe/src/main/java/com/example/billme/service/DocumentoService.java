@@ -307,6 +307,7 @@ public class DocumentoService {
                     ? null : pedida.lugarEntrega().trim());
             // Una línea que se conserva mantiene el costo con el que se vendió
             if (!mismoProducto) {
+                linea.setCompra(null);
                 linea.setCostoUnitConIva(costos.computeIfAbsent(producto.getId(),
                         p -> precioListaService.costoEstimadoConIva(producto).orElse(null)));
             }
@@ -387,6 +388,7 @@ public class DocumentoService {
                 l.getParametros(),
                 l.getFechaEntrega(),
                 l.getLugarEntrega(),
-                l.getCostoUnitConIva());
+                l.getCostoUnitConIva(),
+                l.getCompra() != null ? l.getCompra().getId() : null);
     }
 }
