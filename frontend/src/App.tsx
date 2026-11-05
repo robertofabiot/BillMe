@@ -13,6 +13,7 @@ import { ReportesPage } from '@/pages/ReportesPage'
 import { ConfiguracionPage } from '@/pages/ConfiguracionPage'
 import { ConsolidadosPage } from '@/pages/ConsolidadosPage'
 import { ImportarPage } from '@/pages/ImportarPage'
+import { PreciosPage } from '@/pages/PreciosPage'
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
               <Route element={<AppLayout />}>
                 <Route index         element={<DocumentosPage tipo="FACTURA" />}  />
                 <Route path="cotizaciones" element={<DocumentosPage tipo="COTIZACION" />} />
+                <Route path="precios" element={<PreciosPage />} />
                 <Route path="documentos/nuevo" element={<DocumentoEditorPage />} />
                 <Route path="documentos/:id" element={<DocumentoEditorPage />} />
                 <Route path="clientes"  element={<ClientesPage />}  />
