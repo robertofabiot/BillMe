@@ -13,15 +13,19 @@ interface Props {
 }
 
 export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
-  const [nombre,   setNombre]   = useState('')
-  const [telefono, setTelefono] = useState('')
-  const [detalles, setDetalles] = useState('')
+  const [nombre,       setNombre]       = useState('')
+  const [telefono,     setTelefono]     = useState('')
+  const [detalles,     setDetalles]     = useState('')
+  const [descuentoPct, setDescuentoPct] = useState('')
+  const [tarifaKgUsd,  setTarifaKgUsd]  = useState('')
 
   useEffect(() => {
     if (open) {
-      setNombre(initial?.nombre   ?? '')
+      setNombre(initial?.nombre ?? '')
       setTelefono(initial?.telefono ?? '')
       setDetalles(initial?.detalles ?? '')
+      setDescuentoPct(initial?.descuentoPct != null ? String(initial.descuentoPct) : '0')
+      setTarifaKgUsd(initial?.tarifaKgUsd != null ? String(initial.tarifaKgUsd) : '')
     }
   }, [open, initial])
 
@@ -34,7 +38,16 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
 
   const handleSave = () => {
     if (!nombre.trim()) return
-    onSave({ id: initial?.id, nombre: nombre.trim(), telefono: telefono.trim() || undefined, detalles: detalles.trim() || undefined })
+    const descVal = parseFloat(descuentoPct)
+    const tarifaVal = parseFloat(tarifaKgUsd)
+    onSave({
+      id: initial?.id,
+      nombre: nombre.trim(),
+      telefono: telefono.trim() || undefined,
+      detalles: detalles.trim() || undefined,
+      descuentoPct: !isNaN(descVal) ? descVal : 0,
+      tarifaKgUsd: !isNaN(tarifaVal) && tarifaVal > 0 ? tarifaVal : null,
+    })
     onOpenChange(false)
   }
 
@@ -83,6 +96,30 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
               onChange={(e: ChangeEvent<HTMLInputElement>) => setTelefono(e.target.value)}
               placeholder="Opcional"
             />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-[#705D56]">Descuento sobre la lista (%)</label>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              max="99.99"
+              value={descuentoPct}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setDescuentoPct(e.target.value)}
+              placeholder="0"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-[#705D56]">Tarifa por kg para placas y platinas (USD, sin IVA)</label>
+            <Input
+              type="number"
+              step="0.0001"
+              min="0"
+              value={tarifaKgUsd}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setTarifaKgUsd(e.target.value)}
+              placeholder="Opcional"
+            />
+            <span className="text-[11px] text-[#80727B]">Si lo dejas vacío se usa la de Configuración</span>
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-[#705D56]">Notas</label>

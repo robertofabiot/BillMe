@@ -97,4 +97,36 @@ class ClienteControllerTest extends IntegrationTest {
 
         assertThat(proyectoService.listarTodos()).isEmpty();
     }
+
+    @Test
+    void crearConDescuentoYTarifaGuardaLosValores() throws Exception {
+        mockMvc.perform(post("/api/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nombre": "Cliente Especial",
+                                  "descuentoPct": 5.5,
+                                  "tarifaKgUsd": 1.7500
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").isNotEmpty())
+                .andExpect(jsonPath("$.nombre").value("Cliente Especial"))
+                .andExpect(jsonPath("$.descuentoPct").value(5.5))
+                .andExpect(jsonPath("$.tarifaKgUsd").value(1.75));
+    }
+
+    @Test
+    void crearConDescuentoMayorOIgualA100Responde400() throws Exception {
+        mockMvc.perform(post("/api/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nombre": "Cliente Invalido",
+                                  "descuentoPct": 100
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errores[0].campo").value("descuentoPct"));
+    }
 }

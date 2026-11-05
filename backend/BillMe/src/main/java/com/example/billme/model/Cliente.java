@@ -31,6 +31,13 @@ public class Cliente extends BaseEntity {
     @Column(name = "detalles", columnDefinition = "TEXT")
     private String detalles;
 
+    @Column(name = "descuento_pct", nullable = false, precision = 5, scale = 2)
+    @Builder.Default
+    private java.math.BigDecimal descuentoPct = java.math.BigDecimal.ZERO;
+
+    @Column(name = "tarifa_kg_usd", precision = 8, scale = 4)
+    private java.math.BigDecimal tarifaKgUsd;
+
     // ── Relaciones ──────────────────────────────────────────────────────────
 
     /**

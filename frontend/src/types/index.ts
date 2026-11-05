@@ -30,6 +30,8 @@ export interface Cliente {
   nombre: string
   telefono?: string
   detalles?: string
+  descuentoPct?: number
+  tarifaKgUsd?: number | null
   createdAt?: string
 }
 
