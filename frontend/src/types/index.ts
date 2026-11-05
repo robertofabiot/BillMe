@@ -21,8 +21,12 @@ export interface Producto {
 
 export interface Abono {
   id: string
+  clienteId: string
+  proyectoId?: string | null
+  proyectoNombre?: string | null
   monto: number
   fechaPago: string
+  nota?: string | null
 }
 
 export interface Cliente {
@@ -32,7 +36,41 @@ export interface Cliente {
   detalles?: string
   descuentoPct?: number
   tarifaKgUsd?: number | null
+  saldoInicial?: number
+  fechaInicioCuenta?: string | null
+  saldo?: number
   createdAt?: string
+}
+
+export interface SaldoProyecto {
+  proyectoId: string | null
+  nombre: string
+  facturado: number
+  abonado: number
+  saldo: number
+}
+
+export interface MovimientoCuenta {
+  fecha: string | null
+  tipo: 'SALDO_INICIAL' | 'FACTURA' | 'ABONO'
+  id?: string | null
+  concepto: string
+  proyectoNombre?: string | null
+  cargo?: number | null
+  abono?: number | null
+  saldo: number
+}
+
+export interface CuentaCliente {
+  clienteId: string
+  clienteNombre: string
+  saldoInicial: number
+  fechaInicioCuenta: string | null
+  totalFacturado: number
+  totalAbonado: number
+  saldo: number
+  proyectos: SaldoProyecto[]
+  movimientos: MovimientoCuenta[]
 }
 
 export interface Proyecto {

@@ -13,11 +13,13 @@ interface Props {
 }
 
 export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
-  const [nombre,       setNombre]       = useState('')
-  const [telefono,     setTelefono]     = useState('')
-  const [detalles,     setDetalles]     = useState('')
-  const [descuentoPct, setDescuentoPct] = useState('')
-  const [tarifaKgUsd,  setTarifaKgUsd]  = useState('')
+  const [nombre,            setNombre]            = useState('')
+  const [telefono,          setTelefono]          = useState('')
+  const [detalles,          setDetalles]          = useState('')
+  const [descuentoPct,      setDescuentoPct]      = useState('')
+  const [tarifaKgUsd,       setTarifaKgUsd]       = useState('')
+  const [saldoInicial,      setSaldoInicial]      = useState('')
+  const [fechaInicioCuenta, setFechaInicioCuenta] = useState('')
 
   useEffect(() => {
     if (open) {
@@ -26,6 +28,8 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
       setDetalles(initial?.detalles ?? '')
       setDescuentoPct(initial?.descuentoPct != null ? String(initial.descuentoPct) : '0')
       setTarifaKgUsd(initial?.tarifaKgUsd != null ? String(initial.tarifaKgUsd) : '')
+      setSaldoInicial(initial?.saldoInicial != null ? String(initial.saldoInicial) : '0')
+      setFechaInicioCuenta(initial?.fechaInicioCuenta ?? '')
     }
   }, [open, initial])
 
@@ -40,6 +44,7 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
     if (!nombre.trim()) return
     const descVal = parseFloat(descuentoPct)
     const tarifaVal = parseFloat(tarifaKgUsd)
+    const saldoVal = parseFloat(saldoInicial)
     onSave({
       id: initial?.id,
       nombre: nombre.trim(),
@@ -47,6 +52,8 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
       detalles: detalles.trim() || undefined,
       descuentoPct: !isNaN(descVal) ? descVal : 0,
       tarifaKgUsd: !isNaN(tarifaVal) && tarifaVal > 0 ? tarifaVal : null,
+      saldoInicial: !isNaN(saldoVal) ? saldoVal : 0,
+      fechaInicioCuenta: fechaInicioCuenta ? fechaInicioCuenta : null,
     })
     onOpenChange(false)
   }
@@ -120,6 +127,27 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
               placeholder="Opcional"
             />
             <span className="text-[11px] text-[#80727B]">Si lo dejas vacío se usa la de Configuración</span>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-[#705D56]">Saldo inicial (C$)</label>
+            <Input
+              type="number"
+              step="0.01"
+              value={saldoInicial}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setSaldoInicial(e.target.value)}
+              placeholder="0"
+            />
+            <span className="text-[11px] text-[#80727B]">
+              Lo que debía al empezar a usar el sistema. Si tenía saldo a favor, escríbelo en negativo.
+            </span>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-[#705D56]">La cuenta empieza el</label>
+            <Input
+              type="date"
+              value={fechaInicioCuenta}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setFechaInicioCuenta(e.target.value)}
+            />
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-[#705D56]">Notas</label>
