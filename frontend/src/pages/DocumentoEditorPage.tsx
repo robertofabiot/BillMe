@@ -7,7 +7,9 @@ import { precioService } from '@/services/precioService'
 import { proyectoService } from '@/services/proyectoService'
 import { formatCurrency, hoyIso } from '@/lib/format'
 import { AbonosSeccion } from '@/components/documentos/AbonosSeccion'
-import { DocumentoExportSheet } from '@/components/documentos/DocumentoExportSheet'
+import { ExportarDialog } from '@/components/export/ExportarDialog'
+import { DocumentoPlantilla } from '@/components/export/DocumentoPlantilla'
+import { nombreArchivo } from '@/lib/exportar'
 import { EstadoDocumentoBadge } from '@/components/documentos/EstadoDocumentoBadge'
 import { LineasTabla } from '@/components/documentos/LineasTabla'
 import { calcularLinea, type LineaForm } from '@/components/documentos/lineaForm'
@@ -189,6 +191,13 @@ export function DocumentoEditorPage() {
 
   const cambiosSinGuardar = JSON.stringify(form) !== guardadoRef.current
   const soloLectura = documento?.estado === 'ACEPTADA' || documento?.estado === 'ANULADA'
+
+  const abrirExportar = () => {
+    if (cambiosSinGuardar && !window.confirm('Se exportará la última versión guardada. ¿Continuar?')) {
+      return
+    }
+    setExportando(true)
+  }
 
   // Que un clic en el menú o cerrar la pestaña no pierda lo escrito
   useEffect(() => {
@@ -446,8 +455,8 @@ export function DocumentoEditorPage() {
 
         {documento && (
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" onClick={() => setExportando(true)} className="h-9 gap-2">
-              <FileDown className="w-4 h-4" /> Exportar imagen
+            <Button variant="outline" onClick={abrirExportar} className="h-9 gap-2">
+              <FileDown className="w-4 h-4" /> Exportar
             </Button>
             <Button variant="outline" onClick={() => setViendoCambios(true)} className="h-9 gap-2">
               <History className="w-4 h-4" /> Ver cambios
@@ -664,7 +673,19 @@ export function DocumentoEditorPage() {
         <AbonosSeccion factura={documento} onRegistrado={recargarAbonos} />
       )}
 
-      <DocumentoExportSheet documento={documento} open={exportando} onOpenChange={setExportando} />
+      {documento && (
+        <ExportarDialog
+          open={exportando}
+          onOpenChange={setExportando}
+          encabezadoInicial={`${documento.clienteNombre}${documento.proyectoNombre ? ` / ${documento.proyectoNombre}` : ''}${documento.tipo === 'COTIZACION' ? ' / Cotización' : ''}`}
+          nombreBase={(ext) => nombreArchivo(documento.folio, documento.clienteNombre, documento.fecha, ext)}
+          horizontal={documento.mostrarEntrega}
+          plantilla={(encabezado) => (
+            <DocumentoPlantilla documento={documento} encabezado={encabezado} />
+          )}
+          descargarExcel={(enc) => documentoService.descargarExcel(documento.id, enc)}
+        />
+      )}
       {documento && <RevisionesDialog documentoId={documento.id} open={viendoCambios} onOpenChange={setViendoCambios} />}
 
       <PrecioLineaDialog

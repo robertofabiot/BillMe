@@ -11,6 +11,9 @@ import com.example.billme.dto.RevisionResponse;
 import com.example.billme.enums.EstadoDocumento;
 import com.example.billme.enums.MetodoPrecio;
 import com.example.billme.enums.TipoDocumento;
+import com.example.billme.exportacion.ArchivoExcel;
+import com.example.billme.exportacion.DocumentoExcel;
+import com.example.billme.exportacion.NombreArchivo;
 import com.example.billme.model.Abono;
 import com.example.billme.model.Cliente;
 import com.example.billme.model.Documento;
@@ -60,6 +63,7 @@ public class DocumentoService {
     private final PrecioListaService precioListaService;
     private final DocumentoRevisionRepository revisionRepository;
     private final JsonMapper jsonMapper;
+    private final DocumentoExcel documentoExcel;
 
     public List<DocumentoResponse> filtrar(TipoDocumento tipo, EstadoDocumento estado, UUID clienteId, UUID proyectoId,
                                            UUID productoId, LocalDate desde, LocalDate hasta) {
@@ -71,6 +75,33 @@ public class DocumentoService {
     public DocumentoResponse obtener(UUID id) {
         Documento documento = buscar(id);
         return toResponse(documento, documentoRepository.findFirstByCotizacionOrigenId(id).orElse(null));
+    }
+
+    public ArchivoExcel exportarExcel(UUID id, String encabezado) {
+        Documento doc = buscar(id);
+        String encabezadoFinal = (encabezado != null && !encabezado.isBlank())
+                ? encabezado.trim()
+                : encabezadoPorDefecto(doc);
+        byte[] contenido = documentoExcel.generar(doc, encabezadoFinal);
+        String clienteNombre = doc.getCliente() != null && doc.getCliente().getNombre() != null
+                ? doc.getCliente().getNombre()
+                : "";
+        String nombre = NombreArchivo.de(doc.getFolio(), clienteNombre, doc.getFecha(), "xlsx");
+        return new ArchivoExcel(nombre, contenido);
+    }
+
+    public String encabezadoPorDefecto(Documento doc) {
+        String clienteNombre = doc.getCliente() != null && doc.getCliente().getNombre() != null
+                ? doc.getCliente().getNombre()
+                : "";
+        StringBuilder sb = new StringBuilder(clienteNombre);
+        if (doc.getProyecto() != null && doc.getProyecto().getNombre() != null && !doc.getProyecto().getNombre().isBlank()) {
+            sb.append(" / ").append(doc.getProyecto().getNombre().trim());
+        }
+        if (doc.getTipo() == TipoDocumento.COTIZACION) {
+            sb.append(" / Cotización");
+        }
+        return sb.toString();
     }
 
     @Transactional

@@ -10,10 +10,13 @@ import com.example.billme.enums.EstadoDocumento;
 import com.example.billme.enums.TipoDocumento;
 import com.example.billme.service.AbonoService;
 import com.example.billme.service.DocumentoService;
+import com.example.billme.exportacion.ArchivoExcel;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,6 +48,17 @@ public class DocumentoController {
     @GetMapping("/{id}")
     public ResponseEntity<DocumentoResponse> obtener(@PathVariable UUID id) {
         return ResponseEntity.ok(documentoService.obtener(id));
+    }
+
+    @GetMapping("/{id}/excel")
+    public ResponseEntity<byte[]> exportarExcel(
+            @PathVariable UUID id,
+            @RequestParam(required = false) String encabezado) {
+        ArchivoExcel archivo = documentoService.exportarExcel(id, encabezado);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + archivo.nombre() + "\"")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(archivo.contenido());
     }
 
     @PostMapping

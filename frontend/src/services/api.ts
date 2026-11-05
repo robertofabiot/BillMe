@@ -48,8 +48,8 @@ async function toApiError(res: Response): Promise<ApiError> {
   return new ApiError(res.status, text || res.statusText || `Error ${res.status}`)
 }
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = localStorage.getItem('billme_token')
+export async function enviar(path: string, options?: RequestInit): Promise<Response> {
+  const token = localStorage.getItem('token') || localStorage.getItem('billme_token')
   // Con FormData (subir archivos) el navegador pone el Content-Type con su separador
   const esArchivo = options?.body instanceof FormData
   const headers: Record<string, string> = {
@@ -57,25 +57,38 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     ...(options?.headers as Record<string, string> | undefined),
   }
 
-  if (token) {
+  if (token && !headers['Authorization'] && !headers['authorization']) {
     headers['Authorization'] = `Bearer ${token}`
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const cleanPath = path.startsWith('/api') ? path.slice(4) : path
+  const url = path.startsWith('http') ? path : `${API_BASE}${cleanPath}`
+
+  const res = await fetch(url, {
     ...options,
     headers,
   })
 
-  if (res.status === 401 && token && !path.startsWith('/auth/')) {
+  if (res.status === 401 && !path.startsWith('/auth/')) {
     // La sesión venció o el usuario ya no es válido: volver al login
+    localStorage.removeItem('token')
+    localStorage.removeItem('usuario')
     localStorage.removeItem('billme_token')
     localStorage.removeItem('billme_user')
-    window.location.assign('/login')
+    if (typeof window !== 'undefined') {
+      window.location.assign('/login')
+    }
   }
 
   if (!res.ok) {
     throw await toApiError(res)
   }
+
+  return res
+}
+
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const res = await enviar(path, options)
 
   // 204 No Content
   if (res.status === 204) return undefined as T
@@ -95,4 +108,8 @@ export const api = {
     request<T>(path, { method: 'DELETE' }),
   subir: <T>(path: string, form: FormData) =>
     request<T>(path, { method: 'POST', body: form }),
+  descargar: async (path: string): Promise<Blob> => {
+    const res = await enviar(path)
+    return res.blob()
+  },
 }

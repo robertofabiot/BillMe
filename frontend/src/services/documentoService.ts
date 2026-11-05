@@ -70,4 +70,13 @@ export const documentoService = {
 
   registrarAbono: (id: string, data: { monto: number; fechaPago: string }) =>
     api.post<Abono>(`/documentos/${id}/abonos`, data),
+
+  descargarExcel: (id: string, encabezado?: string): Promise<Blob> => {
+    const params = new URLSearchParams()
+    if (encabezado !== undefined && encabezado !== null && encabezado.trim() !== '') {
+      params.set('encabezado', encabezado.trim())
+    }
+    const qs = params.toString()
+    return api.descargar(`/documentos/${id}/excel${qs ? `?${qs}` : ''}`)
+  },
 }
