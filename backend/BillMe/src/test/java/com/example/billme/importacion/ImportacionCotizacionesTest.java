@@ -15,6 +15,13 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.ResultActions;
 
+import com.example.billme.dto.DecisionConciliacion;
+import com.example.billme.model.AliasProducto;
+import com.example.billme.model.Producto;
+import com.example.billme.repository.AliasProductoRepository;
+import com.example.billme.repository.ProductoRepository;
+import tools.jackson.databind.ObjectMapper;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -22,6 +29,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -41,6 +49,15 @@ class ImportacionCotizacionesTest extends IntegrationTest {
     @Autowired
     private DocumentoService documentoService;
 
+    @Autowired
+    private ProductoRepository productoRepository;
+
+    @Autowired
+    private AliasProductoRepository aliasProductoRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
     private static MockMultipartFile archivo(byte[] contenido) {
         return new MockMultipartFile("archivo", "cotizaciones.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", contenido);
@@ -53,9 +70,17 @@ class ImportacionCotizacionesTest extends IntegrationTest {
     }
 
     private ResultActions aplicar(byte[] contenido, UUID clienteId) throws Exception {
-        return mockMvc.perform(multipart("/api/importaciones/cotizaciones/aplicar")
+        return aplicar(contenido, clienteId, null);
+    }
+
+    private ResultActions aplicar(byte[] contenido, UUID clienteId, String decisionesJson) throws Exception {
+        var builder = multipart("/api/importaciones/cotizaciones/aplicar")
                 .file(archivo(contenido))
-                .param("clienteId", clienteId.toString()));
+                .param("clienteId", clienteId.toString());
+        if (decisionesJson != null) {
+            builder.param("decisiones", decisionesJson);
+        }
+        return mockMvc.perform(builder);
     }
 
     @Test
@@ -314,5 +339,276 @@ class ImportacionCotizacionesTest extends IntegrationTest {
 
         aplicar(excel, noExiste)
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void elegirProductoCreaAliasYAlReimportarNoQuedaPendiente() throws Exception {
+        Cliente cliente = clienteRepository.save(Cliente.builder()
+                .nombre("Cliente Conciliacion")
+                .descuentoPct(BigDecimal.ZERO)
+                .build());
+
+        Producto productoReal = productoRepository.save(Producto.builder()
+                .codigoInterno("PROD-TUB-1")
+                .nombrePrincipal("Tubo Industrial 1 pulgada")
+                .unidad("UND")
+                .generico(false)
+                .activo(true)
+                .build());
+
+        String descripcionEspecial = "Tubo Redondo Especial 1 pulgada";
+
+        byte[] excel1 = ExcelDePrueba.cotizaciones()
+                .fila(LocalDate.of(2026, 11, 1), 2, descripcionEspecial, 100.0, null, null, null, null, null, "Bodega", null, null, null)
+                .bytes();
+
+        vistaPrevia(excel1, cliente.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.porConciliar").isArray())
+                .andExpect(jsonPath("$.porConciliar[0].descripcion").value(descripcionEspecial))
+                .andExpect(jsonPath("$.porConciliar[0].filas").value(1));
+
+        String decisionesJson = objectMapper.writeValueAsString(List.of(
+                new DecisionConciliacion(descripcionEspecial, productoReal.getId())
+        ));
+
+        aplicar(excel1, cliente.getId(), decisionesJson)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.facturasNuevas").value(1))
+                .andExpect(jsonPath("$.filasNuevas").value(1));
+
+        Optional<AliasProducto> aliasOpt = aliasProductoRepository.findFirstByAliasNorm(
+                com.example.billme.util.NormalizadorTexto.normalizar(descripcionEspecial));
+        assertThat(aliasOpt).isPresent();
+        assertThat(aliasOpt.get().getProducto().getId()).isEqualTo(productoReal.getId());
+        assertThat(aliasOpt.get().getNombreAlias()).isEqualTo(descripcionEspecial);
+
+        DocumentoLinea linea1 = documentoLineaRepository.findAll().get(0);
+        assertThat(linea1.getProducto().getId()).isEqualTo(productoReal.getId());
+        assertThat(linea1.getDescripcion()).isEqualTo(descripcionEspecial);
+
+        byte[] excel2 = ExcelDePrueba.cotizaciones()
+                .fila(LocalDate.of(2026, 11, 2), 5, descripcionEspecial, 120.0, null, null, null, null, null, "Bodega", null, null, null)
+                .bytes();
+
+        vistaPrevia(excel2, cliente.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.filasNuevas").value(1))
+                .andExpect(jsonPath("$.porConciliar").isEmpty());
+
+        aplicar(excel2, cliente.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.filasNuevas").value(1));
+
+        List<DocumentoLinea> lineas = documentoLineaRepository.findAll();
+        assertThat(lineas).hasSize(2);
+        DocumentoLinea linea2 = lineas.stream().filter(l -> l.getCantidad().compareTo(new BigDecimal("5.000")) == 0).findFirst().orElseThrow();
+        assertThat(linea2.getProducto().getId()).isEqualTo(productoReal.getId());
+        assertThat(linea2.getDescripcion()).isEqualTo(descripcionEspecial);
+    }
+
+    @Test
+    void sinDecisionEntraConPropuestaGenericaYConservaDescripcion() throws Exception {
+        Cliente cliente = clienteRepository.save(Cliente.builder()
+                .nombre("Cliente Generico")
+                .descuentoPct(BigDecimal.ZERO)
+                .build());
+
+        Producto genPlaca = productoRepository.findByCodigoInterno("GEN-PLACA").orElseThrow();
+        Producto genPlatina = productoRepository.findByCodigoInterno("GEN-PLATINA").orElseThrow();
+        Producto genLibre = productoRepository.findByCodigoInterno("GEN-LIBRE").orElseThrow();
+
+        byte[] excel = ExcelDePrueba.cotizaciones()
+                .fila(LocalDate.of(2026, 11, 1), 1, "Placa base 200x200x12mm", 300.0, null, null, null, null, null, "Local", null, null, null)
+                .fila(LocalDate.of(2026, 11, 1), 2, "Platina 2x1/4 x 6m", 150.0, null, null, null, null, null, "Local", null, null, null)
+                .fila(LocalDate.of(2026, 11, 1), 3, "Servicio de oxicorte especial", 80.0, null, null, null, null, null, "Local", null, null, null)
+                .bytes();
+
+        vistaPrevia(excel, cliente.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.porConciliar").isArray())
+                .andExpect(jsonPath("$.porConciliar[0].descripcion").value("Placa base 200x200x12mm"))
+                .andExpect(jsonPath("$.porConciliar[0].propuestaProductoId").value(genPlaca.getId().toString()))
+                .andExpect(jsonPath("$.porConciliar[0].propuestaNombre").value(genPlaca.getNombrePrincipal()))
+                .andExpect(jsonPath("$.porConciliar[1].descripcion").value("Platina 2x1/4 x 6m"))
+                .andExpect(jsonPath("$.porConciliar[1].propuestaProductoId").value(genPlatina.getId().toString()))
+                .andExpect(jsonPath("$.porConciliar[1].propuestaNombre").value(genPlatina.getNombrePrincipal()))
+                .andExpect(jsonPath("$.porConciliar[2].descripcion").value("Servicio de oxicorte especial"))
+                .andExpect(jsonPath("$.porConciliar[2].propuestaProductoId").value(genLibre.getId().toString()))
+                .andExpect(jsonPath("$.porConciliar[2].propuestaNombre").value(genLibre.getNombrePrincipal()));
+
+        aplicar(excel, cliente.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.filasNuevas").value(3));
+
+        List<DocumentoLinea> lineas = documentoLineaRepository.findAll();
+        assertThat(lineas).hasSize(3);
+
+        DocumentoLinea lPlaca = lineas.stream().filter(l -> l.getDescripcion().equals("Placa base 200x200x12mm")).findFirst().orElseThrow();
+        assertThat(lPlaca.getProducto().getId()).isEqualTo(genPlaca.getId());
+
+        DocumentoLinea lPlatina = lineas.stream().filter(l -> l.getDescripcion().equals("Platina 2x1/4 x 6m")).findFirst().orElseThrow();
+        assertThat(lPlatina.getProducto().getId()).isEqualTo(genPlatina.getId());
+
+        DocumentoLinea lLibre = lineas.stream().filter(l -> l.getDescripcion().equals("Servicio de oxicorte especial")).findFirst().orElseThrow();
+        assertThat(lLibre.getProducto().getId()).isEqualTo(genLibre.getId());
+
+        assertThat(aliasProductoRepository.findFirstByAliasNorm(com.example.billme.util.NormalizadorTexto.normalizar("Placa base 200x200x12mm"))).isEmpty();
+        assertThat(aliasProductoRepository.findFirstByAliasNorm(com.example.billme.util.NormalizadorTexto.normalizar("Platina 2x1/4 x 6m"))).isEmpty();
+        assertThat(aliasProductoRepository.findFirstByAliasNorm(com.example.billme.util.NormalizadorTexto.normalizar("Servicio de oxicorte especial"))).isEmpty();
+    }
+
+    @Test
+    void trasImportarConsultaPrecioSugeridoDevuelvePrecioHistorial() throws Exception {
+        Cliente cliente = clienteRepository.save(Cliente.builder()
+                .nombre("Cliente Historial")
+                .descuentoPct(BigDecimal.ZERO)
+                .build());
+
+        Producto productoReal = productoRepository.save(Producto.builder()
+                .codigoInterno("PROD-VIGA-1")
+                .nombrePrincipal("Viga IPE 100")
+                .unidad("UND")
+                .generico(false)
+                .activo(true)
+                .build());
+
+        byte[] excel = ExcelDePrueba.cotizaciones()
+                .fila(LocalDate.of(2026, 11, 1), 2, "Viga IPE 100 especial", 275.50, null, null, null, null, null, "Local", null, null, null)
+                .bytes();
+
+        String decisionesJson = objectMapper.writeValueAsString(List.of(
+                new DecisionConciliacion("Viga IPE 100 especial", productoReal.getId())
+        ));
+
+        aplicar(excel, cliente.getId(), decisionesJson)
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/precios/sugerido")
+                        .param("clienteId", cliente.getId().toString())
+                        .param("productoId", productoReal.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.precioUnit").value(275.50))
+                .andExpect(jsonPath("$.origen").value("ESTE_CLIENTE"))
+                .andExpect(jsonPath("$.clienteNombre").value("Cliente Historial"));
+    }
+
+    @Test
+    void decisionConProductoInexistenteDa404() throws Exception {
+        Cliente cliente = clienteRepository.save(Cliente.builder()
+                .nombre("Cliente Test 404")
+                .descuentoPct(BigDecimal.ZERO)
+                .build());
+
+        byte[] excel = ExcelDePrueba.cotizaciones()
+                .fila(LocalDate.of(2026, 11, 1), 1, "Tubo Especial", 100.0, null, null, null, null, null, "Local", null, null, null)
+                .bytes();
+
+        UUID productoFantasma = UUID.randomUUID();
+        String decisionesJson = objectMapper.writeValueAsString(List.of(
+                new DecisionConciliacion("Tubo Especial", productoFantasma)
+        ));
+
+        aplicar(excel, cliente.getId(), decisionesJson)
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void descripcionMayorA200NoCreaAliasPeroImportaCorrectamente() throws Exception {
+        Cliente cliente = clienteRepository.save(Cliente.builder()
+                .nombre("Cliente Descripcion Larga")
+                .descuentoPct(BigDecimal.ZERO)
+                .build());
+
+        Producto productoReal = productoRepository.save(Producto.builder()
+                .codigoInterno("PROD-LARGO-1")
+                .nombrePrincipal("Plancha Lisa Gruesa")
+                .unidad("UND")
+                .generico(false)
+                .activo(true)
+                .build());
+
+        String descripcionLarga = "X".repeat(210);
+
+        byte[] excel = ExcelDePrueba.cotizaciones()
+                .fila(LocalDate.of(2026, 11, 1), 1, descripcionLarga, 500.0, null, null, null, null, null, "Local", null, null, null)
+                .bytes();
+
+        String decisionesJson = objectMapper.writeValueAsString(List.of(
+                new DecisionConciliacion(descripcionLarga, productoReal.getId())
+        ));
+
+        aplicar(excel, cliente.getId(), decisionesJson)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.filasNuevas").value(1));
+
+        DocumentoLinea linea = documentoLineaRepository.findAll().get(0);
+        assertThat(linea.getProducto().getId()).isEqualTo(productoReal.getId());
+        assertThat(linea.getDescripcion()).isEqualTo(descripcionLarga);
+
+        assertThat(aliasProductoRepository.findByProductoId(productoReal.getId())).isEmpty();
+    }
+
+    @Test
+    void filaConCodProductoSeConciliaDirectamenteSinEstarPendiente() throws Exception {
+        Cliente cliente = clienteRepository.save(Cliente.builder()
+                .nombre("Cliente Codigo")
+                .descuentoPct(BigDecimal.ZERO)
+                .build());
+
+        Producto prod = productoRepository.save(Producto.builder()
+                .codigoInterno("COD-12345")
+                .nombrePrincipal("Tubo Con Codigo")
+                .unidad("UND")
+                .generico(false)
+                .activo(true)
+                .build());
+
+        byte[] excel = ExcelDePrueba.cotizaciones()
+                .fila(LocalDate.of(2026, 11, 1), 1, "Descripcion que no importa", 50.0, "COD-12345", null, null, null, null, "Local", null, null, null)
+                .bytes();
+
+        vistaPrevia(excel, cliente.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.filasNuevas").value(1))
+                .andExpect(jsonPath("$.porConciliar").isEmpty());
+
+        aplicar(excel, cliente.getId())
+                .andExpect(status().isOk());
+
+        DocumentoLinea linea = documentoLineaRepository.findAll().get(0);
+        assertThat(linea.getProducto().getId()).isEqualTo(prod.getId());
+        assertThat(linea.getDescripcion()).isEqualTo("Descripcion que no importa");
+    }
+
+    @Test
+    void filaConNombreNormCoincidenteSeConciliaDirectamenteSinEstarPendiente() throws Exception {
+        Cliente cliente = clienteRepository.save(Cliente.builder()
+                .nombre("Cliente NombreNorm")
+                .descuentoPct(BigDecimal.ZERO)
+                .build());
+
+        Producto prod = productoRepository.save(Producto.builder()
+                .codigoInterno("PROD-NORM-1")
+                .nombrePrincipal("Angulo Estructural 2x2")
+                .unidad("UND")
+                .generico(false)
+                .activo(true)
+                .build());
+
+        byte[] excel = ExcelDePrueba.cotizaciones()
+                .fila(LocalDate.of(2026, 11, 1), 1, "Angulo  Estructural  2 x 2", 70.0, null, null, null, null, null, "Local", null, null, null)
+                .bytes();
+
+        vistaPrevia(excel, cliente.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.filasNuevas").value(1))
+                .andExpect(jsonPath("$.porConciliar").isEmpty());
+
+        aplicar(excel, cliente.getId())
+                .andExpect(status().isOk());
+
+        DocumentoLinea linea = documentoLineaRepository.findAll().get(0);
+        assertThat(linea.getProducto().getId()).isEqualTo(prod.getId());
     }
 }

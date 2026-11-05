@@ -12,11 +12,13 @@ import com.example.billme.importacion.CotizacionesLector;
 import com.example.billme.importacion.FilaCotizacion;
 import com.example.billme.importacion.LecturaCotizaciones;
 import com.example.billme.model.Cliente;
+import com.example.billme.model.AliasProducto;
 import com.example.billme.model.Documento;
 import com.example.billme.model.DocumentoLinea;
 import com.example.billme.model.Producto;
 import com.example.billme.model.Proyecto;
 import com.example.billme.model.Usuario;
+import com.example.billme.repository.AliasProductoRepository;
 import com.example.billme.repository.ClienteRepository;
 import com.example.billme.repository.DocumentoLineaRepository;
 import com.example.billme.repository.DocumentoRepository;
@@ -49,6 +51,36 @@ public class ImportacionCotizacionesService {
     private final ClienteRepository clienteRepository;
     private final ProyectoRepository proyectoRepository;
     private final ProductoRepository productoRepository;
+    private final AliasProductoRepository aliasProductoRepository;
+    private final ProductoService productoService;
+
+    private Optional<Producto> resolverExistente(String codigo, String descripcion) {
+        if (codigo != null && !codigo.isBlank()) {
+            Optional<Producto> opt = productoRepository.findByCodigoInterno(codigo.trim());
+            if (opt.isPresent()) {
+                return opt;
+            }
+        }
+        if (descripcion != null && !descripcion.isBlank()) {
+            String norm = NormalizadorTexto.normalizar(descripcion);
+            Optional<Producto> opt = productoRepository.findFirstByNombreNormAndActivoTrue(norm);
+            if (opt.isPresent()) {
+                return opt;
+            }
+            return aliasProductoRepository.findFirstByAliasNorm(norm).map(AliasProducto::getProducto);
+        }
+        return Optional.empty();
+    }
+
+    private String codigoPropuestaGenerica(String norm) {
+        if (norm.startsWith("placa")) {
+            return "GEN-PLACA";
+        }
+        if (norm.startsWith("platina")) {
+            return "GEN-PLATINA";
+        }
+        return "GEN-LIBRE";
+    }
 
     private record FilaPreparada(
             FilaCotizacion fila,
@@ -175,6 +207,47 @@ public class ImportacionCotizacionesService {
             }
         }
 
+        Map<String, String> descripcionesPendientes = new LinkedHashMap<>();
+        Map<String, Integer> conteoPendientes = new LinkedHashMap<>();
+
+        for (GrupoDocumento grupo : grupos.values()) {
+            for (FilaPreparada fp : grupo.filas()) {
+                if (clavesExistentes.contains(fp.claveLinea())) {
+                    continue;
+                }
+                FilaCotizacion f = fp.fila();
+                if (resolverExistente(f.codigo(), f.descripcion()).isEmpty()) {
+                    String norm = NormalizadorTexto.normalizar(f.descripcion());
+                    descripcionesPendientes.putIfAbsent(norm, f.descripcion());
+                    conteoPendientes.put(norm, conteoPendientes.getOrDefault(norm, 0) + 1);
+                }
+            }
+        }
+
+        List<ImportacionCotizacionesResponse.PorConciliar> porConciliar = new ArrayList<>();
+        for (Map.Entry<String, String> entry : descripcionesPendientes.entrySet()) {
+            String norm = entry.getKey();
+            String descripcion = entry.getValue();
+            int filasCount = conteoPendientes.get(norm);
+
+            String codigoGenerico = codigoPropuestaGenerica(norm);
+            Producto propuesta = productoRepository.findByCodigoInterno(codigoGenerico)
+                    .orElseThrow(() -> new IllegalStateException("Producto genérico " + codigoGenerico + " no encontrado"));
+
+            List<ImportacionCotizacionesResponse.Candidato> candidatos = productoService.buscar(descripcion).stream()
+                    .limit(3)
+                    .map(p -> new ImportacionCotizacionesResponse.Candidato(p.id(), p.codigoInterno(), p.nombrePrincipal()))
+                    .toList();
+
+            porConciliar.add(new ImportacionCotizacionesResponse.PorConciliar(
+                    descripcion,
+                    filasCount,
+                    propuesta.getId(),
+                    propuesta.getNombrePrincipal(),
+                    candidatos
+            ));
+        }
+
         return new ImportacionCotizacionesResponse(
                 lectura.hoja(),
                 lectura.filas().size(),
@@ -184,7 +257,7 @@ public class ImportacionCotizacionesService {
                 facturasConLineasNuevas,
                 clientesNuevos,
                 lectura.incompletas(),
-                List.of(),
+                porConciliar,
                 false
         );
     }
@@ -295,12 +368,23 @@ public class ImportacionCotizacionesService {
             }
         }
 
-        Map<String, UUID> decisionesMap = new HashMap<>();
+        Map<String, Producto> decisionesPorTexto = new HashMap<>();
+        Map<String, Producto> decisionesPorNorm = new HashMap<>();
         if (decisiones != null) {
             for (DecisionConciliacion d : decisiones) {
-                decisionesMap.put(d.descripcion(), d.productoId());
+                Producto p = productoRepository.findById(d.productoId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
+                decisionesPorTexto.put(d.descripcion(), p);
+                decisionesPorNorm.put(NormalizadorTexto.normalizar(d.descripcion()), p);
             }
         }
+
+        Map<String, Producto> genericos = new HashMap<>();
+        for (String cod : List.of("GEN-PLACA", "GEN-PLATINA", "GEN-LIBRE")) {
+            genericos.put(cod, productoRepository.findByCodigoInterno(cod)
+                    .orElseThrow(() -> new IllegalStateException("Producto genérico " + cod + " no encontrado")));
+        }
+        Set<String> aliasCreados = new HashSet<>();
 
         Map<String, Proyecto> proyectosCache = new HashMap<>();
 
@@ -373,18 +457,33 @@ public class ImportacionCotizacionesService {
 
             for (FilaPreparada fp : lineasNuevas) {
                 FilaCotizacion f = fp.fila();
-                Producto producto = null;
-
-                if (decisionesMap.containsKey(f.descripcion())) {
-                    producto = productoRepository.findById(decisionesMap.get(f.descripcion()))
-                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
-                } else if (f.codigo() != null && !f.codigo().isBlank()) {
-                    producto = productoRepository.findByCodigoInterno(f.codigo().trim()).orElse(null);
-                }
+                Producto producto = resolverExistente(f.codigo(), f.descripcion()).orElse(null);
 
                 if (producto == null) {
-                    producto = productoRepository.findByCodigoInterno("GEN-LIBRE")
-                            .orElseThrow(() -> new IllegalStateException("Producto genérico GEN-LIBRE no encontrado"));
+                    Producto decisionProd = decisionesPorTexto.get(f.descripcion());
+                    if (decisionProd == null) {
+                        decisionProd = decisionesPorNorm.get(NormalizadorTexto.normalizar(f.descripcion()));
+                    }
+
+                    if (decisionProd != null) {
+                        producto = decisionProd;
+                        if (!producto.isGenerico() && f.descripcion().length() <= 200) {
+                            String normDesc = NormalizadorTexto.normalizar(f.descripcion());
+                            if (aliasCreados.add(normDesc)) {
+                                if (aliasProductoRepository.findFirstByAliasNorm(normDesc).isEmpty()) {
+                                    AliasProducto alias = new AliasProducto();
+                                    alias.setNombreAlias(f.descripcion());
+                                    alias.setAliasNorm(normDesc);
+                                    alias.setProducto(producto);
+                                    aliasProductoRepository.save(alias);
+                                }
+                            }
+                        }
+                    } else {
+                        String norm = NormalizadorTexto.normalizar(f.descripcion());
+                        String codGen = codigoPropuestaGenerica(norm);
+                        producto = genericos.get(codGen);
+                    }
                 }
 
                 BigDecimal pesoUnit = f.pesoUnitKg() != null ? f.pesoUnitKg() : producto.getPeso();
@@ -404,6 +503,7 @@ public class ImportacionCotizacionesService {
                         .orden(documento.getLineas().size())
                         .producto(producto)
                         .descripcion(f.descripcion())
+                        .descripcionNorm(NormalizadorTexto.normalizar(f.descripcion()))
                         .cantidad(f.cantidad().setScale(3, RoundingMode.HALF_UP))
                         .pesoUnitKg(calc.pesoUnitKg())
                         .pesoTotalKg(calc.pesoTotalKg())
