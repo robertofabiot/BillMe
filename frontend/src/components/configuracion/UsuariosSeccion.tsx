@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { Usuario } from '@/types'
 import { usuarioService } from '@/services'
-import { useAuth } from '@/context/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Users, KeyRound, UserPlus } from 'lucide-react'

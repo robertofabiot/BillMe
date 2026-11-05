@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { TooltipProvider } from '@/components/ui/tooltip'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AuthProvider } from '@/context/AuthContext'
@@ -21,31 +20,29 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <TooltipProvider>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            
-            <Route element={<ProtectedRoute />}>
-              <Route element={<AppLayout />}>
-                <Route index         element={<DocumentosPage tipo="FACTURA" />}  />
-                <Route path="cotizaciones" element={<DocumentosPage tipo="COTIZACION" />} />
-                <Route path="precios" element={<PreciosPage />} />
-                <Route path="documentos/nuevo" element={<DocumentoEditorPage />} />
-                <Route path="documentos/:id" element={<DocumentoEditorPage />} />
-                <Route path="clientes"      element={<ClientesPage />}  />
-                <Route path="clientes/:id"  element={<ClienteDetallePage />} />
-                <Route path="productos" element={<ProductosPage />} />
-                <Route path="proyectos" element={<ProyectosPage />} />
-                <Route path="consolidados" element={<ConsolidadosPage />} />
-                <Route path="consolidados/nuevo" element={<ConsolidadoEditorPage />} />
-                <Route path="consolidados/:id" element={<ConsolidadoEditorPage />} />
-                <Route path="reportes"  element={<ReportesPage />}  />
-                <Route path="configuracion" element={<ConfiguracionPage />} />
-                <Route path="importar" element={<ImportarPage />} />
-              </Route>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppLayout />}>
+              <Route index         element={<DocumentosPage tipo="FACTURA" />}  />
+              <Route path="cotizaciones" element={<DocumentosPage tipo="COTIZACION" />} />
+              <Route path="precios" element={<PreciosPage />} />
+              <Route path="documentos/nuevo" element={<DocumentoEditorPage />} />
+              <Route path="documentos/:id" element={<DocumentoEditorPage />} />
+              <Route path="clientes"      element={<ClientesPage />}  />
+              <Route path="clientes/:id"  element={<ClienteDetallePage />} />
+              <Route path="productos" element={<ProductosPage />} />
+              <Route path="proyectos" element={<ProyectosPage />} />
+              <Route path="consolidados" element={<ConsolidadosPage />} />
+              <Route path="consolidados/nuevo" element={<ConsolidadoEditorPage />} />
+              <Route path="consolidados/:id" element={<ConsolidadoEditorPage />} />
+              <Route path="reportes"  element={<ReportesPage />}  />
+              <Route path="configuracion" element={<ConfiguracionPage />} />
+              <Route path="importar" element={<ImportarPage />} />
             </Route>
-          </Routes>
-        </TooltipProvider>
+          </Route>
+        </Routes>
       </BrowserRouter>
     </AuthProvider>
   )

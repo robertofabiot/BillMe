@@ -14,7 +14,7 @@ import {
   Tags
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useAuth } from '@/context/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
 
 const navItems = [
   { to: '/',             label: 'Facturas',     icon: ReceiptText },
