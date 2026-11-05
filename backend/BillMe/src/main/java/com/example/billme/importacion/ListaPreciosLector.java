@@ -2,17 +2,12 @@ package com.example.billme.importacion;
 
 import com.example.billme.util.NormalizadorTexto;
 import org.apache.poi.openxml4j.opc.OPCPackage;
-import org.apache.poi.util.XMLHelper;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
-import org.xml.sax.Attributes;
-import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
-import org.xml.sax.helpers.DefaultHandler;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -47,10 +42,10 @@ public class ListaPreciosLector {
             XSSFReader.SheetIterator hojas = (XSSFReader.SheetIterator) lector.getSheetsData();
             while (hojas.hasNext()) {
                 try (InputStream hoja = hojas.next()) {
-                    LectorHoja lectorHoja = new LectorHoja(textos);
-                    leerHoja(hoja, lectorHoja);
-                    if (lectorHoja.columnas != null) {
-                        return new LecturaListaPrecios(hojas.getSheetName(), lectorHoja.filas, lectorHoja.ignoradas);
+                    ManejadorLista manejador = new ManejadorLista();
+                    LectorExcel.recorrer(hoja, textos, manejador);
+                    if (manejador.columnas != null) {
+                        return new LecturaListaPrecios(hojas.getSheetName(), manejador.filas, manejador.ignoradas);
                     }
                 }
             }
@@ -62,16 +57,6 @@ public class ListaPreciosLector {
         }
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "No se encontró una hoja con columnas de código, descripción y precio.");
-    }
-
-    private void leerHoja(InputStream hoja, LectorHoja lectorHoja) throws Exception {
-        XMLReader xml = XMLHelper.newXMLReader();
-        xml.setContentHandler(lectorHoja);
-        try {
-            xml.parse(new InputSource(hoja));
-        } catch (SinEncabezado e) {
-            // esta hoja no es la lista de precios
-        }
     }
 
     static String normalizarUnidad(String unidad) {
@@ -107,83 +92,21 @@ public class ListaPreciosLector {
         }
     }
 
-    /** Corta la lectura de una hoja que no tiene los encabezados de la lista. */
-    private static final class SinEncabezado extends SAXException {
-    }
+    /** Recorre las celdas de una hoja con LectorExcel y arma las filas. */
+    private static final class ManejadorLista implements LectorExcel.ManejadorFila {
 
-    /** Recorre las celdas de una hoja con SAX y arma las filas. */
-    private static final class LectorHoja extends DefaultHandler {
-
-        private final ReadOnlySharedStringsTable textos;
-        private final StringBuilder valor = new StringBuilder();
-        private final Map<String, String> celdas = new HashMap<>();
-        /** Columnas cuya celda en la fila actual es numérica (no texto). */
-        private final Set<String> numericas = new HashSet<>();
         private final Set<String> codigosVistos = new HashSet<>();
         private final List<FilaListaPrecios> filas = new ArrayList<>();
 
         private Columnas columnas;
         private int ignoradas;
-        private int fila;
-        private String columna;
-        private String tipo;
-        private boolean leyendoValor;
-
-        LectorHoja(ReadOnlySharedStringsTable textos) {
-            this.textos = textos;
-        }
 
         @Override
-        public void startElement(String uri, String local, String nombre, Attributes atributos) {
-            switch (local) {
-                case "row" -> {
-                    celdas.clear();
-                    numericas.clear();
-                    fila = Integer.parseInt(atributos.getValue("r"));
-                }
-                case "c" -> {
-                    columna = atributos.getValue("r").replaceAll("\\d", "");
-                    tipo = atributos.getValue("t");
-                    valor.setLength(0);
-                }
-                case "v", "t" -> leyendoValor = true;
-                default -> { }
-            }
-        }
-
-        @Override
-        public void characters(char[] ch, int inicio, int largo) {
-            if (leyendoValor) {
-                valor.append(ch, inicio, largo);
-            }
-        }
-
-        @Override
-        public void endElement(String uri, String local, String nombre) throws SAXException {
-            switch (local) {
-                case "v", "t" -> leyendoValor = false;
-                case "c" -> {
-                    String texto = valor.toString();
-                    if ("s".equals(tipo) && !texto.isEmpty()) {
-                        texto = textos.getItemAt(Integer.parseInt(texto)).getString();
-                    }
-                    if (!texto.isBlank() && !"b".equals(tipo)) {
-                        celdas.put(columna, texto.trim());
-                        if (tipo == null || "n".equals(tipo)) {
-                            numericas.add(columna);
-                        }
-                    }
-                }
-                case "row" -> terminarFila();
-                default -> { }
-            }
-        }
-
-        private void terminarFila() throws SinEncabezado {
+        public void fila(int numero, Map<String, String> celdas, Set<String> numericas) throws SAXException {
             if (columnas == null) {
                 columnas = Columnas.detectar(celdas);
-                if (columnas == null && fila >= FILAS_PARA_ENCONTRAR_ENCABEZADO) {
-                    throw new SinEncabezado();
+                if (columnas == null && numero >= FILAS_PARA_ENCONTRAR_ENCABEZADO) {
+                    throw new LectorExcel.DetenerLectura();
                 }
                 return;
             }
@@ -197,7 +120,7 @@ public class ListaPreciosLector {
                 return;
             }
             filas.add(new FilaListaPrecios(
-                    fila,
+                    numero,
                     codigo,
                     descripcion.replaceAll("\\s+", " "),
                     normalizarUnidad(columnas.unidad() != null ? celdas.get(columnas.unidad()) : null),
