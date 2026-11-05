@@ -82,32 +82,50 @@ export interface Proyecto {
   createdAt?: string
 }
 
-export interface ConsolidadoItem {
-  id: string
-  facturaId?: string
-  productoNombre: string
+export interface ConsolidadoLinea {
+  documentoId: string
+  folio: string
   cantidad: number
-  precioUnitario: number
-  orden?: number
+  descripcion: string
+  pesoUnitKg?: number | null
+  pesoTotalKg?: number | null
+  precioUnit: number
+  total: number
+  lugarEntrega?: string | null
 }
 
-export interface ConsolidadoGroup {
-  id: string
+export interface ConsolidadoGrupo {
+  fechaEntrega: string
   nombre: string
-  items: ConsolidadoItem[]
-  orden?: number
-  subtotal?: number
+  lineas: ConsolidadoLinea[]
+  subtotal: number
+  subtotalKg: number
+}
+
+export interface ConsolidadoAbono {
+  fecha: string
+  monto: number
+  nota?: string | null
 }
 
 export interface Consolidado {
-  id: string
-  folioInterno: string
-  clienteId: string
-  clienteNombre?: string
+  id?: string | null
+  folio?: string | null
   nombre: string
-  createdAt: string
-  grupos: ConsolidadoGroup[]
-  totalGeneral?: number
+  clienteId: string
+  clienteNombre: string
+  proyectoId?: string | null
+  proyectoNombre?: string | null
+  desde: string
+  hasta: string
+  createdAt?: string | null
+  grupos: ConsolidadoGrupo[]
+  total: number
+  totalKg: number
+  saldoAnterior: number
+  abonos: ConsolidadoAbono[]
+  totalAbonos: number
+  totalActualizado: number
 }
 
 export interface ReporteData {
