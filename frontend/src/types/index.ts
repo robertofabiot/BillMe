@@ -128,13 +128,56 @@ export interface Consolidado {
   totalActualizado: number
 }
 
-export interface ReporteData {
-  ingresosTotales: number
-  totalCobrado: number
-  porCobrar: number
-  costoTotal: number
-  gananciaNeta: number
-  totalFacturas: number
+export interface Proveedor {
+  id: string
+  nombre: string
+}
+
+export interface ProveedorRequest {
+  nombre: string
+}
+
+export interface CompraRequest {
+  proveedorId: string
+  fecha: string
+  numeroFactura?: string
+  nota?: string
+  lineas: Array<{
+    lineaId: string
+    precioSinIva: number
+    descuentoPct?: number
+    pesoUnitKg?: number
+  }>
+}
+
+export interface CompraResponse {
+  id: string
+  proveedorId: string
+  proveedorNombre: string
+  fecha: string
+  numeroFactura?: string
+  nota?: string
+}
+
+export interface FilaGanancia {
+  id: string
+  folio: string
+  fecha: string
+  clienteNombre: string
+  total: number
+  costo: number
+  ganancia: number
+  lineasSinCosto: number
+}
+
+export interface Ganancias {
+  facturado: number
+  ventasConCosto: number
+  costo: number
+  ganancia: number
+  lineasSinCosto: number
+  ventasSinCosto: number
+  facturas: FilaGanancia[]
 }
 
 export type UnidadLongitud = 'PULGADA' | 'PIE' | 'METRO' | 'CM' | 'MM'
@@ -317,6 +360,7 @@ export interface LineaDocumento {
   fechaEntrega?: string | null
   lugarEntrega?: string | null
   costoUnitConIva?: number | null
+  compraId?: string
 }
 
 export interface Documento {

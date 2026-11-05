@@ -100,7 +100,7 @@ class ProductoServiceTest extends IntegrationTest {
 
         // 1000.00 × (1 − 0.20) × 1.15 = 920.00
         assertThat(factura.lineas().get(0).costoUnitConIva()).isEqualByComparingTo("920.00");
-        assertThat(reporteService.generarReporte(cliente.id(), null, null, null).costoTotal()).isEqualByComparingTo("4600.00");
+        assertThat(reporteService.ganancias(cliente.id(), null, null, null).costo()).isEqualByComparingTo("4600.00");
     }
 
     private ProductoResponse crear(String codigo, String nombre) {

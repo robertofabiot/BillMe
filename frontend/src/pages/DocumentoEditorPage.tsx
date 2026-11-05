@@ -16,9 +16,10 @@ import { ProductoBuscador } from '@/components/documentos/ProductoBuscador'
 import { RevisionesDialog } from '@/components/documentos/RevisionesDialog'
 import { PrecioLineaDialog } from '@/components/documentos/PrecioLineaDialog'
 import { CalculadoraPesoDialog } from '@/components/documentos/CalculadoraPesoDialog'
+import { RegistrarCompraDialog } from '@/components/documentos/RegistrarCompraDialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, FileDown, FileText, History, Plus, ReceiptText, Save } from 'lucide-react'
+import { ArrowLeft, FileDown, FileText, History, Plus, ReceiptText, Save, ShoppingCart } from 'lucide-react'
 
 interface Formulario {
   clienteId: string
@@ -128,6 +129,7 @@ export function DocumentoEditorPage() {
   const [aviso, setAviso] = useState<Aviso>(null)
   const [exportando, setExportando] = useState(false)
   const [viendoCambios, setViendoCambios] = useState(false)
+  const [registrandoCompra, setRegistrandoCompra] = useState(false)
   const [lineaParaPrecio, setLineaParaPrecio] = useState<string | null>(null)
   const [lineaParaCalculadora, setLineaParaCalculadora] = useState<string | null>(null)
   const [modoCalculadoraSoloPeso, setModoCalculadoraSoloPeso] = useState(false)
@@ -413,6 +415,17 @@ export function DocumentoEditorPage() {
     }
   }
 
+  const alRegistrarCompra = async () => {
+    if (!documento) return
+    try {
+      const actualizado = await documentoService.obtener(documento.id)
+      mostrar(actualizado)
+      setAviso({ tipo: 'ok', texto: 'Compra registrada.' })
+    } catch (e) {
+      setAviso({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al recargar el documento' })
+    }
+  }
+
   const volver = () => {
     if (!cambiosSinGuardar || window.confirm(SALIR_SIN_GUARDAR)) {
       navigate(titulos.ruta)
@@ -466,7 +479,19 @@ export function DocumentoEditorPage() {
               <Button variant="outline" disabled={trabajando} onClick={reabrir} className="h-9">Reabrir</Button>
             )}
             {documento.estado === 'ACTIVA' && (
-              <Button variant="outline" disabled={trabajando} onClick={anular} className="h-9 text-red-600 hover:text-red-700">Anular</Button>
+              <>
+                <span title={cambiosSinGuardar ? 'Guarda primero los cambios' : undefined}>
+                  <Button
+                    variant="outline"
+                    disabled={trabajando || cambiosSinGuardar}
+                    onClick={() => setRegistrandoCompra(true)}
+                    className="h-9 gap-2"
+                  >
+                    <ShoppingCart className="w-4 h-4" /> Registrar compra
+                  </Button>
+                </span>
+                <Button variant="outline" disabled={trabajando} onClick={anular} className="h-9 text-red-600 hover:text-red-700">Anular</Button>
+              </>
             )}
           </div>
         )}
@@ -677,6 +702,15 @@ export function DocumentoEditorPage() {
         />
       )}
       {documento && <RevisionesDialog documentoId={documento.id} open={viendoCambios} onOpenChange={setViendoCambios} />}
+      {documento && (
+        <RegistrarCompraDialog
+          open={registrandoCompra}
+          onOpenChange={setRegistrandoCompra}
+          documentoId={documento.id}
+          lineas={documento.lineas}
+          onCompraRegistrada={() => void alRegistrarCompra()}
+        />
+      )}
 
       <PrecioLineaDialog
         open={lineaParaPrecio !== null}

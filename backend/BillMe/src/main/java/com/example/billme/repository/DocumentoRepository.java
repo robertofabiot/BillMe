@@ -66,4 +66,26 @@ public interface DocumentoRepository extends JpaRepository<Documento, UUID> {
                    "AND (c.fecha_inicio_cuenta IS NULL OR d.fecha >= c.fecha_inicio_cuenta) " +
                    "GROUP BY d.cliente_id", nativeQuery = true)
     List<SumaPorCliente> sumaFacturasPorCliente();
+
+    @Query(value = """
+            select d.id as id, d.folio as folio, d.fecha as fecha, c.nombre as cliente, d.total as total,
+                   coalesce(sum(l.cantidad * l.costo_unit_con_iva), 0) as costo,
+                   coalesce(sum(l.total) filter (where l.costo_unit_con_iva is not null), 0) as ventasconcosto,
+                   count(*) filter (where l.costo_unit_con_iva is null) as lineassincosto
+            from documentos d
+            join clientes c on c.id = d.cliente_id
+            join documento_lineas l on l.documento_id = d.id
+            where d.tipo = 'FACTURA' and d.estado = 'ACTIVA'
+              and (cast(:clienteId as uuid) is null or d.cliente_id = cast(:clienteId as uuid))
+              and (cast(:proyectoId as uuid) is null or d.proyecto_id = cast(:proyectoId as uuid))
+              and (cast(:desde as date) is null or d.fecha >= cast(:desde as date))
+              and (cast(:hasta as date) is null or d.fecha <= cast(:hasta as date))
+            group by d.id, d.folio, d.fecha, c.nombre, d.total
+            order by d.fecha desc, d.folio desc
+            """, nativeQuery = true)
+    List<GananciaPorFactura> reporteGanancias(
+            @Param("clienteId") UUID clienteId,
+            @Param("proyectoId") UUID proyectoId,
+            @Param("desde") LocalDate desde,
+            @Param("hasta") LocalDate hasta);
 }

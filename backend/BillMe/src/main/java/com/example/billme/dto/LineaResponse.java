@@ -21,5 +21,6 @@ public record LineaResponse(
         String parametros,
         LocalDate fechaEntrega,
         String lugarEntrega,
-        BigDecimal costoUnitConIva
+        BigDecimal costoUnitConIva,
+        UUID compraId
 ) {}

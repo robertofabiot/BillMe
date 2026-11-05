@@ -243,7 +243,7 @@ class DocumentoServiceTest extends IntegrationTest {
 
         assertEstado(HttpStatus.CONFLICT, () -> documentoService.anular(factura.id()));
         assertEstado(HttpStatus.CONFLICT, () -> documentoService.actualizar(factura.id(), requestDe(factura)));
-        assertThat(reporteService.generarReporte(null, null, null, null).ingresosTotales())
+        assertThat(reporteService.ganancias(null, null, null, null).facturado())
                 .isEqualByComparingTo(otra.total());
     }
 
@@ -424,18 +424,11 @@ class DocumentoServiceTest extends IntegrationTest {
     void elReporteSoloCuentaFacturasActivas() {
         crear(TipoDocumento.COTIZACION);
         crear(TipoDocumento.FACTURA);
-        abonoRepository.save(Abono.builder()
-                .cliente(clienteRepository.findById(cliente.id()).orElseThrow())
-                .monto(new BigDecimal("40"))
-                .fechaPago(FECHA)
-                .build());
 
-        var reporte = reporteService.generarReporte(null, null, null, null);
+        var reporte = reporteService.ganancias(null, null, null, null);
 
-        assertThat(reporte.totalFacturas()).isEqualTo(1);
-        assertThat(reporte.ingresosTotales()).isEqualByComparingTo("100");
-        assertThat(reporte.totalCobrado()).isEqualByComparingTo("40");
-        assertThat(reporte.porCobrar()).isEqualByComparingTo("60");
+        assertThat(reporte.facturas()).hasSize(1);
+        assertThat(reporte.facturado()).isEqualByComparingTo("100");
     }
 
     @Test
