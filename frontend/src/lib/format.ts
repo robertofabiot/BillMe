@@ -29,3 +29,18 @@ export function hoyIso(): string {
   const dia = String(ahora.getDate()).padStart(2, '0')
   return `${ahora.getFullYear()}-${mes}-${dia}`
 }
+
+/**
+ * Convierte una fecha ISO (o AAAA-MM-DD) al formato dd/mm/aaaa.
+ * Si la fecha viene vacía retorna una cadena vacía.
+ */
+export function formatFechaCorta(fecha: string): string {
+  if (!fecha) return ''
+  const parte = fecha.includes('T') ? fecha.split('T')[0] : fecha
+  const [yyyy, mm, dd] = parte.split('-')
+  if (yyyy && mm && dd) {
+    return `${dd}/${mm}/${yyyy}`
+  }
+  return fecha
+}
+
