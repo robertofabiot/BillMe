@@ -107,9 +107,9 @@ export function ClientesPage() {
         </div>
         <Button
           onClick={openCreate}
-          className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-2"
+          className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm gap-2"
         >
-          <Plus className="w-4 h-4" /> Nuevo Cliente
+          <Plus className="w-4 h-4" /> Nuevo cliente
         </Button>
       </div>
 
@@ -133,9 +133,12 @@ export function ClientesPage() {
 
       {/* ── Grid de clientes ── */}
       {filtered.length === 0 ? (
-        <div className="bg-white border border-[#E5E7EB] rounded p-12 text-center shadow-sm">
-          <Users className="w-10 h-10 mx-auto text-[#80727B] mb-3" />
-          <p className="text-sm text-[#705D56]">No se encontraron clientes.</p>
+        <div className="bg-white border border-[#E5E7EB] rounded p-12 text-center shadow-sm flex flex-col items-center justify-center gap-3">
+          <Users className="w-10 h-10 mx-auto text-[#80727B]" />
+          <p className="text-sm text-[#705D56]">{clientes.length === 0 ? 'Todavía no hay clientes.' : 'No se encontraron clientes.'}</p>
+          <Button onClick={openCreate}>
+            <Plus className="w-4 h-4" /> Nuevo cliente
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

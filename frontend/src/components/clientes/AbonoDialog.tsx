@@ -95,7 +95,7 @@ export function AbonoDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-sm font-semibold text-[#022F40]">
-            {isEdit ? 'Editar Abono' : 'Registrar Abono'}
+            {isEdit ? 'Editar abono' : 'Registrar abono'}
           </DialogTitle>
         </DialogHeader>
 
@@ -170,7 +170,7 @@ export function AbonoDialog({
               disabled={guardando}
               className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm"
             >
-              {guardando ? 'Guardando…' : isEdit ? 'Guardar Cambios' : 'Registrar Abono'}
+              {guardando ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Registrar abono'}
             </Button>
           </DialogFooter>
         </form>

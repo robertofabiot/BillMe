@@ -89,7 +89,7 @@ export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
               <Package className="w-3.5 h-3.5 text-[#91E5F6]" />
             </div>
             <h2 className="text-sm font-semibold text-[#022F40]">
-              {isEdit ? 'Editar Producto' : 'Nuevo Producto'}
+              {isEdit ? 'Editar producto' : 'Nuevo producto'}
             </h2>
           </div>
           <button onClick={() => onOpenChange(false)} className="w-7 h-7 flex items-center justify-center rounded hover:bg-[#F9FAFB] text-[#80727B] transition-colors">
@@ -164,7 +164,7 @@ export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
           <Button onClick={handleSave} disabled={!codigo.trim() || !nombre.trim()}
             className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-1">
             <Plus className="w-3.5 h-3.5" />
-            {isEdit ? 'Guardar Cambios' : 'Crear Producto'}
+            {isEdit ? 'Guardar cambios' : 'Crear producto'}
           </Button>
         </div>
       </div>

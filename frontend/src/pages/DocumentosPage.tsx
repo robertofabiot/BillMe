@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button'
 import { FileText, Plus, ReceiptText, Search } from 'lucide-react'
 
 const TEXTOS = {
-  COTIZACION: { titulo: 'Cotizaciones', subtitulo: 'Precios que se le dan a un cliente antes de la venta', nuevo: 'Nueva cotización', vacio: 'No hay cotizaciones.', icono: FileText },
-  FACTURA: { titulo: 'Facturas', subtitulo: 'Ventas confirmadas', nuevo: 'Nueva factura', vacio: 'No hay facturas.', icono: ReceiptText },
+  COTIZACION: { titulo: 'Cotizaciones', subtitulo: 'Precios que se le dan a un cliente antes de la venta', nuevo: 'Nueva cotización', vacio: 'Todavía no hay cotizaciones.', icono: FileText },
+  FACTURA: { titulo: 'Facturas', subtitulo: 'Ventas confirmadas', nuevo: 'Nueva factura', vacio: 'Todavía no hay facturas.', icono: ReceiptText },
 }
 
 const ESTADOS: Record<TipoDocumento, { valor: EstadoDocumento; texto: string }[]> = {
@@ -113,7 +113,20 @@ export function DocumentosPage({ tipo }: { tipo: TipoDocumento }) {
               <tr><td colSpan={5} className="px-4 py-8 text-center text-[#80727B]">Cargando…</td></tr>
             )}
             {!cargando && filtrados.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-[#80727B]">{textos.vacio}</td></tr>
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-[#80727B]">
+                  {documentos.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <p className="text-sm text-[#705D56]">{textos.vacio}</p>
+                      <Button onClick={() => navigate(tipo === 'COTIZACION' ? '/documentos/nuevo?tipo=COTIZACION' : '/documentos/nuevo')}>
+                        <Plus className="w-4 h-4" /> {textos.nuevo}
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-[#80727B]">No se encontraron documentos.</p>
+                  )}
+                </td>
+              </tr>
             )}
             {!cargando && filtrados.map(d => (
               <tr

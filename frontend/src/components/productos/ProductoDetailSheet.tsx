@@ -1,11 +1,12 @@
 import type { Documento, FuentePrecio, PrecioLista, PreciosListaProducto, Producto } from '@/types'
 import { useCallback, useEffect, useState } from 'react'
 import { documentoService } from '@/services/documentoService'
+import { productoService } from '@/services/productoService'
 import { precioListaService } from '@/services/precioListaService'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { CalcularListaDialog } from '@/components/precios/CalcularListaDialog'
-import { X, Pencil, Tag, Weight, Hash, FileText, History, Calculator, Receipt } from 'lucide-react'
+import { X, Pencil, Trash2, Tag, Weight, Hash, FileText, History, Calculator, Receipt } from 'lucide-react'
 
 const FUENTES: Record<FuentePrecio, string> = {
   LISTA_IMPORTADA: 'Lista del proveedor',
@@ -95,6 +96,18 @@ export function ProductoDetailSheet({ producto, open, onOpenChange, onEdit, onPr
 
   const vigente = precios?.vigente ?? null
 
+  const handleEliminar = async () => {
+    if (!producto) return
+    if (!window.confirm(`¿Eliminar el producto ${producto.nombrePrincipal}?`)) return
+    try {
+      await productoService.eliminar(producto.id)
+      onOpenChange(false)
+      window.location.reload()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error al eliminar el producto')
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
       <div className="absolute inset-0 bg-black/20" onClick={() => onOpenChange(false)} />
@@ -119,8 +132,16 @@ export function ProductoDetailSheet({ producto, open, onOpenChange, onEdit, onPr
             <Button
               size="sm"
               variant="outline"
+              onClick={handleEliminar}
+              className="rounded border-red-200 text-red-600 hover:bg-red-50 text-sm gap-1"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Eliminar
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
               onClick={() => onEdit(producto)}
-              className="rounded border-[#E5E7EB] text-[#022F40] h-8 text-sm gap-1"
+              className="rounded border-[#E5E7EB] text-[#022F40] text-sm gap-1"
             >
               <Pencil className="w-3.5 h-3.5" /> Editar
             </Button>

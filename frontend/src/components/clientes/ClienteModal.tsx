@@ -74,7 +74,7 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
               <User className="w-3.5 h-3.5 text-[#91E5F6]" />
             </div>
             <h2 className="text-sm font-semibold text-[#022F40]">
-              {isEdit ? 'Editar Cliente' : 'Nuevo Cliente'}
+              {isEdit ? 'Editar cliente' : 'Nuevo cliente'}
             </h2>
           </div>
           <button
@@ -171,7 +171,7 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
             disabled={!nombre.trim()}
             className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm"
           >
-            {isEdit ? 'Guardar Cambios' : 'Crear Cliente'}
+            {isEdit ? 'Guardar cambios' : 'Crear cliente'}
           </Button>
         </div>
       </div>

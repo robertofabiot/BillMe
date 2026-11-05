@@ -242,7 +242,7 @@ export function ConsolidadoEditorPage() {
       {/* ── 1. Formulario de Parámetros ── */}
       <div className="bg-white border border-[#E5E7EB] rounded p-5 shadow-sm flex flex-col gap-4">
         <h2 className="text-sm font-semibold text-[#022F40]">
-          {isGuardado ? `Editar Consolidado ${consolidado?.folio ?? ''}` : 'Nuevo Consolidado'}
+          {isGuardado ? `Editar consolidado ${consolidado?.folio ?? ''}` : 'Nuevo consolidado'}
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -507,7 +507,7 @@ export function ConsolidadoEditorPage() {
               className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-1.5 w-full sm:w-auto"
             >
               <Save className="w-4 h-4" />
-              {guardando ? 'Guardando…' : isGuardado ? 'Guardar Cambios' : 'Guardar Consolidado'}
+              {guardando ? 'Guardando…' : isGuardado ? 'Guardar cambios' : 'Guardar consolidado'}
             </Button>
           </div>
         </div>

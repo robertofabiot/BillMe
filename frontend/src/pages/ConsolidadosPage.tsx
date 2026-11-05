@@ -80,9 +80,9 @@ export function ConsolidadosPage() {
         </div>
         <Button
           onClick={() => navigate('/consolidados/nuevo')}
-          className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-2"
+          className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm gap-2"
         >
-          <Plus className="w-4 h-4" /> Nuevo Consolidado
+          <Plus className="w-4 h-4" /> Nuevo consolidado
         </Button>
       </div>
 
@@ -99,12 +99,12 @@ export function ConsolidadosPage() {
 
       {/* ── Grid ── */}
       {filtered.length === 0 ? (
-        <div className="bg-white border border-[#E5E7EB] rounded p-12 text-center shadow-sm flex flex-col items-center">
-          <Layers className="w-10 h-10 text-[#80727B] mb-3" />
-          <p className="text-sm font-semibold text-[#022F40]">Sin Consolidados</p>
-          <p className="text-sm text-[#705D56] mt-1 max-w-sm">
-            No hay documentos consolidados. Crea uno nuevo seleccionando un rango de fechas de un cliente.
-          </p>
+        <div className="bg-white border border-[#E5E7EB] rounded p-12 text-center shadow-sm flex flex-col items-center justify-center gap-3">
+          <Layers className="w-10 h-10 text-[#80727B]" />
+          <p className="text-sm text-[#705D56]">{consolidados.length === 0 ? 'Todavía no hay consolidados.' : 'No se encontraron consolidados.'}</p>
+          <Button onClick={() => navigate('/consolidados/nuevo')}>
+            <Plus className="w-4 h-4" /> Nuevo consolidado
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -144,7 +144,7 @@ export function ConsolidadosPage() {
 
                 <div className="mt-auto pt-3 border-t border-[#E5E7EB] flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-[#705D56] uppercase tracking-wider">Total Actualizado</p>
+                    <p className="text-sm text-[#705D56] uppercase tracking-wider">Total actualizado</p>
                     <p className="text-base font-bold text-[#022F40] leading-none mt-0.5">
                       {formatCurrency(c.totalActualizado)}
                     </p>

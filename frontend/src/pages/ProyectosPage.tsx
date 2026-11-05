@@ -132,17 +132,17 @@ export function ProyectosPage() {
         </div>
         <Button
           onClick={openCreate}
-          className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-2"
+          className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm gap-2"
         >
-          <Plus className="w-4 h-4" /> Nuevo Proyecto
+          <Plus className="w-4 h-4" /> Nuevo proyecto
         </Button>
       </div>
 
       {/* ── Stats ── */}
       <div className="grid grid-cols-3 gap-4 max-w-4xl">
-        <StatCard icon={FolderGit2} label="Total Proyectos" value={String(stats.total)} />
-        <StatCard icon={CheckCircle2} label="Proyectos Activos" value={String(stats.activos)} accent="bg-[#558564]" />
-        <StatCard icon={TrendingUp} label="Facturado en Obras" value={formatCurrency(stats.facturado)} accent="bg-[#022F40]" />
+        <StatCard icon={FolderGit2} label="Total de proyectos" value={String(stats.total)} />
+        <StatCard icon={CheckCircle2} label="Proyectos activos" value={String(stats.activos)} accent="bg-[#558564]" />
+        <StatCard icon={TrendingUp} label="Total facturado" value={formatCurrency(stats.facturado)} accent="bg-[#022F40]" />
       </div>
 
       {/* ── Search ── */}
@@ -158,9 +158,12 @@ export function ProyectosPage() {
 
       {/* ── Grid de Proyectos ── */}
       {filtered.length === 0 ? (
-        <div className="bg-white border border-[#E5E7EB] rounded p-12 text-center shadow-sm">
-          <FolderGit2 className="w-10 h-10 mx-auto text-[#80727B] mb-3" />
-          <p className="text-sm text-[#705D56]">No se encontraron proyectos.</p>
+        <div className="bg-white border border-[#E5E7EB] rounded p-12 text-center shadow-sm flex flex-col items-center justify-center gap-3">
+          <FolderGit2 className="w-10 h-10 mx-auto text-[#80727B]" />
+          <p className="text-sm text-[#705D56]">{proyectos.length === 0 ? 'Todavía no hay proyectos.' : 'No se encontraron proyectos.'}</p>
+          <Button onClick={openCreate}>
+            <Plus className="w-4 h-4" /> Nuevo proyecto
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

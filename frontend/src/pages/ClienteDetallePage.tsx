@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import type { Cliente, CuentaCliente, Documento, Proyecto, Abono, MovimientoCuenta } from '@/types'
 import { clienteService, type ClientePayload } from '@/services/clienteService'
 import { documentoService } from '@/services/documentoService'
@@ -25,6 +25,7 @@ import {
 
 export function ClienteDetallePage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [cliente, setCliente] = useState<Cliente | null>(null)
   const [cuenta, setCuenta] = useState<CuentaCliente | null>(null)
   const [documentos, setDocumentos] = useState<Documento[]>([])
@@ -90,6 +91,17 @@ export function ClienteDetallePage() {
       nota: mov.concepto !== 'Abono' ? mov.concepto : null,
     })
     setShowAbonoDialog(true)
+  }
+
+  const handleEliminarCliente = async () => {
+    if (!cliente) return
+    if (!window.confirm(`¿Eliminar al cliente ${cliente.nombre}?`)) return
+    try {
+      await clienteService.eliminar(cliente.id)
+      navigate('/clientes')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al eliminar el cliente')
+    }
   }
 
   const handleDeleteAbono = async (mov: MovimientoCuenta) => {
@@ -184,14 +196,21 @@ export function ClienteDetallePage() {
         <div className="flex items-center gap-2 self-start md:self-center shrink-0">
           <Button
             variant="outline"
+            onClick={handleEliminarCliente}
+            className="rounded border-red-200 text-red-600 hover:bg-red-50 text-sm gap-1.5"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Eliminar
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => setShowEditCliente(true)}
-            className="rounded border-[#E5E7EB] text-[#022F40] text-sm h-9 gap-1.5"
+            className="rounded border-[#E5E7EB] text-[#022F40] text-sm gap-1.5"
           >
             <Pencil className="w-3.5 h-3.5" /> Editar
           </Button>
           <Button
             onClick={handleNuevoAbono}
-            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-1.5"
+            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm gap-1.5"
           >
             <Plus className="w-4 h-4" /> Registrar abono
           </Button>

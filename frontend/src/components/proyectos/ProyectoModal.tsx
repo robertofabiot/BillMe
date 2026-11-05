@@ -61,7 +61,7 @@ export function ProyectoModal({ open, onOpenChange, initial, onSave, defaultClie
               <FolderGit2 className="w-3.5 h-3.5 text-[#91E5F6]" />
             </div>
             <h2 className="text-sm font-semibold text-[#022F40]">
-              {isEdit ? 'Editar Proyecto' : 'Nuevo Proyecto'}
+              {isEdit ? 'Editar proyecto' : 'Nuevo proyecto'}
             </h2>
           </div>
           <button onClick={() => onOpenChange(false)} className="w-7 h-7 flex items-center justify-center rounded hover:bg-[#F9FAFB] text-[#80727B] transition-colors">
@@ -113,7 +113,7 @@ export function ProyectoModal({ open, onOpenChange, initial, onSave, defaultClie
           <Button onClick={handleSave} disabled={!nombre.trim() || !clienteId}
             className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-1">
             <Plus className="w-3.5 h-3.5" />
-            {isEdit ? 'Guardar Cambios' : 'Crear Proyecto'}
+            {isEdit ? 'Guardar cambios' : 'Crear proyecto'}
           </Button>
         </div>
       </div>
