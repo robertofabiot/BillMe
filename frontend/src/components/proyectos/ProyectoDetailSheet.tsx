@@ -17,11 +17,17 @@ interface Props {
 
 export function ProyectoDetailSheet({ proyecto, open, onOpenChange, onEdit }: Props) {
   const [documentos, setDocumentos] = useState<Documento[]>([])
+  const [totalDocumentos, setTotalDocumentos] = useState(0)
   const [cuentaProyecto, setCuentaProyecto] = useState<{ facturado: number; abonado: number; saldo: number } | null>(null)
 
   useEffect(() => {
     if (!proyecto?.id || !open) return
-    documentoService.listar({ proyectoId: proyecto.id }).then(setDocumentos).catch(console.error)
+    documentoService.listar({ proyectoId: proyecto.id, tamano: 200 })
+      .then(res => {
+        setDocumentos(res.contenido)
+        setTotalDocumentos(res.totalElementos)
+      })
+      .catch(console.error)
     clienteService.cuenta(proyecto.clienteId).then(cuenta => {
       const fila = cuenta.proyectos.find(p => p.proyectoId === proyecto.id)
       if (fila) {
@@ -102,6 +108,12 @@ export function ProyectoDetailSheet({ proyecto, open, onOpenChange, onEdit }: Pr
           <h3 className="text-sm font-semibold uppercase tracking-wider text-[#80727B] flex items-center gap-1.5">
             <TrendingUp className="w-3.5 h-3.5" /> Cotizaciones y facturas
           </h3>
+
+          {totalDocumentos > 200 && (
+            <p className="text-sm text-[#705D56] bg-amber-50 border border-amber-200 px-3 py-1.5 rounded">
+              Se muestran los 200 más recientes.
+            </p>
+          )}
 
           {documentos.length === 0 ? (
             <div className="border border-dashed border-[#E5E7EB] rounded p-6 flex flex-col items-center justify-center text-center">

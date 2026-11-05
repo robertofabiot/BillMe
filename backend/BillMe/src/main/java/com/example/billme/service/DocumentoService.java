@@ -6,6 +6,7 @@ import com.example.billme.dto.DocumentoRequest;
 import com.example.billme.dto.DocumentoResponse;
 import com.example.billme.dto.LineaRequest;
 import com.example.billme.dto.LineaResponse;
+import com.example.billme.dto.PaginaResponse;
 import com.example.billme.dto.RevisionResponse;
 import com.example.billme.enums.EstadoDocumento;
 import com.example.billme.enums.MetodoPrecio;
@@ -28,6 +29,8 @@ import com.example.billme.repository.ProyectoRepository;
 import com.example.billme.repository.UsuarioRepository;
 import com.example.billme.util.Fechas;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -63,11 +66,20 @@ public class DocumentoService {
     private final JsonMapper jsonMapper;
     private final DocumentoExcel documentoExcel;
 
-    public List<DocumentoResponse> filtrar(TipoDocumento tipo, EstadoDocumento estado, UUID clienteId, UUID proyectoId,
-                                           UUID productoId, LocalDate desde, LocalDate hasta) {
-        return documentoRepository.filtrar(tipo, estado, clienteId, proyectoId, productoId, desde, hasta).stream()
+    public PaginaResponse<DocumentoResponse> filtrar(TipoDocumento tipo, EstadoDocumento estado, UUID clienteId, UUID proyectoId,
+                                                    UUID productoId, LocalDate desde, LocalDate hasta, String q, Pageable pageable) {
+        String qNormalizada = (q != null) ? q.trim() : "";
+        String contiene = "%" + qNormalizada.toLowerCase() + "%";
+        Page<Documento> pagina = documentoRepository.filtrar(tipo, estado, clienteId, proyectoId, productoId, desde, hasta, qNormalizada, contiene, pageable);
+        List<DocumentoResponse> elementos = pagina.getContent().stream()
                 .map(d -> toResponse(d, null))
                 .toList();
+        return new PaginaResponse<>(elementos, pagina.getNumber(), pagina.getTotalPages(), pagina.getTotalElements());
+    }
+
+    public List<DocumentoResponse> filtrar(TipoDocumento tipo, EstadoDocumento estado, UUID clienteId, UUID proyectoId,
+                                           UUID productoId, LocalDate desde, LocalDate hasta) {
+        return filtrar(tipo, estado, clienteId, proyectoId, productoId, desde, hasta, "", Pageable.unpaged()).contenido();
     }
 
     public DocumentoResponse obtener(UUID id) {

@@ -29,6 +29,7 @@ export function ClienteDetallePage() {
   const [cliente, setCliente] = useState<Cliente | null>(null)
   const [cuenta, setCuenta] = useState<CuentaCliente | null>(null)
   const [documentos, setDocumentos] = useState<Documento[]>([])
+  const [totalDocumentos, setTotalDocumentos] = useState(0)
   const [proyectos, setProyectos] = useState<Proyecto[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -45,12 +46,13 @@ export function ClienteDetallePage() {
       const [c, cu, docs, proys] = await Promise.all([
         clienteService.obtener(id),
         clienteService.cuenta(id),
-        documentoService.listar({ clienteId: id }),
+        documentoService.listar({ clienteId: id, tamano: 200 }),
         proyectoService.listar(id),
       ])
       setCliente(c)
       setCuenta(cu)
-      setDocumentos(docs)
+      setDocumentos(docs.contenido)
+      setTotalDocumentos(docs.totalElementos)
       setProyectos(proys)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar datos del cliente')
@@ -391,6 +393,11 @@ export function ClienteDetallePage() {
         <h2 className="text-sm font-semibold uppercase tracking-wider text-[#80727B] flex items-center gap-1.5">
           <ReceiptText className="w-4 h-4" /> Cotizaciones y facturas ({documentos.length})
         </h2>
+        {totalDocumentos > 200 && (
+          <p className="text-sm text-[#705D56] bg-amber-50 border border-amber-200 px-3 py-1.5 rounded">
+            Se muestran los 200 más recientes.
+          </p>
+        )}
         {documentos.length === 0 ? (
           <p className="text-sm text-[#80727B] py-3 text-center">Sin cotizaciones ni facturas.</p>
         ) : (

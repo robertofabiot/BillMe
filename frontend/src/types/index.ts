@@ -1,5 +1,12 @@
 // ─── Tipos alineados con los DTOs del backend ───────────────────────
 
+export interface PaginaResponse<T> {
+  contenido: T[]
+  pagina: number
+  totalPaginas: number
+  totalElementos: number
+}
+
 export type EstadoProyecto = 'ACTIVO' | 'FINALIZADO'
 
 export interface Producto {
@@ -80,6 +87,7 @@ export interface Proyecto {
   nombre: string
   estado: EstadoProyecto
   createdAt?: string
+  totalFacturado?: number
 }
 
 export interface ConsolidadoLinea {

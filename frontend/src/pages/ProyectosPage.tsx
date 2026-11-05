@@ -1,22 +1,28 @@
-import { useState, useMemo, useEffect, type ChangeEvent } from 'react'
-import type { Proyecto, Cliente, Documento } from '@/types'
+import { useState, useEffect, useMemo, type ChangeEvent } from 'react'
+import type { Proyecto, Cliente } from '@/types'
 import { proyectoService } from '@/services/proyectoService'
 import { clienteService } from '@/services/clienteService'
-import { documentoService } from '@/services/documentoService'
 import { formatCurrency } from '@/lib/format'
 import { ProyectoModal } from '@/components/proyectos/ProyectoModal'
 import { ProyectoDetailSheet } from '@/components/proyectos/ProyectoDetailSheet'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { FolderGit2, Plus, Search, Building2, CheckCircle2, TrendingUp } from 'lucide-react'
+import { 
+  FolderGit2, 
+  Plus, 
+  Search, 
+  Building2, 
+  CheckCircle2, 
+  TrendingUp, 
+} from 'lucide-react'
 
-function StatCard({ icon: Icon, label, value, accent }: {
-  icon: React.ElementType; label: string; value: string; accent?: string
+function StatCard({ icon: Icon, label, value, accent }: { 
+  icon: React.ElementType; label: string; value: string; accent?: string 
 }) {
   return (
-    <div className="bg-white border border-[#E5E7EB] rounded p-4 flex items-start gap-3 shadow-sm">
+    <div className="bg-white border border-[#E5E7EB] rounded p-4 flex items-center gap-3 shadow-xs">
       <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${accent ?? 'bg-[#F9FAFB]'}`}>
-        <Icon className={`w-4 h-4 ${accent ? 'text-white' : 'text-[#80727B]'}`} />
+        <Icon className={`w-4 h-4 ${accent ? 'text-white' : 'text-[#705D56]'}`} />
       </div>
       <div>
         <p className="text-sm text-[#705D56]">{label}</p>
@@ -29,7 +35,6 @@ function StatCard({ icon: Icon, label, value, accent }: {
 export function ProyectosPage() {
   const [proyectos, setProyectos]   = useState<Proyecto[]>([])
   const [clientes, setClientes]     = useState<Cliente[]>([])
-  const [facturas, setFacturas]     = useState<Documento[]>([])
   const [loading, setLoading]       = useState(true)
   const [error, setError]           = useState<string | null>(null)
   const [selected,  setSelected]    = useState<Proyecto | null>(null)
@@ -41,14 +46,12 @@ export function ProyectosPage() {
     const load = async () => {
       try {
         setLoading(true)
-        const [proyectosData, clientesData, facturasData] = await Promise.all([
+        const [proyectosData, clientesData] = await Promise.all([
           proyectoService.listar(),
           clienteService.listar(),
-          documentoService.listar({ tipo: 'FACTURA', estado: 'ACTIVA' })
         ])
         setProyectos(proyectosData)
         setClientes(clientesData)
-        setFacturas(facturasData)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Error al cargar datos')
       } finally {
@@ -61,12 +64,9 @@ export function ProyectosPage() {
   /* ── Stats ── */
   const stats = useMemo(() => {
     const activos = proyectos.filter(p => p.estado === 'ACTIVO').length
-    const facturado = facturas
-      .filter(f => f.proyectoId)
-      .reduce((s, f) => s + f.total, 0)
-    
+    const facturado = proyectos.reduce((s, p) => s + (p.totalFacturado ?? 0), 0)
     return { total: proyectos.length, activos, facturado }
-  }, [proyectos, facturas])
+  }, [proyectos])
 
   /* ── Filter ── */
   const filtered = useMemo(() => {
@@ -101,12 +101,6 @@ export function ProyectosPage() {
       console.error(e)
     }
   }
-
-  /* ── Helpers ── */
-  const getFacturado = (proyectoId: string) => 
-    facturas
-      .filter(f => f.proyectoId === proyectoId)
-      .reduce((s, f) => s + f.total, 0)
 
   if (loading) return (
     <div className="p-4 md:p-8 flex items-center justify-center h-64">
@@ -169,7 +163,7 @@ export function ProyectosPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map(p => {
             const clienteNombre = p.clienteNombre || clientes.find(c => c.id === p.clienteId)?.nombre
-            const facturado = getFacturado(p.id)
+            const facturado = p.totalFacturado ?? 0
             
             const estadoColors = {
               ACTIVO: 'bg-emerald-100 text-emerald-800 border-emerald-200',
@@ -197,8 +191,10 @@ export function ProyectosPage() {
 
                 {/* Footer (Facturado) */}
                 <div className="mt-auto pt-3 border-t border-[#E5E7EB]">
-                  <p className="text-sm text-[#705D56]">Total Facturado</p>
-                  <p className="text-lg font-bold text-[#022F40] leading-tight mt-0.5">{formatCurrency(facturado)}</p>
+                  <p className="text-sm text-[#705D56]">Total facturado</p>
+                  <p className="text-base font-bold text-[#022F40] mt-0.5">
+                    {formatCurrency(facturado)}
+                  </p>
                 </div>
               </button>
             )
@@ -206,20 +202,22 @@ export function ProyectosPage() {
         </div>
       )}
 
-      {/* ── Modales ── */}
+      {/* ── Modals / Sheets ── */}
       <ProyectoModal
         open={showModal}
         onOpenChange={setShowModal}
         initial={editTarget}
-        onSave={handleSave}
         clientes={clientes}
+        onSave={handleSave}
       />
+
       <ProyectoDetailSheet
         proyecto={selected}
         open={selected !== null}
-        onOpenChange={v => { if (!v) setSelected(null) }}
+        onOpenChange={(op) => !op && setSelected(null)}
         onEdit={openEdit}
       />
+
     </div>
   )
 }

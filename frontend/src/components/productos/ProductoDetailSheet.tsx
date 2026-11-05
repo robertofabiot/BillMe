@@ -69,6 +69,7 @@ interface Props {
 
 export function ProductoDetailSheet({ producto, open, onOpenChange, onEdit, onPrecioActualizado }: Props) {
   const [history, setHistory] = useState<PriceEntry[]>([])
+  const [totalDocumentos, setTotalDocumentos] = useState(0)
   const [totalVentas, setTotalVentas] = useState(0)
   const [precios, setPrecios] = useState<PreciosListaProducto | null>(null)
   const [calculando, setCalculando] = useState(false)
@@ -81,10 +82,11 @@ export function ProductoDetailSheet({ producto, open, onOpenChange, onEdit, onPr
   useEffect(() => {
     if (!producto?.id || !open) return
     cargarPrecios()
-    // Solo los documentos que incluyen este producto
-    documentoService.listar({ productoId: producto.id }).then(documentos => {
-      setHistory(processHistory(producto.id, documentos))
-      setTotalVentas(documentos
+    // Solo los documentos que incluyen este producto (tamano=200)
+    documentoService.listar({ productoId: producto.id, tamano: 200 }).then(res => {
+      setTotalDocumentos(res.totalElementos)
+      setHistory(processHistory(producto.id, res.contenido))
+      setTotalVentas(res.contenido
         .filter(d => d.tipo === 'FACTURA' && d.estado === 'ACTIVA')
         .flatMap(d => d.lineas)
         .filter(l => l.productoId === producto.id)
@@ -245,6 +247,12 @@ export function ProductoDetailSheet({ producto, open, onOpenChange, onEdit, onPr
             <h3 className="text-sm font-semibold uppercase tracking-wider text-[#80727B] mb-2 flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5" /> Historial de Precios por Cliente
             </h3>
+
+            {totalDocumentos > 200 && (
+              <p className="text-sm text-[#705D56] bg-amber-50 border border-amber-200 px-3 py-1.5 rounded mb-2">
+                Se muestran los 200 más recientes.
+              </p>
+            )}
 
             {history.length === 0 ? (
               <p className="text-sm text-[#80727B] py-2">

@@ -3,6 +3,7 @@ package com.example.billme.controller;
 import com.example.billme.dto.CambioEstadoRequest;
 import com.example.billme.dto.DocumentoRequest;
 import com.example.billme.dto.DocumentoResponse;
+import com.example.billme.dto.PaginaResponse;
 import com.example.billme.dto.RevisionResponse;
 import com.example.billme.enums.EstadoDocumento;
 import com.example.billme.enums.TipoDocumento;
@@ -10,6 +11,8 @@ import com.example.billme.service.DocumentoService;
 import com.example.billme.exportacion.ArchivoExcel;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -30,15 +33,21 @@ public class DocumentoController {
     private final DocumentoService documentoService;
 
     @GetMapping
-    public ResponseEntity<List<DocumentoResponse>> listar(
+    public ResponseEntity<PaginaResponse<DocumentoResponse>> listar(
             @RequestParam(required = false) TipoDocumento tipo,
             @RequestParam(required = false) EstadoDocumento estado,
             @RequestParam(required = false) UUID clienteId,
             @RequestParam(required = false) UUID proyectoId,
             @RequestParam(required = false) UUID productoId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
-        return ResponseEntity.ok(documentoService.filtrar(tipo, estado, clienteId, proyectoId, productoId, desde, hasta));
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @RequestParam(required = false, defaultValue = "") String q,
+            @RequestParam(required = false, defaultValue = "0") int pagina,
+            @RequestParam(required = false, defaultValue = "50") int tamano) {
+        int tamanoFinal = Math.max(1, Math.min(tamano, 200));
+        int paginaFinal = Math.max(0, pagina);
+        Pageable pageable = PageRequest.of(paginaFinal, tamanoFinal);
+        return ResponseEntity.ok(documentoService.filtrar(tipo, estado, clienteId, proyectoId, productoId, desde, hasta, q, pageable));
     }
 
     @GetMapping("/{id}")
