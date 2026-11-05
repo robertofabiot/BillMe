@@ -72,18 +72,18 @@ export function ProyectoModal({ open, onOpenChange, initial, onSave, defaultClie
         {/* Body */}
         <div className="px-5 py-5 flex flex-col gap-5">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Nombre del Proyecto *</label>
+            <label className="text-sm font-medium text-[#705D56]">Nombre del Proyecto *</label>
             <Input value={nombre} onChange={(e: ChangeEvent<HTMLInputElement>) => setNombre(e.target.value)} placeholder="Ej. Remodelación Casa Club" autoFocus />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56] flex items-center gap-1.5">
+            <label className="text-sm font-medium text-[#705D56] flex items-center gap-1.5">
               <Building2 className="w-3 h-3 text-[#80727B]" /> Cliente *
             </label>
             <select
               value={clienteId}
               onChange={e => setClienteId(e.target.value)}
-              className="h-9 w-full rounded border border-[#E5E7EB] bg-white px-3 py-1 text-sm text-[#022F40] outline-none focus:border-[#022F40] focus:ring-2 focus:ring-[#022F40]/10 transition-all"
+              className="w-full rounded border border-[#E5E7EB] bg-white px-3 py-1 text-sm text-[#022F40] outline-none focus:border-[#022F40] focus:ring-2 focus:ring-[#022F40]/10 transition-all"
             >
               <option value="" disabled>Selecciona un cliente</option>
               {clientes.map(c => (
@@ -94,11 +94,11 @@ export function ProyectoModal({ open, onOpenChange, initial, onSave, defaultClie
 
           {isEdit && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-[#705D56]">Estado</label>
+              <label className="text-sm font-medium text-[#705D56]">Estado</label>
               <select
                 value={estado}
                 onChange={e => setEstado(e.target.value as Proyecto['estado'])}
-                className="h-9 w-full rounded border border-[#E5E7EB] bg-white px-3 py-1 text-sm text-[#022F40] outline-none focus:border-[#022F40] focus:ring-2 focus:ring-[#022F40]/10 transition-all"
+                className="w-full rounded border border-[#E5E7EB] bg-white px-3 py-1 text-sm text-[#022F40] outline-none focus:border-[#022F40] focus:ring-2 focus:ring-[#022F40]/10 transition-all"
               >
                 <option value="ACTIVO">Activo</option>
                 <option value="FINALIZADO">Finalizado</option>
@@ -109,7 +109,7 @@ export function ProyectoModal({ open, onOpenChange, initial, onSave, defaultClie
 
         {/* Footer */}
         <div className="flex items-center justify-end px-5 py-4 border-t border-[#E5E7EB] bg-[#F9FAFB] shrink-0 gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded border-[#E5E7EB] text-sm h-9">Cancelar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded border-[#E5E7EB] text-sm">Cancelar</Button>
           <Button onClick={handleSave} disabled={!nombre.trim() || !clienteId}
             className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-1">
             <Plus className="w-3.5 h-3.5" />

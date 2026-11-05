@@ -101,13 +101,13 @@ export function AbonoDialog({
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 py-2">
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded text-xs">
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded text-sm">
               {error}
             </div>
           )}
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Monto (C$) *</label>
+            <label className="text-sm font-medium text-[#705D56]">Monto (C$) *</label>
             <Input
               type="number"
               step="0.01"
@@ -121,7 +121,7 @@ export function AbonoDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Fecha *</label>
+            <label className="text-sm font-medium text-[#705D56]">Fecha *</label>
             <Input
               type="date"
               value={fechaPago}
@@ -131,7 +131,7 @@ export function AbonoDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Proyecto</label>
+            <label className="text-sm font-medium text-[#705D56]">Proyecto</label>
             <select
               value={proyectoId}
               onChange={(e: ChangeEvent<HTMLSelectElement>) => setProyectoId(e.target.value)}
@@ -147,7 +147,7 @@ export function AbonoDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Nota</label>
+            <label className="text-sm font-medium text-[#705D56]">Nota</label>
             <Input
               value={nota}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setNota(e.target.value)}
@@ -161,14 +161,14 @@ export function AbonoDialog({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="rounded border-[#E5E7EB] text-sm h-9"
+              className="rounded border-[#E5E7EB] text-sm"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={guardando}
-              className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9"
+              className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm"
             >
               {guardando ? 'Guardando…' : isEdit ? 'Guardar Cambios' : 'Registrar Abono'}
             </Button>

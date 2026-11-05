@@ -88,7 +88,7 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
         {/* Body */}
         <div className="px-5 py-5 flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Nombre *</label>
+            <label className="text-sm font-medium text-[#705D56]">Nombre *</label>
             <Input
               value={nombre}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setNombre(e.target.value)}
@@ -97,7 +97,7 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Teléfono</label>
+            <label className="text-sm font-medium text-[#705D56]">Teléfono</label>
             <Input
               value={telefono}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setTelefono(e.target.value)}
@@ -105,7 +105,7 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Descuento sobre la lista (%)</label>
+            <label className="text-sm font-medium text-[#705D56]">Descuento sobre la lista (%)</label>
             <Input
               type="number"
               step="0.01"
@@ -117,7 +117,7 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Tarifa por kg para placas y platinas (USD, sin IVA)</label>
+            <label className="text-sm font-medium text-[#705D56]">Tarifa por kg para placas y platinas (USD, sin IVA)</label>
             <Input
               type="number"
               step="0.0001"
@@ -126,10 +126,10 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
               onChange={(e: ChangeEvent<HTMLInputElement>) => setTarifaKgUsd(e.target.value)}
               placeholder="Opcional"
             />
-            <span className="text-[11px] text-[#80727B]">Si lo dejas vacío se usa la de Configuración</span>
+            <span className="text-sm text-[#80727B]">Si lo dejas vacío se usa la de Configuración</span>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Saldo inicial (C$)</label>
+            <label className="text-sm font-medium text-[#705D56]">Saldo inicial (C$)</label>
             <Input
               type="number"
               step="0.01"
@@ -137,12 +137,12 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
               onChange={(e: ChangeEvent<HTMLInputElement>) => setSaldoInicial(e.target.value)}
               placeholder="0"
             />
-            <span className="text-[11px] text-[#80727B]">
+            <span className="text-sm text-[#80727B]">
               Lo que debía al empezar a usar el sistema. Si tenía saldo a favor, escríbelo en negativo.
             </span>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">La cuenta empieza el</label>
+            <label className="text-sm font-medium text-[#705D56]">La cuenta empieza el</label>
             <Input
               type="date"
               value={fechaInicioCuenta}
@@ -150,7 +150,7 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Notas</label>
+            <label className="text-sm font-medium text-[#705D56]">Notas</label>
             <textarea
               value={detalles}
               onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDetalles(e.target.value)}
@@ -163,13 +163,13 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
 
         {/* Footer */}
         <div className="flex justify-end gap-2 px-5 py-4 border-t border-[#E5E7EB] bg-[#F9FAFB]">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded border-[#E5E7EB] text-sm h-9">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded border-[#E5E7EB] text-sm">
             Cancelar
           </Button>
           <Button
             onClick={handleSave}
             disabled={!nombre.trim()}
-            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9"
+            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm"
           >
             {isEdit ? 'Guardar Cambios' : 'Crear Cliente'}
           </Button>

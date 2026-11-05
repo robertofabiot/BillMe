@@ -16,7 +16,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 
-export const navItems = [
+const navItems = [
   { to: '/',             label: 'Facturas',     icon: ReceiptText },
   { to: '/cotizaciones', label: 'Cotizaciones', icon: FileText },
   { to: '/precios',      label: 'Precios',      icon: Tags },

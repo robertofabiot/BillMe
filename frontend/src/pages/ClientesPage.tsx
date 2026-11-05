@@ -19,7 +19,7 @@ function StatCard({ icon: Icon, label, value, accent }: {
         <Icon className={`w-4 h-4 ${accent ? 'text-white' : 'text-[#80727B]'}`} />
       </div>
       <div>
-        <p className="text-xs text-[#705D56]">{label}</p>
+        <p className="text-sm text-[#705D56]">{label}</p>
         <p className="text-lg font-bold text-[#022F40] leading-tight">{value}</p>
       </div>
     </div>
@@ -159,11 +159,11 @@ export function ClientesPage() {
                       {cliente.nombre}
                     </p>
                     {cliente.telefono
-                      ? <p className="text-xs text-[#705D56]">{cliente.telefono}</p>
-                      : <p className="text-xs text-[#80727B]">Sin teléfono</p>
+                      ? <p className="text-sm text-[#705D56]">{cliente.telefono}</p>
+                      : <p className="text-sm text-[#80727B]">Sin teléfono</p>
                     }
                     {cliente.detalles && (
-                      <p className="text-xs text-[#80727B] truncate mt-0.5">{cliente.detalles}</p>
+                      <p className="text-sm text-[#80727B] truncate mt-0.5">{cliente.detalles}</p>
                     )}
                   </div>
                 </div>
@@ -173,7 +173,7 @@ export function ClientesPage() {
 
                 {/* Saldo row */}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#705D56]">Estado:</span>
+                  <span className="text-sm text-[#705D56]">Estado:</span>
                   <span
                     className={`text-sm font-bold ${
                       saldo > 0

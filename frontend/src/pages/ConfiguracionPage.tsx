@@ -78,7 +78,7 @@ export function ConfiguracionPage() {
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
           {CAMPOS.map(c => (
             <div key={c.clave} className="flex flex-col gap-1.5">
-              <label htmlFor={c.clave} className="text-xs font-medium text-[#705D56]">{c.etiqueta}</label>
+              <label htmlFor={c.clave} className="text-sm font-medium text-[#705D56]">{c.etiqueta}</label>
               <Input
                 id={c.clave}
                 type="number"
@@ -88,7 +88,7 @@ export function ConfiguracionPage() {
                 value={campos?.[c.clave] ?? ''}
                 onChange={e => campos && setCampos({ ...campos, [c.clave]: e.target.value })}
               />
-              <p className="text-[11px] text-[#80727B]">{c.ayuda}</p>
+              <p className="text-sm text-[#80727B]">{c.ayuda}</p>
             </div>
           ))}
         </div>

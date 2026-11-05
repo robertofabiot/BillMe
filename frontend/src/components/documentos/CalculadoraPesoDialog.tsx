@@ -237,7 +237,7 @@ export function CalculadoraPesoDialog({
         <div className="flex flex-col gap-4 py-2">
           {/* Selector de forma */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Forma</label>
+            <label className="text-sm font-medium text-[#705D56]">Forma</label>
             <div className="flex items-center gap-4 text-sm text-[#022F40]">
               {(['PLACA', 'PLATINA', 'ANGULAR'] as FormaTipo[]).map(f => (
                 <label key={f} className="flex items-center gap-1.5 cursor-pointer">
@@ -259,7 +259,7 @@ export function CalculadoraPesoDialog({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Ancho o Ala 1 */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-[#705D56]">
+              <label className="text-sm font-medium text-[#705D56]">
                 {forma === 'ANGULAR' ? 'Ala 1' : 'Ancho'}
               </label>
               <div className="flex gap-1.5">
@@ -267,12 +267,12 @@ export function CalculadoraPesoDialog({
                   value={anchoTexto}
                   onChange={e => setAnchoTexto(e.target.value)}
                   placeholder="Ej. 10 o 1 1/2"
-                  className="h-8 text-xs flex-1"
+                  className="text-sm flex-1"
                 />
                 <select
                   value={anchoUnidad}
                   onChange={e => setAnchoUnidad(e.target.value as UnidadLongitud)}
-                  className="h-8 rounded border border-[#E5E7EB] bg-white px-2 text-xs text-[#022F40] outline-none"
+                  className="rounded border border-[#E5E7EB] bg-white px-2 text-sm text-[#022F40] outline-none"
                 >
                   {UNIDADES.map(u => (
                     <option key={u.valor} value={u.valor}>{u.etiqueta}</option>
@@ -284,18 +284,18 @@ export function CalculadoraPesoDialog({
             {/* Ala 2 (solo angular) */}
             {forma === 'ANGULAR' && (
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-[#705D56]">Ala 2</label>
+                <label className="text-sm font-medium text-[#705D56]">Ala 2</label>
                 <div className="flex gap-1.5">
                   <Input
                     value={ala2Texto}
                     onChange={e => setAla2Texto(e.target.value)}
                     placeholder="Ej. 2 o 1/4"
-                    className="h-8 text-xs flex-1"
+                    className="text-sm flex-1"
                   />
                   <select
                     value={ala2Unidad}
                     onChange={e => setAla2Unidad(e.target.value as UnidadLongitud)}
-                    className="h-8 rounded border border-[#E5E7EB] bg-white px-2 text-xs text-[#022F40] outline-none"
+                    className="rounded border border-[#E5E7EB] bg-white px-2 text-sm text-[#022F40] outline-none"
                   >
                     {UNIDADES.map(u => (
                       <option key={u.valor} value={u.valor}>{u.etiqueta}</option>
@@ -307,18 +307,18 @@ export function CalculadoraPesoDialog({
 
             {/* Espesor */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-[#705D56]">Espesor</label>
+              <label className="text-sm font-medium text-[#705D56]">Espesor</label>
               <div className="flex gap-1.5">
                 <Input
                   value={espesorTexto}
                   onChange={e => setEspesorTexto(e.target.value)}
                   placeholder="Ej. 1/4 o 3/16"
-                  className="h-8 text-xs flex-1"
+                  className="text-sm flex-1"
                 />
                 <select
                   value={espesorUnidad}
                   onChange={e => setEspesorUnidad(e.target.value as UnidadLongitud)}
-                  className="h-8 rounded border border-[#E5E7EB] bg-white px-2 text-xs text-[#022F40] outline-none"
+                  className="rounded border border-[#E5E7EB] bg-white px-2 text-sm text-[#022F40] outline-none"
                 >
                   {UNIDADES.map(u => (
                     <option key={u.valor} value={u.valor}>{u.etiqueta}</option>
@@ -329,18 +329,18 @@ export function CalculadoraPesoDialog({
 
             {/* Largo */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-[#705D56]">Largo</label>
+              <label className="text-sm font-medium text-[#705D56]">Largo</label>
               <div className="flex gap-1.5">
                 <Input
                   value={largoTexto}
                   onChange={e => setLargoTexto(e.target.value)}
                   placeholder={forma === 'PLACA' ? 'Ej. 8' : 'Ej. 3.05 o 6'}
-                  className="h-8 text-xs flex-1"
+                  className="text-sm flex-1"
                 />
                 <select
                   value={largoUnidad}
                   onChange={e => setLargoUnidad(e.target.value as UnidadLongitud)}
-                  className="h-8 rounded border border-[#E5E7EB] bg-white px-2 text-xs text-[#022F40] outline-none"
+                  className="rounded border border-[#E5E7EB] bg-white px-2 text-sm text-[#022F40] outline-none"
                 >
                   {UNIDADES.map(u => (
                     <option key={u.valor} value={u.valor}>{u.etiqueta}</option>
@@ -353,7 +353,7 @@ export function CalculadoraPesoDialog({
           {/* Tarifa USD si es modo completo para Placa o Platina */}
           {esModoCompletoPlacaOPlatina && (
             <div className="flex flex-col gap-1 pt-1">
-              <label htmlFor="tarifa-input" className="text-xs font-medium text-[#705D56]">
+              <label htmlFor="tarifa-input" className="text-sm font-medium text-[#705D56]">
                 Tarifa USD por kg (sin IVA)
               </label>
               <Input
@@ -364,20 +364,20 @@ export function CalculadoraPesoDialog({
                 value={tarifaUsd}
                 onChange={e => setTarifaUsd(e.target.value)}
                 placeholder="Ej. 1.80"
-                className="h-8 text-xs max-w-xs"
+                className="text-sm max-w-xs"
               />
             </div>
           )}
 
           {/* Errores de cálculo */}
           {errorCalculo && (
-            <p className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200">
+            <p className="text-sm text-red-600 bg-red-50 p-2 rounded border border-red-200">
               {errorCalculo}
             </p>
           )}
 
           {/* Resumen de resultados */}
-          <div className="p-3 bg-[#F9FAFB] rounded border border-[#E5E7EB] flex flex-col gap-1 text-xs">
+          <div className="p-3 bg-[#F9FAFB] rounded border border-[#E5E7EB] flex flex-col gap-1 text-sm">
             {descCalculada && (
               <div className="flex items-center justify-between">
                 <span className="text-[#705D56]">Descripción sugerida:</span>
@@ -406,7 +406,7 @@ export function CalculadoraPesoDialog({
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="text-xs h-9"
+            className="text-sm"
           >
             Cancelar
           </Button>
@@ -414,7 +414,7 @@ export function CalculadoraPesoDialog({
             type="button"
             onClick={handleUsar}
             disabled={!puedeUsar}
-            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-xs h-9"
+            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm"
           >
             Usar
           </Button>

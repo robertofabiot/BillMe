@@ -210,7 +210,7 @@ export function ConsolidadoEditorPage() {
       <div className="flex items-center justify-between">
         <button
           onClick={volver}
-          className="inline-flex items-center gap-1.5 text-xs text-[#705D56] hover:text-[#022F40] transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-[#705D56] hover:text-[#022F40] transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Volver a Consolidados
         </button>
@@ -233,7 +233,7 @@ export function ConsolidadoEditorPage() {
 
       {/* ── Error Banner ── */}
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded text-xs flex items-center gap-2">
+        <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded text-sm flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -248,7 +248,7 @@ export function ConsolidadoEditorPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {/* Cliente */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Cliente *</label>
+            <label className="text-sm font-medium text-[#705D56]">Cliente *</label>
             <select
               value={clienteId}
               onChange={e => {
@@ -270,7 +270,7 @@ export function ConsolidadoEditorPage() {
 
           {/* Proyecto */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Proyecto</label>
+            <label className="text-sm font-medium text-[#705D56]">Proyecto</label>
             <select
               value={proyectoId}
               onChange={e => {
@@ -291,7 +291,7 @@ export function ConsolidadoEditorPage() {
 
           {/* Desde */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Desde *</label>
+            <label className="text-sm font-medium text-[#705D56]">Desde *</label>
             <Input
               type="date"
               value={desde}
@@ -304,7 +304,7 @@ export function ConsolidadoEditorPage() {
 
           {/* Hasta */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#705D56]">Hasta *</label>
+            <label className="text-sm font-medium text-[#705D56]">Hasta *</label>
             <Input
               type="date"
               value={hasta}
@@ -345,15 +345,15 @@ export function ConsolidadoEditorPage() {
                   {/* Barra de Subtotal editable */}
                   <div className="px-5 py-3 bg-[#F9FAFB] border-b border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-2 flex-1 max-w-md">
-                      <span className="text-xs text-[#80727B] font-mono whitespace-nowrap">Grupo {idx + 1}:</span>
+                      <span className="text-sm text-[#80727B] font-mono whitespace-nowrap">Grupo {idx + 1}:</span>
                       <Input
                         value={nombreMostrado}
                         onChange={e => handleNombreGrupoChange(g.fechaEntrega, e.target.value)}
                         placeholder="Nombre del subtotal…"
-                        className="h-8 text-xs font-semibold text-[#022F40] bg-white"
+                        className="text-sm font-semibold text-[#022F40] bg-white"
                       />
                     </div>
-                    <div className="flex items-center gap-4 text-xs font-semibold">
+                    <div className="flex items-center gap-4 text-sm font-semibold">
                       <span className="text-[#705D56]">
                         Kilos: <strong className="text-[#022F40]">{(g.subtotalKg ?? 0).toFixed(2)} kg</strong>
                       </span>
@@ -365,7 +365,7 @@ export function ConsolidadoEditorPage() {
 
                   {/* Tabla de líneas */}
                   <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
+                    <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-[#E5E7EB] bg-white text-[#705D56]">
                           <th className="text-left px-4 py-2 font-medium">Folio</th>
@@ -416,14 +416,14 @@ export function ConsolidadoEditorPage() {
           <div className="bg-white border border-[#E5E7EB] rounded p-6 shadow-sm flex flex-col md:flex-row justify-between gap-6">
             {/* Abonos del período */}
             <div className="flex-1 flex flex-col gap-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#80727B]">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-[#80727B]">
                 Abonos en el período ({consolidado.abonos.length})
               </h3>
               {consolidado.abonos.length === 0 ? (
-                <p className="text-xs text-[#80727B]">No hubo abonos registrados en este rango.</p>
+                <p className="text-sm text-[#80727B]">No hubo abonos registrados en este rango.</p>
               ) : (
                 <div className="border border-[#E5E7EB] rounded overflow-hidden">
-                  <table className="w-full text-xs">
+                  <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB] text-[#705D56]">
                         <th className="text-left px-3 py-1.5 font-medium">Fecha</th>
@@ -449,17 +449,17 @@ export function ConsolidadoEditorPage() {
 
             {/* Cuadro de Totales */}
             <div className="w-full md:w-80 flex flex-col gap-2 border-t md:border-t-0 md:border-l border-[#E5E7EB] md:pl-6 pt-4 md:pt-0">
-              <div className="flex justify-between text-xs py-1">
+              <div className="flex justify-between text-sm py-1">
                 <span className="text-[#705D56]">Total C$:</span>
                 <span className="font-bold text-[#022F40]">{formatCurrency(consolidado.total)}</span>
               </div>
-              <div className="flex justify-between text-xs py-1">
+              <div className="flex justify-between text-sm py-1">
                 <span className="text-[#705D56]">Total KG:</span>
                 <span className="font-bold text-[#022F40]">{(consolidado.totalKg ?? 0).toFixed(2)} kg</span>
               </div>
 
               {consolidado.saldoAnterior !== 0 && (
-                <div className="flex justify-between text-xs py-1 border-t border-[#E5E7EB]">
+                <div className="flex justify-between text-sm py-1 border-t border-[#E5E7EB]">
                   <span className="text-[#705D56]">Saldo anterior:</span>
                   <span className="font-bold text-[#022F40]">
                     {formatCurrency(consolidado.saldoAnterior)}
@@ -468,7 +468,7 @@ export function ConsolidadoEditorPage() {
               )}
 
               {consolidado.totalAbonos !== 0 && (
-                <div className="flex justify-between text-xs py-1">
+                <div className="flex justify-between text-sm py-1">
                   <span className="text-[#705D56]">Menos abonos:</span>
                   <span className="font-bold text-[#558564]">
                     −{formatCurrency(consolidado.totalAbonos)}
@@ -490,7 +490,7 @@ export function ConsolidadoEditorPage() {
           {/* ── 4. Nombre del Consolidado & Guardar ── */}
           <div className="bg-white border border-[#E5E7EB] rounded p-5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex flex-col gap-1.5 w-full sm:max-w-md">
-              <label className="text-xs font-medium text-[#705D56]">Nombre del consolidado *</label>
+              <label className="text-sm font-medium text-[#705D56]">Nombre del consolidado *</label>
               <Input
                 value={nombreConsolidado}
                 onChange={e => {

@@ -19,7 +19,7 @@ function StatCard({ icon: Icon, label, value, accent }: {
         <Icon className={`w-4 h-4 ${accent ? 'text-white' : 'text-[#80727B]'}`} />
       </div>
       <div>
-        <p className="text-xs text-[#705D56]">{label}</p>
+        <p className="text-sm text-[#705D56]">{label}</p>
         <p className="text-lg font-bold text-[#022F40] leading-tight">{value}</p>
       </div>
     </div>
@@ -183,18 +183,18 @@ export function ProyectosPage() {
                 <div className="flex justify-between items-start gap-2">
                   <div className="min-w-0">
                     <h3 className="text-sm font-semibold text-[#022F40] truncate group-hover:text-[#022F40]">{p.nombre}</h3>
-                    <p className="text-xs text-[#705D56] truncate mt-0.5 flex items-center gap-1">
+                    <p className="text-sm text-[#705D56] truncate mt-0.5 flex items-center gap-1">
                       <Building2 className="w-3 h-3" /> {clienteNombre ?? 'Desconocido'}
                     </p>
                   </div>
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${estadoColors[p.estado]}`}>
+                  <span className={`text-sm font-bold px-1.5 py-0.5 rounded border ${estadoColors[p.estado]}`}>
                     {p.estado}
                   </span>
                 </div>
 
                 {/* Footer (Facturado) */}
                 <div className="mt-auto pt-3 border-t border-[#E5E7EB]">
-                  <p className="text-[10px] text-[#705D56]">Total Facturado</p>
+                  <p className="text-sm text-[#705D56]">Total Facturado</p>
                   <p className="text-lg font-bold text-[#022F40] leading-tight mt-0.5">{formatCurrency(facturado)}</p>
                 </div>
               </button>

@@ -119,7 +119,7 @@ export function ClienteDetallePage() {
     return (
       <div className="p-4 md:p-8 flex flex-col items-center justify-center h-64 gap-3">
         <div className="text-sm text-red-600">{error}</div>
-        <Link to="/clientes" className="text-xs text-[#022F40] underline">
+        <Link to="/clientes" className="text-sm text-[#022F40] underline">
           Volver a clientes
         </Link>
       </div>
@@ -136,7 +136,7 @@ export function ClienteDetallePage() {
       <div>
         <Link
           to="/clientes"
-          className="inline-flex items-center gap-1.5 text-xs text-[#705D56] hover:text-[#022F40] transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-[#705D56] hover:text-[#022F40] transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Volver a Clientes
         </Link>
@@ -144,7 +144,7 @@ export function ClienteDetallePage() {
 
       {/* ── Error Banner ── */}
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded text-xs">
+        <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded text-sm">
           {error}
         </div>
       )}
@@ -159,7 +159,7 @@ export function ClienteDetallePage() {
           </div>
           <div className="flex flex-col gap-1">
             <h1 className="text-xl font-bold text-[#022F40]">{cliente.nombre}</h1>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#705D56]">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[#705D56]">
               {cliente.telefono ? (
                 <span className="flex items-center gap-1">
                   <Phone className="w-3.5 h-3.5" /> {cliente.telefono}
@@ -174,7 +174,7 @@ export function ClienteDetallePage() {
               )}
             </div>
             {cliente.detalles && (
-              <p className="text-xs text-[#80727B] flex items-start gap-1 mt-1">
+              <p className="text-sm text-[#80727B] flex items-start gap-1 mt-1">
                 <StickyNote className="w-3.5 h-3.5 shrink-0 mt-0.5" /> {cliente.detalles}
               </p>
             )}
@@ -201,7 +201,7 @@ export function ClienteDetallePage() {
       {/* ── 2. Tarjeta con saldo en grande, Facturado y Abonado ── */}
       <div className="bg-white border border-[#E5E7EB] rounded p-6 shadow-sm flex flex-col gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#80727B]">Estado de cuenta</p>
+          <p className="text-sm font-semibold uppercase tracking-wider text-[#80727B]">Estado de cuenta</p>
           <p
             className={`text-3xl font-extrabold mt-1 ${
               cuenta.saldo > 0
@@ -219,20 +219,20 @@ export function ClienteDetallePage() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <div>
-            <p className="text-xs text-[#705D56]">Facturado</p>
+            <p className="text-sm text-[#705D56]">Facturado</p>
             <p className="text-lg font-bold text-[#022F40] mt-0.5">
               {formatCurrency(cuenta.totalFacturado)}
             </p>
           </div>
           <div>
-            <p className="text-xs text-[#705D56]">Abonado</p>
+            <p className="text-sm text-[#705D56]">Abonado</p>
             <p className="text-lg font-bold text-[#558564] mt-0.5">
               {formatCurrency(cuenta.totalAbonado)}
             </p>
           </div>
           {cuenta.saldoInicial !== 0 && (
             <div>
-              <p className="text-xs text-[#705D56]">Saldo inicial</p>
+              <p className="text-sm text-[#705D56]">Saldo inicial</p>
               <p className="text-lg font-bold text-[#705D56] mt-0.5">
                 {formatCurrency(cuenta.saldoInicial)}
               </p>
@@ -244,11 +244,11 @@ export function ClienteDetallePage() {
       {/* ── 3. Por proyecto (solo si tiene proyectos) ── */}
       {cuenta.proyectos && cuenta.proyectos.length > 0 && (
         <section className="bg-white border border-[#E5E7EB] rounded p-6 shadow-sm flex flex-col gap-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#80727B] flex items-center gap-1.5">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-[#80727B] flex items-center gap-1.5">
             <FolderKanban className="w-4 h-4" /> Por proyecto
           </h2>
           <div className="border border-[#E5E7EB] rounded overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="w-full text-sm">
               <thead>
                 <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                   <th className="text-left px-4 py-2.5 font-medium text-[#705D56]">Proyecto</th>
@@ -285,14 +285,14 @@ export function ClienteDetallePage() {
 
       {/* ── 4. Movimientos (del más reciente al más antiguo) ── */}
       <section className="bg-white border border-[#E5E7EB] rounded p-6 shadow-sm flex flex-col gap-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#80727B] flex items-center gap-1.5">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-[#80727B] flex items-center gap-1.5">
           <TrendingUp className="w-4 h-4" /> Movimientos ({cuenta.movimientos.length})
         </h2>
         {movimientosRecientes.length === 0 ? (
-          <p className="text-xs text-[#80727B] py-3 text-center">Sin movimientos registrados.</p>
+          <p className="text-sm text-[#80727B] py-3 text-center">Sin movimientos registrados.</p>
         ) : (
           <div className="border border-[#E5E7EB] rounded overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="w-full text-sm">
               <thead>
                 <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                   <th className="text-left px-4 py-2.5 font-medium text-[#705D56]">Fecha</th>
@@ -369,14 +369,14 @@ export function ClienteDetallePage() {
 
       {/* ── 5. Cotizaciones y facturas: Folio, Fecha, Total y Estado ── */}
       <section className="bg-white border border-[#E5E7EB] rounded p-6 shadow-sm flex flex-col gap-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#80727B] flex items-center gap-1.5">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-[#80727B] flex items-center gap-1.5">
           <ReceiptText className="w-4 h-4" /> Cotizaciones y facturas ({documentos.length})
         </h2>
         {documentos.length === 0 ? (
-          <p className="text-xs text-[#80727B] py-3 text-center">Sin cotizaciones ni facturas.</p>
+          <p className="text-sm text-[#80727B] py-3 text-center">Sin cotizaciones ni facturas.</p>
         ) : (
           <div className="border border-[#E5E7EB] rounded overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="w-full text-sm">
               <thead>
                 <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                   <th className="text-left px-4 py-2.5 font-medium text-[#705D56]">Folio</th>

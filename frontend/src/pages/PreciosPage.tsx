@@ -133,7 +133,7 @@ export function PreciosPage() {
                   <td className="px-4 py-3 text-[#705D56] whitespace-nowrap">
                     {formatDate(fila.fecha)}
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs font-semibold whitespace-nowrap">
+                  <td className="px-4 py-3 font-mono text-sm font-semibold whitespace-nowrap">
                     <Link
                       to={`/documentos/${fila.documentoId}`}
                       className="text-[#022F40] hover:underline"
@@ -154,7 +154,7 @@ export function PreciosPage() {
                     <div className="flex items-center justify-end gap-1.5 font-semibold text-[#022F40]">
                       <span>{formatCurrency(fila.precioUnit)}</span>
                       {fila.viejo && (
-                        <span className="text-amber-700 bg-amber-50 border border-amber-200 text-xs px-1.5 py-0.5 rounded font-normal">
+                        <span className="text-amber-700 bg-amber-50 border border-amber-200 text-sm px-1.5 py-0.5 rounded font-normal">
                           Viejo
                         </span>
                       )}

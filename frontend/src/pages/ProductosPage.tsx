@@ -104,7 +104,7 @@ export function ProductosPage() {
           className="pl-8"
         />
       </div>
-      <p className="text-xs text-[#80727B] -mt-3">
+      <p className="text-sm text-[#80727B] -mt-3">
         {resultados === null
           ? 'Se muestran los productos usados más recientemente. Busca para encontrar cualquier otro.'
           : `${resultados.length} resultado${resultados.length === 1 ? '' : 's'} (máximo 20, los más parecidos primero).`}
@@ -140,35 +140,35 @@ export function ProductosPage() {
                   className={`border-b border-[#E5E7EB] hover:bg-[#F9FAFB] cursor-pointer transition-colors ${isLast ? 'border-b-0' : ''}`}
                 >
                   <td className="px-4 py-3">
-                    <span className="font-mono text-xs font-semibold text-[#022F40] bg-[#F9FAFB] border border-[#E5E7EB] rounded px-2 py-0.5">
+                    <span className="font-mono text-sm font-semibold text-[#022F40] bg-[#F9FAFB] border border-[#E5E7EB] rounded px-2 py-0.5">
                       {p.codigoInterno}
                     </span>
                   </td>
                   <td className="px-4 py-3 font-medium text-[#022F40]">{p.nombrePrincipal}</td>
                   <td className="px-4 py-3">
                     {p.aliases.length === 0 ? (
-                      <span className="text-xs text-[#80727B] italic">Sin alias</span>
+                      <span className="text-sm text-[#80727B] italic">Sin alias</span>
                     ) : (
                       <div className="flex flex-wrap gap-1">
                         {p.aliases.slice(0, 3).map(a => (
                           <span
                             key={a}
-                            className="text-[11px] bg-[#022F40]/8 text-[#022F40] px-1.5 py-0.5 rounded border border-[#022F40]/15"
+                            className="text-sm bg-[#022F40]/8 text-[#022F40] px-1.5 py-0.5 rounded border border-[#022F40]/15"
                           >
                             {a}
                           </span>
                         ))}
                         {p.aliases.length > 3 && (
-                          <span className="text-[11px] text-[#80727B]">+{p.aliases.length - 3}</span>
+                          <span className="text-sm text-[#80727B]">+{p.aliases.length - 3}</span>
                         )}
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-center text-[#705D56] text-xs">
+                  <td className="px-4 py-3 text-center text-[#705D56] text-sm">
                     {p.peso > 0 ? `${p.peso} kg` : '—'}
                   </td>
-                  <td className="px-4 py-3 text-center text-[#705D56] text-xs">{p.unidad}</td>
-                  <td className="px-4 py-3 text-right text-xs font-medium text-[#022F40]">
+                  <td className="px-4 py-3 text-center text-[#705D56] text-sm">{p.unidad}</td>
+                  <td className="px-4 py-3 text-right text-sm font-medium text-[#022F40]">
                     {p.precioListaVigente != null ? formatCurrency(p.precioListaVigente) : '—'}
                   </td>
                 </tr>

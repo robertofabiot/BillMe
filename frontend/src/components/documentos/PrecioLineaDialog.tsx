@@ -174,11 +174,11 @@ export function PrecioLineaDialog({
                   {sugerido?.precioUnit != null ? (
                     <span className="font-semibold text-[#022F40]">{formatCurrency(sugerido.precioUnit)}</span>
                   ) : (
-                    <span className="text-xs text-[#80727B]">Todavía no se ha vendido</span>
+                    <span className="text-sm text-[#80727B]">Todavía no se ha vendido</span>
                   )}
                 </div>
                 {sugerido?.precioUnit != null && (
-                  <div className="text-xs text-[#705D56] mt-1 flex flex-col gap-0.5">
+                  <div className="text-sm text-[#705D56] mt-1 flex flex-col gap-0.5">
                     <span>
                       {sugerido.origen === 'OTRO_CLIENTE' && sugerido.clienteNombre
                         ? `Precio de ${sugerido.clienteNombre}`
@@ -217,11 +217,11 @@ export function PrecioLineaDialog({
                       {formatCurrency(formulaRes?.precioUnit ?? sugerido.precioFormula ?? 0)}
                     </span>
                   ) : (
-                    <span className="text-xs text-[#80727B]">No tiene precio de lista</span>
+                    <span className="text-sm text-[#80727B]">No tiene precio de lista</span>
                   )}
                 </div>
                 {sugerido?.precioLista != null && (
-                  <div className="flex items-center gap-3 text-xs text-[#705D56]">
+                  <div className="flex items-center gap-3 text-sm text-[#705D56]">
                     <span>Lista: {formatCurrency(sugerido.precioLista)}</span>
                     <div className="flex items-center gap-1.5">
                       <label htmlFor="descuento-input" className="font-medium">Descuento:</label>
@@ -233,7 +233,7 @@ export function PrecioLineaDialog({
                         step="0.01"
                         value={descuentoPct}
                         onChange={e => setDescuentoPct(e.target.value)}
-                        className="w-16 h-7 text-xs px-1.5"
+                        className="w-16 h-7 text-sm px-1.5"
                         onClick={e => e.stopPropagation()}
                       />
                       <span>%</span>
@@ -249,7 +249,7 @@ export function PrecioLineaDialog({
                 <div className="flex-1 text-sm flex items-center justify-between">
                   <div>
                     <span className="font-semibold text-[#022F40]">Por peso</span>
-                    <p className="text-xs text-[#705D56] mt-0.5">Calcula medidas y precio según tarifa por kg</p>
+                    <p className="text-sm text-[#705D56] mt-0.5">Calcula medidas y precio según tarifa por kg</p>
                   </div>
                   <Button
                     type="button"
@@ -259,7 +259,7 @@ export function PrecioLineaDialog({
                       onOpenChange(false)
                       onAbrirCalculadoraPeso()
                     }}
-                    className="h-8 text-xs font-medium text-[#022F40]"
+                    className="text-sm font-medium text-[#022F40]"
                   >
                     Abrir calculadora
                   </Button>
@@ -286,7 +286,7 @@ export function PrecioLineaDialog({
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2" onClick={e => e.stopPropagation()}>
                   <div className="flex flex-col gap-1">
-                    <span className="text-[11px] font-medium text-[#705D56]">Precio vendida (C$)</span>
+                    <span className="text-sm font-medium text-[#705D56]">Precio vendida (C$)</span>
                     <Input
                       type="number"
                       min="0"
@@ -294,11 +294,11 @@ export function PrecioLineaDialog({
                       placeholder="Ej. 2700"
                       value={precioRef}
                       onChange={e => setPrecioRef(e.target.value)}
-                      className="h-7 text-xs px-2"
+                      className="h-7 text-sm px-2"
                     />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-[11px] font-medium text-[#705D56]">Largo vendida (m)</span>
+                    <span className="text-sm font-medium text-[#705D56]">Largo vendida (m)</span>
                     <Input
                       type="number"
                       min="0"
@@ -306,11 +306,11 @@ export function PrecioLineaDialog({
                       placeholder="Ej. 6.75"
                       value={largoRef}
                       onChange={e => setLargoRef(e.target.value)}
-                      className="h-7 text-xs px-2"
+                      className="h-7 text-sm px-2"
                     />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-[11px] font-medium text-[#705D56]">Largo nuevo (m)</span>
+                    <span className="text-sm font-medium text-[#705D56]">Largo nuevo (m)</span>
                     <Input
                       type="number"
                       min="0"
@@ -318,7 +318,7 @@ export function PrecioLineaDialog({
                       placeholder="Ej. 5.40"
                       value={largoNuevo}
                       onChange={e => setLargoNuevo(e.target.value)}
-                      className="h-7 text-xs px-2"
+                      className="h-7 text-sm px-2"
                     />
                   </div>
                 </div>
@@ -333,7 +333,7 @@ export function PrecioLineaDialog({
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="text-xs h-9"
+            className="text-sm"
           >
             Cancelar
           </Button>
@@ -341,7 +341,7 @@ export function PrecioLineaDialog({
             type="button"
             onClick={handleAplicar}
             disabled={!puedeAplicar}
-            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-xs h-9"
+            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm"
           >
             Usar este precio
           </Button>

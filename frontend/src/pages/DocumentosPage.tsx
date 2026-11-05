@@ -88,7 +88,7 @@ export function DocumentosPage({ tipo }: { tipo: TipoDocumento }) {
           aria-label="Filtrar por estado"
           value={estado}
           onChange={e => setEstado(e.target.value as EstadoDocumento | '')}
-          className="h-9 rounded border border-[#E5E7EB] bg-white px-3 text-sm text-[#022F40] outline-none focus:border-[#022F40]"
+          className="rounded border border-[#E5E7EB] bg-white px-3 text-sm text-[#022F40] outline-none focus:border-[#022F40]"
         >
           <option value="">Todos los estados</option>
           {ESTADOS[tipo].map(e => <option key={e.valor} value={e.valor}>{e.texto}</option>)}
@@ -121,7 +121,7 @@ export function DocumentosPage({ tipo }: { tipo: TipoDocumento }) {
                 onClick={() => navigate(`/documentos/${d.id}`)}
                 className="border-b border-[#E5E7EB] last:border-b-0 hover:bg-[#F9FAFB] cursor-pointer transition-colors"
               >
-                <td className="px-4 py-3 font-mono text-xs font-semibold text-[#022F40]">
+                <td className="px-4 py-3 font-mono text-sm font-semibold text-[#022F40]">
                   <Link to={`/documentos/${d.id}`} onClick={e => e.stopPropagation()}>{d.folio}</Link>
                 </td>
                 <td className="px-4 py-3 text-[#705D56] whitespace-nowrap">{formatDate(d.fecha)}</td>

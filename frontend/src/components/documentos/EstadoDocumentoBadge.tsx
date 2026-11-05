@@ -18,7 +18,7 @@ function apariencia(d: Pick<Documento, 'estado'>) {
 export function EstadoDocumentoBadge({ documento }: { documento: Pick<Documento, 'estado'> }) {
   const a = apariencia(documento)
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium border ${a.clase}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-sm font-medium border ${a.clase}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${a.dot}`} />
       {a.texto}
     </span>

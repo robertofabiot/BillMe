@@ -58,17 +58,17 @@ export function ProyectoDetailSheet({ proyecto, open, onOpenChange, onEdit }: Pr
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-semibold text-[#022F40] leading-tight">{proyecto.nombre}</h2>
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${estadoColors[proyecto.estado]}`}>
+                <span className={`text-sm font-semibold px-2 py-0.5 rounded border ${estadoColors[proyecto.estado]}`}>
                   {proyecto.estado}
                 </span>
               </div>
-              <p className="text-xs text-[#705D56] mt-1 flex items-center gap-1">
+              <p className="text-sm text-[#705D56] mt-1 flex items-center gap-1">
                 <Building2 className="w-3 h-3" /> {proyecto.clienteNombre ?? 'Cliente desconocido'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            <Button size="sm" variant="outline" onClick={() => onEdit(proyecto)} className="rounded border-[#E5E7EB] text-[#022F40] h-8 text-xs gap-1 bg-white">
+            <Button size="sm" variant="outline" onClick={() => onEdit(proyecto)} className="rounded border-[#E5E7EB] text-[#022F40] h-8 text-sm gap-1 bg-white">
               <Pencil className="w-3.5 h-3.5" /> Editar
             </Button>
             <button onClick={() => onOpenChange(false)} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white text-[#80727B] transition-colors ml-1">
@@ -80,17 +80,17 @@ export function ProyectoDetailSheet({ proyecto, open, onOpenChange, onEdit }: Pr
         {/* Financial Summary */}
         <div className="px-6 py-4 border-b border-[#E5E7EB] shrink-0 flex items-center justify-between">
           <div>
-            <p className="text-[10px] text-[#80727B] uppercase tracking-wide">Facturado</p>
+            <p className="text-sm text-[#80727B] uppercase tracking-wide">Facturado</p>
             <p className="text-base font-bold text-[#022F40]">{formatCurrency(facturado)}</p>
           </div>
-          <div className="h-8 w-px bg-[#E5E7EB]" />
+          <div className="w-px bg-[#E5E7EB]" />
           <div>
-            <p className="text-[10px] text-[#80727B] uppercase tracking-wide">Cobrado</p>
+            <p className="text-sm text-[#80727B] uppercase tracking-wide">Cobrado</p>
             <p className="text-base font-bold text-[#558564]">{formatCurrency(cobrado)}</p>
           </div>
-          <div className="h-8 w-px bg-[#E5E7EB]" />
+          <div className="w-px bg-[#E5E7EB]" />
           <div>
-            <p className="text-[10px] text-[#80727B] uppercase tracking-wide">Por Cobrar</p>
+            <p className="text-sm text-[#80727B] uppercase tracking-wide">Por Cobrar</p>
             <p className={`text-base font-bold ${porCobrar > 0 ? 'text-amber-600' : 'text-[#80727B]'}`}>
               {formatCurrency(porCobrar)}
             </p>
@@ -99,7 +99,7 @@ export function ProyectoDetailSheet({ proyecto, open, onOpenChange, onEdit }: Pr
 
         {/* Body (Facturas) */}
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#80727B] flex items-center gap-1.5">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-[#80727B] flex items-center gap-1.5">
             <TrendingUp className="w-3.5 h-3.5" /> Cotizaciones y facturas
           </h3>
 
@@ -107,7 +107,7 @@ export function ProyectoDetailSheet({ proyecto, open, onOpenChange, onEdit }: Pr
             <div className="border border-dashed border-[#E5E7EB] rounded p-6 flex flex-col items-center justify-center text-center">
               <AlertCircle className="w-6 h-6 text-[#80727B] mb-2" />
               <p className="text-sm font-medium text-[#705D56]">Sin documentos</p>
-              <p className="text-xs text-[#80727B] mt-1">Este proyecto aún no tiene cotizaciones ni facturas.</p>
+              <p className="text-sm text-[#80727B] mt-1">Este proyecto aún no tiene cotizaciones ni facturas.</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
@@ -116,15 +116,15 @@ export function ProyectoDetailSheet({ proyecto, open, onOpenChange, onEdit }: Pr
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="text-sm font-semibold text-[#022F40] leading-none">{d.folio}</p>
-                      <p className="text-[10px] text-[#705D56] mt-1">{formatDate(d.fecha)}</p>
+                      <p className="text-sm text-[#705D56] mt-1">{formatDate(d.fecha)}</p>
                     </div>
                     <EstadoDocumentoBadge documento={d} />
                   </div>
 
                   <div className="flex items-center justify-between mt-1 pt-2 border-t border-[#F3F4F6]">
                     <div>
-                      <p className="text-[10px] text-[#80727B]">Total</p>
-                      <p className="text-xs font-bold text-[#022F40]">{formatCurrency(d.total)}</p>
+                      <p className="text-sm text-[#80727B]">Total</p>
+                      <p className="text-sm font-bold text-[#022F40]">{formatCurrency(d.total)}</p>
                     </div>
                   </div>
                 </Link>

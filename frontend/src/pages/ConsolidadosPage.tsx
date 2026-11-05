@@ -102,7 +102,7 @@ export function ConsolidadosPage() {
         <div className="bg-white border border-[#E5E7EB] rounded p-12 text-center shadow-sm flex flex-col items-center">
           <Layers className="w-10 h-10 text-[#80727B] mb-3" />
           <p className="text-sm font-semibold text-[#022F40]">Sin Consolidados</p>
-          <p className="text-xs text-[#705D56] mt-1 max-w-sm">
+          <p className="text-sm text-[#705D56] mt-1 max-w-sm">
             No hay documentos consolidados. Crea uno nuevo seleccionando un rango de fechas de un cliente.
           </p>
         </div>
@@ -120,7 +120,7 @@ export function ConsolidadosPage() {
               >
                 <div className="flex justify-between items-start gap-2 mb-2">
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-mono font-bold text-[#80727B]">{c.folio}</p>
+                    <p className="text-sm font-mono font-bold text-[#80727B]">{c.folio}</p>
                     <h3 className="text-sm font-semibold text-[#022F40] leading-tight truncate mt-0.5">
                       {c.nombre}
                     </h3>
@@ -134,17 +134,17 @@ export function ConsolidadosPage() {
                   </button>
                 </div>
 
-                <p className="text-xs text-[#705D56] flex items-center gap-1.5 mb-1 truncate">
+                <p className="text-sm text-[#705D56] flex items-center gap-1.5 mb-1 truncate">
                   <Building2 className="w-3.5 h-3.5 text-[#80727B] shrink-0" /> {clienteProyecto}
                 </p>
 
-                <p className="text-xs text-[#80727B] flex items-center gap-1.5 mb-4">
+                <p className="text-sm text-[#80727B] flex items-center gap-1.5 mb-4">
                   <Calendar className="w-3.5 h-3.5 shrink-0" /> {rango}
                 </p>
 
                 <div className="mt-auto pt-3 border-t border-[#E5E7EB] flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] text-[#705D56] uppercase tracking-wider">Total Actualizado</p>
+                    <p className="text-sm text-[#705D56] uppercase tracking-wider">Total Actualizado</p>
                     <p className="text-base font-bold text-[#022F40] leading-none mt-0.5">
                       {formatCurrency(c.totalActualizado)}
                     </p>

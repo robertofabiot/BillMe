@@ -46,16 +46,16 @@ export function RevisionesDialog({ documentoId, open, onOpenChange }: Props) {
             <section key={r.numero} className="border border-[#E5E7EB] rounded">
               <header className="flex flex-wrap justify-between gap-2 px-3 py-2 bg-[#F9FAFB] border-b border-[#E5E7EB] text-sm">
                 <span className="font-semibold text-[#022F40]">Versión {r.numero}</span>
-                <span className="text-xs text-[#705D56]">
+                <span className="text-sm text-[#705D56]">
                   Cambiada el {fechaHora(r.editadoEn)}{r.editadoPor ? ` por ${r.editadoPor}` : ''}
                 </span>
               </header>
-              <p className="px-3 pt-2 text-xs text-[#705D56]">
+              <p className="px-3 pt-2 text-sm text-[#705D56]">
                 {r.documento.clienteNombre}
                 {r.documento.proyectoNombre ? ` · ${r.documento.proyectoNombre}` : ''}
                 {' · '}{formatDate(r.documento.fecha)}
               </p>
-              <table className="w-full text-xs mt-1">
+              <table className="w-full text-sm mt-1">
                 <thead>
                   <tr className="text-[#705D56] border-b border-[#E5E7EB]">
                     <th className="text-left font-medium px-3 py-1.5">Cantidad</th>

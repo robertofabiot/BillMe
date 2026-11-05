@@ -98,7 +98,7 @@ export function UsuariosSeccion() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-[#022F40]">{u.nombre}</p>
-                  <p className="text-xs text-[#705D56]">Usuario: {u.username}{u.username === user?.username && ' (tú)'}</p>
+                  <p className="text-sm text-[#705D56]">Usuario: {u.username}{u.username === user?.username && ' (tú)'}</p>
                 </div>
                 {u.username !== user?.username && restableciendo !== u.id && (
                   <Button variant="outline" onClick={() => { setRestableciendo(u.id); setPasswordOtro(''); setAvisoOtro(null) }}>
@@ -121,7 +121,7 @@ export function UsuariosSeccion() {
 
         {/* Cambiar mi contraseña */}
         <form onSubmit={cambiarMiPassword} className="flex flex-col gap-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-[#80727B] flex items-center gap-1.5">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[#80727B] flex items-center gap-1.5">
             <KeyRound className="w-3.5 h-3.5" /> Cambiar mi contraseña
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -129,7 +129,7 @@ export function UsuariosSeccion() {
             <Input type="password" placeholder="Contraseña nueva" value={nueva} onChange={e => setNueva(e.target.value)} />
             <Input type="password" placeholder="Repetir contraseña nueva" value={repetir} onChange={e => setRepetir(e.target.value)} />
           </div>
-          {passwordCorta(nueva) && <p className="text-xs text-[#705D56]">Mínimo {PASSWORD_MINIMO} caracteres.</p>}
+          {passwordCorta(nueva) && <p className="text-sm text-[#705D56]">Mínimo {PASSWORD_MINIMO} caracteres.</p>}
           <AvisoTexto aviso={avisoPassword} />
           <div>
             <Button type="submit" disabled={!actual || nueva.length < PASSWORD_MINIMO || !repetir}>
@@ -140,7 +140,7 @@ export function UsuariosSeccion() {
 
         {/* Agregar usuario */}
         <form onSubmit={agregarUsuario} className="flex flex-col gap-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-[#80727B] flex items-center gap-1.5">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[#80727B] flex items-center gap-1.5">
             <UserPlus className="w-3.5 h-3.5" /> Agregar usuario
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -148,7 +148,7 @@ export function UsuariosSeccion() {
             <Input placeholder="Usuario para entrar" value={username} onChange={e => setUsername(e.target.value)} />
             <Input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} />
           </div>
-          {passwordCorta(password) && <p className="text-xs text-[#705D56]">Mínimo {PASSWORD_MINIMO} caracteres.</p>}
+          {passwordCorta(password) && <p className="text-sm text-[#705D56]">Mínimo {PASSWORD_MINIMO} caracteres.</p>}
           <AvisoTexto aviso={avisoNuevo} />
           <div>
             <Button type="submit" disabled={!nombre.trim() || !username.trim() || password.length < PASSWORD_MINIMO}>

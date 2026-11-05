@@ -107,7 +107,7 @@ export function CalcularListaDialog({ producto, descuentoSugerido, open, onOpenC
             </div>
             <div>
               <h2 className="text-sm font-semibold text-[#022F40]">Calcular precio de lista</h2>
-              <p className="text-xs text-[#80727B]">{producto.nombrePrincipal}</p>
+              <p className="text-sm text-[#80727B]">{producto.nombrePrincipal}</p>
             </div>
           </div>
           <button onClick={() => onOpenChange(false)} className="w-7 h-7 flex items-center justify-center rounded hover:bg-[#F9FAFB] text-[#80727B]">
@@ -126,33 +126,33 @@ export function CalcularListaDialog({ producto, descuentoSugerido, open, onOpenC
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="precio" className="text-xs font-medium text-[#705D56]">{opcion.precio}</label>
+            <label htmlFor="precio" className="text-sm font-medium text-[#705D56]">{opcion.precio}</label>
             <Input id="precio" type="number" min="0" step="0.01" value={precio} onChange={e => setPrecio(e.target.value)} autoFocus />
           </div>
 
           {opcion.descuento && (
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="descuento" className="text-xs font-medium text-[#705D56]">{opcion.descuento}</label>
+              <label htmlFor="descuento" className="text-sm font-medium text-[#705D56]">{opcion.descuento}</label>
               <Input id="descuento" type="number" min="0" max="99.99" step="0.01" value={descuento} onChange={e => setDescuento(e.target.value)} />
               {fuente === 'FACTURA_PROVEEDOR' && descuentoSugerido != null && (
-                <p className="text-[11px] text-[#80727B]">Sugerido: {descuentoSugerido}% (el último usado en esta familia).</p>
+                <p className="text-sm text-[#80727B]">Sugerido: {descuentoSugerido}% (el último usado en esta familia).</p>
               )}
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="fecha" className="text-xs font-medium text-[#705D56]">Vigente desde</label>
+              <label htmlFor="fecha" className="text-sm font-medium text-[#705D56]">Vigente desde</label>
               <Input id="fecha" type="date" value={fecha} onChange={e => setFecha(e.target.value)} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="nota" className="text-xs font-medium text-[#705D56]">Nota (opcional)</label>
+              <label htmlFor="nota" className="text-sm font-medium text-[#705D56]">Nota (opcional)</label>
               <Input id="nota" value={nota} onChange={e => setNota(e.target.value)} placeholder="Ej. factura 1234" />
             </div>
           </div>
 
           <div className="border border-[#E5E7EB] bg-[#F9FAFB] rounded px-4 py-3">
-            <p className="text-xs text-[#705D56]">Precio de lista (sin IVA)</p>
+            <p className="text-sm text-[#705D56]">Precio de lista (sin IVA)</p>
             <p className="text-2xl font-bold text-[#022F40]">{resultado != null ? formatCurrency(resultado) : '—'}</p>
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}

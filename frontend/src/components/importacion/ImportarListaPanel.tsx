@@ -9,7 +9,7 @@ import { FileSpreadsheet, CheckCircle2 } from 'lucide-react'
 function Cifra({ etiqueta, valor, destacar }: { etiqueta: string; valor: number; destacar?: boolean }) {
   return (
     <div className="border border-[#E5E7EB] rounded px-4 py-3">
-      <p className="text-xs text-[#705D56]">{etiqueta}</p>
+      <p className="text-sm text-[#705D56]">{etiqueta}</p>
       <p className={`text-xl font-bold ${destacar ? 'text-[#022F40]' : 'text-[#80727B]'}`}>{valor.toLocaleString('es-NI')}</p>
     </div>
   )
@@ -64,11 +64,11 @@ export function ImportarListaPanel() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="archivo" className="text-xs font-medium text-[#705D56]">Archivo de Excel (.xlsx o .xlsm)</label>
+            <label htmlFor="archivo" className="text-sm font-medium text-[#705D56]">Archivo de Excel (.xlsx o .xlsm)</label>
             <Input id="archivo" type="file" accept=".xlsx,.xlsm" onChange={elegirArchivo} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="fecha" className="text-xs font-medium text-[#705D56]">Los precios rigen desde</label>
+            <label htmlFor="fecha" className="text-sm font-medium text-[#705D56]">Los precios rigen desde</label>
             <Input id="fecha" type="date" value={fecha} onChange={e => setFecha(e.target.value)} />
           </div>
         </div>
@@ -88,7 +88,7 @@ export function ImportarListaPanel() {
                 <CheckCircle2 className="w-4 h-4" /> Lista importada.
               </p>
             )}
-            <p className="text-xs text-[#80727B]">
+            <p className="text-sm text-[#80727B]">
               Hoja "{resumen.hoja}": {resumen.filasLeidas.toLocaleString('es-NI')} productos leídos
               {resumen.filasIgnoradas > 0 && `, ${resumen.filasIgnoradas} filas ignoradas (sin código o repetidas)`}.
             </p>
@@ -101,7 +101,7 @@ export function ImportarListaPanel() {
 
             {resumen.muestra.length > 0 && (
               <div className="border border-[#E5E7EB] rounded overflow-hidden">
-                <table className="w-full text-xs">
+                <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                       <th className="text-left px-3 py-2 font-medium text-[#705D56]">Código</th>
@@ -122,7 +122,7 @@ export function ImportarListaPanel() {
                   </tbody>
                 </table>
                 {resumen.productosNuevos + resumen.preciosQueCambian > resumen.muestra.length && (
-                  <p className="px-3 py-2 text-[11px] text-[#80727B] border-t border-[#E5E7EB]">Se muestran los primeros {resumen.muestra.length}.</p>
+                  <p className="px-3 py-2 text-sm text-[#80727B] border-t border-[#E5E7EB]">Se muestran los primeros {resumen.muestra.length}.</p>
                 )}
               </div>
             )}
