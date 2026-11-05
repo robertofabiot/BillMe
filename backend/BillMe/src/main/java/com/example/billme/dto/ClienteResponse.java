@@ -2,6 +2,7 @@ package com.example.billme.dto;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 public record ClienteResponse(
@@ -11,5 +12,7 @@ public record ClienteResponse(
         String detalles,
         Instant createdAt,
         BigDecimal descuentoPct,
-        BigDecimal tarifaKgUsd
+        BigDecimal tarifaKgUsd,
+        BigDecimal saldoInicial,
+        LocalDate fechaInicioCuenta
 ) {}

@@ -3,6 +3,7 @@ package com.example.billme.service;
 import com.example.billme.dto.ClienteRequest;
 import com.example.billme.dto.ClienteResponse;
 import com.example.billme.model.Cliente;
+import com.example.billme.repository.AbonoRepository;
 import com.example.billme.repository.ClienteRepository;
 import com.example.billme.repository.ConsolidadoRepository;
 import com.example.billme.repository.DocumentoRepository;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -24,6 +26,7 @@ public class ClienteService {
     private final ClienteRepository clienteRepository;
     private final DocumentoRepository documentoRepository;
     private final ConsolidadoRepository consolidadoRepository;
+    private final AbonoRepository abonoRepository;
 
     public List<ClienteResponse> listarTodos() {
         return clienteRepository.findAll().stream()
@@ -49,8 +52,10 @@ public class ClienteService {
         cliente.setNombre(request.nombre());
         cliente.setTelefono(request.telefono());
         cliente.setDetalles(request.detalles());
-        cliente.setDescuentoPct(request.descuentoPct() != null ? request.descuentoPct() : java.math.BigDecimal.ZERO);
+        cliente.setDescuentoPct(request.descuentoPct() != null ? request.descuentoPct() : BigDecimal.ZERO);
         cliente.setTarifaKgUsd(request.tarifaKgUsd());
+        cliente.setSaldoInicial(request.saldoInicial() != null ? request.saldoInicial() : BigDecimal.ZERO);
+        cliente.setFechaInicioCuenta(request.fechaInicioCuenta());
         cliente = clienteRepository.save(cliente);
         return toResponse(cliente);
     }
@@ -62,8 +67,10 @@ public class ClienteService {
         cliente.setNombre(request.nombre());
         cliente.setTelefono(request.telefono());
         cliente.setDetalles(request.detalles());
-        cliente.setDescuentoPct(request.descuentoPct() != null ? request.descuentoPct() : java.math.BigDecimal.ZERO);
+        cliente.setDescuentoPct(request.descuentoPct() != null ? request.descuentoPct() : BigDecimal.ZERO);
         cliente.setTarifaKgUsd(request.tarifaKgUsd());
+        cliente.setSaldoInicial(request.saldoInicial() != null ? request.saldoInicial() : BigDecimal.ZERO);
+        cliente.setFechaInicioCuenta(request.fechaInicioCuenta());
         cliente = clienteRepository.save(cliente);
         return toResponse(cliente);
     }
@@ -74,9 +81,10 @@ public class ClienteService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado");
         }
         // El historial de ventas nunca se borra junto con el cliente
-        if (documentoRepository.existsByClienteId(id) || consolidadoRepository.existsByClienteId(id)) {
+        if (documentoRepository.existsByClienteId(id) || consolidadoRepository.existsByClienteId(id)
+                || abonoRepository.existsByClienteId(id)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "No se puede eliminar un cliente que tiene cotizaciones, facturas o consolidados");
+                    "No se puede eliminar un cliente que tiene cotizaciones, facturas, consolidados o abonos");
         }
         clienteRepository.deleteById(id);
     }
@@ -89,7 +97,9 @@ public class ClienteService {
                 entity.getDetalles(),
                 entity.getCreatedAt(),
                 entity.getDescuentoPct(),
-                entity.getTarifaKgUsd()
+                entity.getTarifaKgUsd(),
+                entity.getSaldoInicial(),
+                entity.getFechaInicioCuenta()
         );
     }
 }

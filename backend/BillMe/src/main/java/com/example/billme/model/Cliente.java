@@ -3,6 +3,8 @@ package com.example.billme.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,10 +35,17 @@ public class Cliente extends BaseEntity {
 
     @Column(name = "descuento_pct", nullable = false, precision = 5, scale = 2)
     @Builder.Default
-    private java.math.BigDecimal descuentoPct = java.math.BigDecimal.ZERO;
+    private BigDecimal descuentoPct = BigDecimal.ZERO;
 
     @Column(name = "tarifa_kg_usd", precision = 8, scale = 4)
-    private java.math.BigDecimal tarifaKgUsd;
+    private BigDecimal tarifaKgUsd;
+
+    @Column(name = "saldo_inicial", nullable = false, precision = 14, scale = 2)
+    @Builder.Default
+    private BigDecimal saldoInicial = BigDecimal.ZERO;
+
+    @Column(name = "fecha_inicio_cuenta")
+    private LocalDate fechaInicioCuenta;
 
     // ── Relaciones ──────────────────────────────────────────────────────────
 

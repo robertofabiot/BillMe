@@ -83,8 +83,4 @@ public class Documento extends BaseEntity {
     @OrderBy("orden ASC")
     @Builder.Default
     private List<DocumentoLinea> lineas = new ArrayList<>();
-
-    @OneToMany(mappedBy = "documento", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<Abono> abonos = new ArrayList<>();
 }

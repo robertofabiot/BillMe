@@ -44,6 +44,12 @@ class ClienteControllerTest extends IntegrationTest {
     @Autowired
     DocumentoService documentoService;
 
+    @Autowired
+    com.example.billme.repository.AbonoRepository abonoRepository;
+
+    @Autowired
+    com.example.billme.repository.ClienteRepository clienteRepository;
+
     @Test
     void crearSinNombreResponde400ConElCampoInvalido() throws Exception {
         mockMvc.perform(post("/api/clientes")
@@ -96,6 +102,22 @@ class ClienteControllerTest extends IntegrationTest {
                 .andExpect(status().isNoContent());
 
         assertThat(proyectoService.listarTodos()).isEmpty();
+    }
+
+    @Test
+    void borrarClienteConAbonosResponde409YNoBorraNada() throws Exception {
+        var cliente = clienteService.crear(new ClienteRequest("Cliente con abono", null, null));
+        abonoRepository.save(com.example.billme.model.Abono.builder()
+                .cliente(clienteRepository.findById(cliente.id()).orElseThrow())
+                .monto(new BigDecimal("500.00"))
+                .fechaPago(LocalDate.of(2026, 10, 1))
+                .build());
+
+        mockMvc.perform(delete("/api/clientes/{id}", cliente.id()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.mensaje").value("No se puede eliminar un cliente que tiene cotizaciones, facturas, consolidados o abonos"));
+
+        mockMvc.perform(get("/api/clientes/{id}", cliente.id())).andExpect(status().isOk());
     }
 
     @Test
