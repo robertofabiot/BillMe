@@ -1,12 +1,12 @@
 import { api } from './api'
-import type { ReporteData } from '@/types'
+import type { Ganancias } from '@/types'
 
 export const reporteService = {
-  general: (filtros?: {
-    clienteId?: string
-    proyectoId?: string
+  ganancias: (filtros?: {
     desde?: string
     hasta?: string
+    clienteId?: string
+    proyectoId?: string
   }) => {
     const params = new URLSearchParams()
     if (filtros) {
@@ -15,6 +15,6 @@ export const reporteService = {
       })
     }
     const qs = params.toString()
-    return api.get<ReporteData>(qs ? `/reportes/general?${qs}` : '/reportes/general')
+    return api.get<Ganancias>(qs ? `/reportes/ganancias?${qs}` : '/reportes/ganancias')
   },
 }
