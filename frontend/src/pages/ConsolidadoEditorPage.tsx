@@ -5,6 +5,9 @@ import { clienteService } from '@/services/clienteService'
 import { proyectoService } from '@/services/proyectoService'
 import { consolidadoService } from '@/services/consolidadoService'
 import { formatCurrency, formatDate, hoyIso } from '@/lib/format'
+import { nombreArchivo } from '@/lib/exportar'
+import { ExportarDialog } from '@/components/export/ExportarDialog'
+import { ConsolidadoPlantilla } from '@/components/export/ConsolidadoPlantilla'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -12,7 +15,7 @@ import {
   Save,
   Search,
   AlertCircle,
-  FileSpreadsheet,
+  FileDown,
 } from 'lucide-react'
 
 export function ConsolidadoEditorPage() {
@@ -40,7 +43,7 @@ export function ConsolidadoEditorPage() {
   const [consolidado, setConsolidado] = useState<Consolidado | null>(null)
   const [cargando, setCargando] = useState(false)
   const [guardando, setGuardando] = useState(false)
-  const [descargandoExcel, setDescargandoExcel] = useState(false)
+  const [exportando, setExportando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [cambiosSinGuardar, setCambiosSinGuardar] = useState(false)
 
@@ -195,27 +198,6 @@ export function ConsolidadoEditorPage() {
     }
   }
 
-  // Descargar Excel directo
-  const handleDescargarExcel = async () => {
-    if (!consolidado?.id) return
-    try {
-      setDescargandoExcel(true)
-      const blob = await consolidadoService.descargarExcel(consolidado.id)
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${consolidado.folio ?? 'consolidado'}.xlsx`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      window.URL.revokeObjectURL(url)
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al descargar Excel')
-    } finally {
-      setDescargandoExcel(false)
-    }
-  }
-
   const volver = () => {
     if (!cambiosSinGuardar || window.confirm('Hay cambios sin guardar. ¿Deseas salir de todas formas?')) {
       navigate('/consolidados')
@@ -239,12 +221,11 @@ export function ConsolidadoEditorPage() {
               type="button"
               variant="outline"
               size="sm"
-              onClick={handleDescargarExcel}
-              disabled={descargandoExcel}
+              onClick={() => setExportando(true)}
               className="rounded border-[#E5E7EB] text-sm h-9 gap-1.5"
             >
-              <FileSpreadsheet className="w-4 h-4 text-[#558564]" />
-              {descargandoExcel ? 'Generando…' : 'Descargar Excel'}
+              <FileDown className="w-4 h-4 text-[#022F40]" />
+              Exportar
             </Button>
           </div>
         )}
@@ -530,6 +511,33 @@ export function ConsolidadoEditorPage() {
             </Button>
           </div>
         </div>
+      )}
+
+      {consolidado && isGuardado && (
+        <ExportarDialog
+          open={exportando}
+          onOpenChange={setExportando}
+          encabezadoInicial={
+            consolidado.proyectoNombre
+              ? `${consolidado.clienteNombre} / ${consolidado.proyectoNombre}`
+              : consolidado.clienteNombre
+          }
+          nombreBase={(ext) =>
+            nombreArchivo(
+              consolidado.folio ?? 'CONS',
+              consolidado.clienteNombre,
+              consolidado.hasta,
+              ext
+            )
+          }
+          horizontal={consolidado.grupos.some((g) =>
+            g.lineas.some((l) => l.lugarEntrega && l.lugarEntrega.trim() !== '')
+          )}
+          plantilla={(encabezado) => (
+            <ConsolidadoPlantilla consolidado={consolidado} encabezado={encabezado} />
+          )}
+          descargarExcel={(enc) => consolidadoService.descargarExcel(consolidado.id!, enc)}
+        />
       )}
     </div>
   )
