@@ -6,7 +6,6 @@ import { documentoService, type DocumentoPayload } from '@/services/documentoSer
 import { precioService } from '@/services/precioService'
 import { proyectoService } from '@/services/proyectoService'
 import { formatCurrency, hoyIso } from '@/lib/format'
-import { AbonosSeccion } from '@/components/documentos/AbonosSeccion'
 import { ExportarDialog } from '@/components/export/ExportarDialog'
 import { DocumentoPlantilla } from '@/components/export/DocumentoPlantilla'
 import { nombreArchivo } from '@/lib/exportar'
@@ -420,10 +419,6 @@ export function DocumentoEditorPage() {
     }
   }
 
-  const recargarAbonos = () => {
-    if (documento) documentoService.obtener(documento.id).then(setDocumento).catch(console.error)
-  }
-
   if (cargando) {
     return <div className="p-8 text-sm text-[#705D56]">Cargando…</div>
   }
@@ -666,11 +661,6 @@ export function DocumentoEditorPage() {
       )}
       {soloLectura && aviso && (
         <p role="status" className={`text-sm ${aviso.tipo === 'error' ? 'text-red-600' : 'text-[#558564]'}`}>{aviso.texto}</p>
-      )}
-
-      {/* ── Abonos (solo facturas guardadas) ── */}
-      {documento?.tipo === 'FACTURA' && documento.estado === 'ACTIVA' && (
-        <AbonosSeccion factura={documento} onRegistrado={recargarAbonos} />
       )}
 
       {documento && (

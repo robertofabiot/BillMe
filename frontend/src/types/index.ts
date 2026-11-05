@@ -320,10 +320,6 @@ export interface Documento {
   facturaGeneradaId?: string | null
   facturaGeneradaFolio?: string | null
   lineas: LineaDocumento[]
-  abonos: Abono[]
-  totalAbonado: number
-  /** Solo en facturas. */
-  saldoPendiente?: number | null
   createdAt: string
   updatedAt: string
 }

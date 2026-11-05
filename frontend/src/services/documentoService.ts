@@ -1,5 +1,5 @@
 import { api } from './api'
-import type { Abono, Documento, EstadoDocumento, MetodoPrecio, RevisionDocumento, TipoDocumento } from '@/types'
+import type { Documento, EstadoDocumento, MetodoPrecio, RevisionDocumento, TipoDocumento } from '@/types'
 
 export interface LineaPayload {
   id?: string
@@ -67,9 +67,6 @@ export const documentoService = {
 
   revisiones: (id: string) =>
     api.get<RevisionDocumento[]>(`/documentos/${id}/revisiones`),
-
-  registrarAbono: (id: string, data: { monto: number; fechaPago: string }) =>
-    api.post<Abono>(`/documentos/${id}/abonos`, data),
 
   descargarExcel: (id: string, encabezado?: string): Promise<Blob> => {
     const params = new URLSearchParams()

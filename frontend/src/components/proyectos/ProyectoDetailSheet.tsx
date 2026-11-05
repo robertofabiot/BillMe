@@ -1,8 +1,8 @@
-import type { Proyecto } from '@/types'
+import type { Proyecto, Documento } from '@/types'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { Documento } from '@/types'
 import { documentoService } from '@/services/documentoService'
+import { clienteService } from '@/services/clienteService'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { EstadoDocumentoBadge } from '@/components/documentos/EstadoDocumentoBadge'
 import { Button } from '@/components/ui/button'
@@ -17,18 +17,26 @@ interface Props {
 
 export function ProyectoDetailSheet({ proyecto, open, onOpenChange, onEdit }: Props) {
   const [documentos, setDocumentos] = useState<Documento[]>([])
+  const [cuentaProyecto, setCuentaProyecto] = useState<{ facturado: number; abonado: number; saldo: number } | null>(null)
 
   useEffect(() => {
     if (!proyecto?.id || !open) return
     documentoService.listar({ proyectoId: proyecto.id }).then(setDocumentos).catch(console.error)
-  }, [proyecto?.id, open])
+    clienteService.cuenta(proyecto.clienteId).then(cuenta => {
+      const fila = cuenta.proyectos.find(p => p.proyectoId === proyecto.id)
+      if (fila) {
+        setCuentaProyecto({ facturado: fila.facturado, abonado: fila.abonado, saldo: fila.saldo })
+      } else {
+        setCuentaProyecto({ facturado: 0, abonado: 0, saldo: 0 })
+      }
+    }).catch(console.error)
+  }, [proyecto?.id, proyecto?.clienteId, open])
 
   if (!open || !proyecto) return null
 
-  const facturas = documentos.filter(d => d.tipo === 'FACTURA' && d.estado === 'ACTIVA')
-  const facturado = facturas.reduce((s, f) => s + f.total, 0)
-  const cobrado = facturas.reduce((s, f) => s + f.totalAbonado, 0)
-  const porCobrar = facturado - cobrado
+  const facturado = cuentaProyecto?.facturado ?? 0
+  const cobrado = cuentaProyecto?.abonado ?? 0
+  const porCobrar = cuentaProyecto?.saldo ?? 0
 
   const estadoColors = {
     ACTIVO: 'bg-emerald-100 text-emerald-800 border-emerald-200',
@@ -103,34 +111,24 @@ export function ProyectoDetailSheet({ proyecto, open, onOpenChange, onEdit }: Pr
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              {documentos.map(d => {
-                const saldo = d.saldoPendiente ?? 0
-                const esFacturaActiva = d.tipo === 'FACTURA' && d.estado === 'ACTIVA'
-                return (
-                  <Link key={d.id} to={`/documentos/${d.id}`} className="border border-[#E5E7EB] rounded p-3 bg-white flex flex-col gap-2 shadow-sm hover:border-[#022F40]/20 transition-colors">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="text-sm font-semibold text-[#022F40] leading-none">{d.folio}</p>
-                        <p className="text-[10px] text-[#705D56] mt-1">{formatDate(d.fecha)}</p>
-                      </div>
-                      <EstadoDocumentoBadge documento={d} />
+              {documentos.map(d => (
+                <Link key={d.id} to={`/documentos/${d.id}`} className="border border-[#E5E7EB] rounded p-3 bg-white flex flex-col gap-2 shadow-sm hover:border-[#022F40]/20 transition-colors">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm font-semibold text-[#022F40] leading-none">{d.folio}</p>
+                      <p className="text-[10px] text-[#705D56] mt-1">{formatDate(d.fecha)}</p>
                     </div>
+                    <EstadoDocumentoBadge documento={d} />
+                  </div>
 
-                    <div className="flex items-center justify-between mt-1 pt-2 border-t border-[#F3F4F6]">
-                      <div>
-                        <p className="text-[10px] text-[#80727B]">Total</p>
-                        <p className="text-xs font-bold text-[#022F40]">{formatCurrency(d.total)}</p>
-                      </div>
-                      {esFacturaActiva && saldo > 0 && (
-                        <div className="text-right">
-                          <p className="text-[10px] text-[#80727B]">Saldo pendiente</p>
-                          <p className="text-xs font-bold text-amber-600">{formatCurrency(saldo)}</p>
-                        </div>
-                      )}
+                  <div className="flex items-center justify-between mt-1 pt-2 border-t border-[#F3F4F6]">
+                    <div>
+                      <p className="text-[10px] text-[#80727B]">Total</p>
+                      <p className="text-xs font-bold text-[#022F40]">{formatCurrency(d.total)}</p>
                     </div>
-                  </Link>
-                )
-              })}
+                  </div>
+                </Link>
+              ))}
             </div>
           )}
         </div>

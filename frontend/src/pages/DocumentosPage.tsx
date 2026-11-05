@@ -10,7 +10,7 @@ import { FileText, Plus, ReceiptText, Search } from 'lucide-react'
 
 const TEXTOS = {
   COTIZACION: { titulo: 'Cotizaciones', subtitulo: 'Precios que se le dan a un cliente antes de la venta', nuevo: 'Nueva cotización', vacio: 'No hay cotizaciones.', icono: FileText },
-  FACTURA: { titulo: 'Facturas', subtitulo: 'Ventas confirmadas y lo que falta por cobrar', nuevo: 'Nueva factura', vacio: 'No hay facturas.', icono: ReceiptText },
+  FACTURA: { titulo: 'Facturas', subtitulo: 'Ventas confirmadas', nuevo: 'Nueva factura', vacio: 'No hay facturas.', icono: ReceiptText },
 }
 
 const ESTADOS: Record<TipoDocumento, { valor: EstadoDocumento; texto: string }[]> = {
@@ -55,10 +55,6 @@ export function DocumentosPage({ tipo }: { tipo: TipoDocumento }) {
         || (d.proyectoNombre?.toLowerCase().includes(q) ?? false)))
   }, [documentos, busqueda, estado])
 
-  const porCobrar = documentos
-    .filter(d => d.estado === 'ACTIVA')
-    .reduce((s, d) => s + (d.saldoPendiente ?? 0), 0)
-
   const Icono = textos.icono
 
   return (
@@ -77,13 +73,6 @@ export function DocumentosPage({ tipo }: { tipo: TipoDocumento }) {
           <Plus className="w-4 h-4" /> {textos.nuevo}
         </Button>
       </div>
-
-      {tipo === 'FACTURA' && (
-        <div className="bg-white border border-[#E5E7EB] rounded shadow-sm px-4 py-3 w-fit">
-          <p className="text-xs text-[#705D56]">Total por cobrar</p>
-          <p className="text-xl font-bold text-[#022F40]">{formatCurrency(porCobrar)}</p>
-        </div>
-      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative w-full max-w-xs">
@@ -116,16 +105,15 @@ export function DocumentosPage({ tipo }: { tipo: TipoDocumento }) {
               <th className="text-left px-4 py-3 font-medium text-[#705D56]">Fecha</th>
               <th className="text-left px-4 py-3 font-medium text-[#705D56]">Cliente</th>
               <th className="text-right px-4 py-3 font-medium text-[#705D56]">Total</th>
-              {tipo === 'FACTURA' && <th className="text-right px-4 py-3 font-medium text-[#705D56]">Saldo</th>}
               <th className="text-left px-4 py-3 font-medium text-[#705D56]">Estado</th>
             </tr>
           </thead>
           <tbody>
             {cargando && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-[#80727B]">Cargando…</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-[#80727B]">Cargando…</td></tr>
             )}
             {!cargando && filtrados.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-[#80727B]">{textos.vacio}</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-[#80727B]">{textos.vacio}</td></tr>
             )}
             {!cargando && filtrados.map(d => (
               <tr
@@ -142,11 +130,6 @@ export function DocumentosPage({ tipo }: { tipo: TipoDocumento }) {
                   {d.proyectoNombre && <span className="text-[#80727B]"> / {d.proyectoNombre}</span>}
                 </td>
                 <td className="px-4 py-3 text-right font-semibold text-[#022F40] whitespace-nowrap">{formatCurrency(d.total)}</td>
-                {tipo === 'FACTURA' && (
-                  <td className="px-4 py-3 text-right text-[#705D56] whitespace-nowrap">
-                    {d.estado === 'ACTIVA' ? formatCurrency(d.saldoPendiente ?? 0) : '—'}
-                  </td>
-                )}
                 <td className="px-4 py-3"><EstadoDocumentoBadge documento={d} /></td>
               </tr>
             ))}
