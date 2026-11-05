@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { documentoService, type FiltrosDocumento } from '@/services/documentoService'
 import { clienteService } from '@/services/clienteService'
 import { proyectoService } from '@/services/proyectoService'
+import { reporteService } from '@/services/reporteService'
 import type { Documento, Cliente, Proyecto } from '@/types'
 import { formatCurrency } from '@/lib/format'
 import {
@@ -52,6 +53,7 @@ export function ReportesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [proyectos, setProyectos] = useState<Proyecto[]>([])
   const [facturas, setFacturas] = useState<Documento[]>([])
+  const [reporteGeneral, setReporteGeneral] = useState<{ totalCobrado: number; porCobrar: number } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -75,8 +77,20 @@ export function ReportesPage() {
     if (dateFrom) filtros.desde = dateFrom
     if (dateTo) filtros.hasta = dateTo
 
-    documentoService.listar(filtros)
-      .then(res => setFacturas(res))
+    const filtrosReporte: { clienteId?: string; proyectoId?: string; desde?: string; hasta?: string } = {}
+    if (clienteId !== 'ALL') filtrosReporte.clienteId = clienteId
+    if (proyectoId !== 'ALL') filtrosReporte.proyectoId = proyectoId
+    if (dateFrom) filtrosReporte.desde = dateFrom
+    if (dateTo) filtrosReporte.hasta = dateTo
+
+    Promise.all([
+      documentoService.listar(filtros),
+      reporteService.general(filtrosReporte),
+    ])
+      .then(([resDocs, resReporte]) => {
+        setFacturas(resDocs)
+        setReporteGeneral({ totalCobrado: resReporte.totalCobrado, porCobrar: resReporte.porCobrar })
+      })
       .catch(() => setError('Error al cargar facturas'))
       .finally(() => setLoading(false))
   }, [clienteId, proyectoId, dateFrom, dateTo])
@@ -88,21 +102,19 @@ export function ReportesPage() {
   const metrics = useMemo(() => {
     let totalVenta = 0
     let totalCosto = 0
-    let totalCobrado = 0
 
     facturas.forEach(f => {
       totalVenta += f.total
       totalCosto += costoDe(f)
-
-      totalCobrado += f.abonos.reduce((s, a) => s + a.monto, 0)
     })
 
+    const totalCobrado = reporteGeneral?.totalCobrado ?? 0
+    const porCobrar = reporteGeneral?.porCobrar ?? (totalVenta - totalCobrado)
     const ganancia = totalVenta - totalCosto
     const margen = totalVenta > 0 ? (ganancia / totalVenta) * 100 : 0
-    const porCobrar = totalVenta - totalCobrado
 
     return { totalVenta, totalCosto, totalCobrado, porCobrar, ganancia, margen }
-  }, [facturas])
+  }, [facturas, reporteGeneral])
 
   // 2. Trend by Month (Fechas)
   const trendsByMonth = useMemo(() => {
@@ -127,15 +139,14 @@ export function ReportesPage() {
 
   // 3. By Client
   const byClient = useMemo(() => {
-    const clients: Record<string, { name: string; ventas: number; cobrado: number; facturas: number }> = {}
+    const clients: Record<string, { name: string; ventas: number; facturas: number }> = {}
     
     facturas.forEach(f => {
       const name = f.clienteNombre || 'Desconocido'
       
-      if (!clients[name]) clients[name] = { name, ventas: 0, cobrado: 0, facturas: 0 }
+      if (!clients[name]) clients[name] = { name, ventas: 0, facturas: 0 }
       
       clients[name].ventas += f.total
-      clients[name].cobrado += f.abonos.reduce((s, a) => s + a.monto, 0)
       clients[name].facturas += 1
     })
 
@@ -331,19 +342,17 @@ export function ReportesPage() {
                       <th className="text-left px-5 py-3 font-medium text-[#705D56]">Cliente</th>
                       <th className="text-center px-5 py-3 font-medium text-[#705D56]">Facturas</th>
                       <th className="text-right px-5 py-3 font-medium text-[#705D56]">Facturado</th>
-                      <th className="text-right px-5 py-3 font-medium text-[#705D56]">Cobrado</th>
                     </tr>
                   </thead>
                   <tbody>
                     {byClient.length === 0 && (
-                      <tr><td colSpan={4} className="text-center py-8 text-[#80727B]">No hay datos para mostrar</td></tr>
+                      <tr><td colSpan={3} className="text-center py-8 text-[#80727B]">No hay datos para mostrar</td></tr>
                     )}
                     {byClient.map(c => (
                       <tr key={c.name} className="border-b border-[#E5E7EB] last:border-0 hover:bg-[#F9FAFB]">
                         <td className="px-5 py-3 font-medium text-[#022F40]">{c.name}</td>
                         <td className="px-5 py-3 text-center text-[#80727B]">{c.facturas}</td>
                         <td className="px-5 py-3 text-right font-semibold text-[#022F40]">{formatCurrency(c.ventas)}</td>
-                        <td className="px-5 py-3 text-right font-medium text-[#558564]">{formatCurrency(c.cobrado)}</td>
                       </tr>
                     ))}
                   </tbody>
