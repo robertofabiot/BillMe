@@ -13,6 +13,8 @@ import { LineasTabla } from '@/components/documentos/LineasTabla'
 import { calcularLinea, type LineaForm } from '@/components/documentos/lineaForm'
 import { ProductoBuscador } from '@/components/documentos/ProductoBuscador'
 import { RevisionesDialog } from '@/components/documentos/RevisionesDialog'
+import { PrecioLineaDialog } from '@/components/documentos/PrecioLineaDialog'
+import { CalculadoraPesoDialog } from '@/components/documentos/CalculadoraPesoDialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, FileDown, FileText, History, Plus, ReceiptText, Save } from 'lucide-react'
@@ -128,9 +130,15 @@ export function DocumentoEditorPage() {
   const [lineaParaPrecio, setLineaParaPrecio] = useState<string | null>(null)
   const [lineaParaCalculadora, setLineaParaCalculadora] = useState<string | null>(null)
   const [modoCalculadoraSoloPeso, setModoCalculadoraSoloPeso] = useState(false)
-  void lineaParaPrecio
-  void lineaParaCalculadora
-  void modoCalculadoraSoloPeso
+
+  const lineaActivaPrecio = useMemo(
+    () => form.lineas.find(l => l.clave === lineaParaPrecio) ?? null,
+    [form.lineas, lineaParaPrecio],
+  )
+  const lineaActivaCalculadora = useMemo(
+    () => form.lineas.find(l => l.clave === lineaParaCalculadora) ?? null,
+    [form.lineas, lineaParaCalculadora],
+  )
 
   const tipo: TipoDocumento = documento?.tipo
     ?? (parametros.get('tipo') === 'COTIZACION' ? 'COTIZACION' : 'FACTURA')
@@ -658,6 +666,41 @@ export function DocumentoEditorPage() {
 
       <DocumentoExportSheet documento={documento} open={exportando} onOpenChange={setExportando} />
       {documento && <RevisionesDialog documentoId={documento.id} open={viendoCambios} onOpenChange={setViendoCambios} />}
+
+      <PrecioLineaDialog
+        open={lineaParaPrecio !== null}
+        onOpenChange={v => { if (!v) setLineaParaPrecio(null) }}
+        clienteId={form.clienteId}
+        linea={lineaActivaPrecio}
+        onAplicar={(precioUnit, metodoPrecio, parametros) => {
+          if (lineaParaPrecio) {
+            cambiarLinea(lineaParaPrecio, { precioUnit, metodoPrecio, parametros })
+          }
+        }}
+        onAbrirCalculadoraPeso={() => {
+          setModoCalculadoraSoloPeso(false)
+          setLineaParaCalculadora(lineaParaPrecio)
+          setLineaParaPrecio(null)
+        }}
+      />
+
+      <CalculadoraPesoDialog
+        open={lineaParaCalculadora !== null}
+        onOpenChange={v => { if (!v) setLineaParaCalculadora(null) }}
+        clienteId={form.clienteId}
+        linea={lineaActivaCalculadora}
+        soloPeso={modoCalculadoraSoloPeso}
+        onAplicar={datos => {
+          if (lineaParaCalculadora) {
+            const cambios: Partial<LineaForm> = { pesoUnitKg: datos.pesoUnitKg }
+            if (datos.descripcion) cambios.descripcion = datos.descripcion
+            if (datos.precioUnit) cambios.precioUnit = datos.precioUnit
+            if (datos.metodoPrecio) cambios.metodoPrecio = datos.metodoPrecio
+            if (datos.parametros !== undefined) cambios.parametros = datos.parametros
+            cambiarLinea(lineaParaCalculadora, cambios)
+          }
+        }}
+      />
     </div>
   )
 }
