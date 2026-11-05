@@ -683,9 +683,7 @@ export function DocumentoEditorPage() {
           plantilla={(encabezado) => (
             <DocumentoPlantilla documento={documento} encabezado={encabezado} />
           )}
-          descargarExcel={async () => {
-            throw new Error('Excel aún no disponible')
-          }}
+          descargarExcel={(enc) => documentoService.descargarExcel(documento.id, enc)}
         />
       )}
       {documento && <RevisionesDialog documentoId={documento.id} open={viendoCambios} onOpenChange={setViendoCambios} />}
