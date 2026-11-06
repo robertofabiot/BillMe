@@ -52,18 +52,13 @@ export function ProductosPage() {
   const openEdit   = (p: Producto) => { setEditTarget(p); setShowModal(true); setSelected(null) }
 
   const handleSave = async (data: ProductoPayload & { id?: string }) => {
-    try {
-      if (data.id) {
-        await productoService.actualizar(data.id, data)
-      } else {
-        await productoService.crear(data)
-      }
-      const newData = await productoService.listar()
-      setProductos(newData)
-    } catch (e) {
-      // Ej. código repetido (409): el mensaje viene del backend
-      alert(e instanceof Error ? e.message : 'No se pudo guardar el producto')
+    if (data.id) {
+      await productoService.actualizar(data.id, data)
+    } else {
+      await productoService.crear(data)
     }
+    const newData = await productoService.listar()
+    setProductos(newData)
   }
 
   if (loading) return (

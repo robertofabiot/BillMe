@@ -13,6 +13,9 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @WithMockUser
 class ProyectoServiceTest extends IntegrationTest {
@@ -118,6 +121,31 @@ class ProyectoServiceTest extends IntegrationTest {
         documentoService.convertirAFactura(cot.id(), FECHA);
 
         assertThat(proyectoService.obtenerPorId(p.id()).totalFacturado()).isEqualByComparingTo("1000.00");
+    }
+
+    @Test
+    void actualizarProyectoConFacturaAOtroClienteLanza409YFacturaSigueEditable() {
+        ClienteResponse otroCliente = clienteService.crear(new ClienteRequest("Otro Cliente", null, null));
+        ProyectoResponse p = proyectoService.crear(new ProyectoRequest(cliente.id(), "Proyecto Con Factura", null));
+        DocumentoResponse fac = documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA, cliente.id(), p.id(), FECHA, null, false,
+                List.of(linea(producto.id(), "5", "100.00"))));
+
+        // Intento de mover el proyecto a otro cliente -> lanza 409 Conflict con mensaje exacto
+        assertThatThrownBy(() -> proyectoService.actualizar(p.id(), new ProyectoRequest(otroCliente.id(), "Proyecto Con Factura", "ACTIVO")))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(rse.getReason()).isEqualTo("Este proyecto tiene movimientos: no se puede pasar a otro cliente");
+                });
+
+        // Comprobar que la factura sigue siendo editable
+        DocumentoResponse facEditada = documentoService.actualizar(fac.id(), new DocumentoRequest(
+                TipoDocumento.FACTURA, cliente.id(), p.id(), FECHA, "Factura editada correctamente", false,
+                List.of(linea(producto.id(), "6", "100.00"))));
+        assertThat(facEditada.notas()).isEqualTo("Factura editada correctamente");
+        assertThat(facEditada.total()).isEqualByComparingTo("600.00");
     }
 
     private static LineaRequest linea(java.util.UUID productoId, String cantidad, String precio) {

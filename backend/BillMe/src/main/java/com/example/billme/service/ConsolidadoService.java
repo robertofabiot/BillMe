@@ -116,6 +116,7 @@ public class ConsolidadoService {
         consolidado.setHasta(request.hasta());
 
         consolidado.getGrupos().clear();
+        consolidadoRepository.flush();
         guardarGruposEditados(consolidado, cliente, proyecto, request.desde(), request.hasta(), request.grupos());
 
         Consolidado guardado = consolidadoRepository.save(consolidado);

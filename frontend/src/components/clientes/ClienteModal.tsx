@@ -9,7 +9,7 @@ interface Props {
   open: boolean
   onOpenChange: (v: boolean) => void
   initial?: Cliente | null
-  onSave: (cliente: Omit<Cliente, 'id'> & { id?: string }) => void
+  onSave: (cliente: Omit<Cliente, 'id'> & { id?: string }) => Promise<void>
 }
 
 export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
@@ -20,6 +20,8 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
   const [tarifaKgUsd,       setTarifaKgUsd]       = useState('')
   const [saldoInicial,      setSaldoInicial]      = useState('')
   const [fechaInicioCuenta, setFechaInicioCuenta] = useState('')
+  const [error,             setError]             = useState<string | null>(null)
+  const [guardando,         setGuardando]         = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -30,6 +32,8 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
       setTarifaKgUsd(initial?.tarifaKgUsd != null ? String(initial.tarifaKgUsd) : '')
       setSaldoInicial(initial?.saldoInicial != null ? String(initial.saldoInicial) : '0')
       setFechaInicioCuenta(initial?.fechaInicioCuenta ?? '')
+      setError(null)
+      setGuardando(false)
     }
   }, [open, initial])
 
@@ -40,22 +44,30 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
     return () => window.removeEventListener('keydown', h)
   }, [open, onOpenChange])
 
-  const handleSave = () => {
-    if (!nombre.trim()) return
+  const handleSave = async () => {
+    if (!nombre.trim() || guardando) return
+    setGuardando(true)
+    setError(null)
     const descVal = parseFloat(descuentoPct)
     const tarifaVal = parseFloat(tarifaKgUsd)
     const saldoVal = parseFloat(saldoInicial)
-    onSave({
-      id: initial?.id,
-      nombre: nombre.trim(),
-      telefono: telefono.trim() || undefined,
-      detalles: detalles.trim() || undefined,
-      descuentoPct: !isNaN(descVal) ? descVal : 0,
-      tarifaKgUsd: !isNaN(tarifaVal) && tarifaVal > 0 ? tarifaVal : null,
-      saldoInicial: !isNaN(saldoVal) ? saldoVal : 0,
-      fechaInicioCuenta: fechaInicioCuenta ? fechaInicioCuenta : null,
-    })
-    onOpenChange(false)
+    try {
+      await onSave({
+        id: initial?.id,
+        nombre: nombre.trim(),
+        telefono: telefono.trim() || undefined,
+        detalles: detalles.trim() || undefined,
+        descuentoPct: !isNaN(descVal) ? descVal : 0,
+        tarifaKgUsd: !isNaN(tarifaVal) && tarifaVal > 0 ? tarifaVal : null,
+        saldoInicial: !isNaN(saldoVal) ? saldoVal : 0,
+        fechaInicioCuenta: fechaInicioCuenta ? fechaInicioCuenta : null,
+      })
+      onOpenChange(false)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo guardar')
+    } finally {
+      setGuardando(false)
+    }
   }
 
   if (!open) return null
@@ -63,12 +75,12 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
   const isEdit = !!initial
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={() => onOpenChange(false)} />
-      <div className="relative z-10 w-full max-w-md bg-white rounded border border-[#E5E7EB] shadow-sm flex flex-col overflow-hidden">
+      <div className="relative z-10 w-full max-w-md bg-white rounded border border-[#E5E7EB] shadow-sm flex flex-col overflow-hidden max-h-full">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB] shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded bg-[#022F40] flex items-center justify-center">
               <User className="w-3.5 h-3.5 text-[#91E5F6]" />
@@ -86,7 +98,12 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
         </div>
 
         {/* Body */}
-        <div className="px-5 py-5 flex flex-col gap-4">
+        <div className="px-5 py-5 flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded text-sm">
+              {error}
+            </div>
+          )}
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-[#705D56]">Nombre *</label>
             <Input
@@ -162,13 +179,13 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-[#E5E7EB] bg-[#F9FAFB]">
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-[#E5E7EB] bg-[#F9FAFB] shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded border-[#E5E7EB] text-sm">
             Cancelar
           </Button>
           <Button
             onClick={handleSave}
-            disabled={!nombre.trim()}
+            disabled={guardando || !nombre.trim()}
             className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm"
           >
             {isEdit ? 'Guardar cambios' : 'Crear cliente'}

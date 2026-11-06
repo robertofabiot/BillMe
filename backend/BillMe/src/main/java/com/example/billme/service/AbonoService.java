@@ -8,12 +8,14 @@ import com.example.billme.model.Proyecto;
 import com.example.billme.repository.AbonoRepository;
 import com.example.billme.repository.ClienteRepository;
 import com.example.billme.repository.ProyectoRepository;
+import com.example.billme.util.Fechas;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Service
@@ -29,6 +31,12 @@ public class AbonoService {
     public AbonoResponse registrarAbono(AbonoRequest request) {
         Cliente cliente = clienteRepository.findById(request.clienteId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
+
+        LocalDate inicio = cliente.getFechaInicioCuenta();
+        if (inicio != null && request.fechaPago().isBefore(inicio)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "La fecha del abono es anterior al inicio de la cuenta (" + Fechas.corta(inicio) + ")");
+        }
 
         Proyecto proyecto = null;
         if (request.proyectoId() != null) {
@@ -57,6 +65,12 @@ public class AbonoService {
 
         Cliente cliente = clienteRepository.findById(request.clienteId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
+
+        LocalDate inicio = cliente.getFechaInicioCuenta();
+        if (inicio != null && request.fechaPago().isBefore(inicio)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "La fecha del abono es anterior al inicio de la cuenta (" + Fechas.corta(inicio) + ")");
+        }
 
         Proyecto proyecto = null;
         if (request.proyectoId() != null) {

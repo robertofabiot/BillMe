@@ -9,7 +9,7 @@ interface Props {
   open: boolean
   onOpenChange: (v: boolean) => void
   initial?: Proyecto | null
-  onSave: (proyecto: Omit<Proyecto, 'id'> & { id?: string }) => void
+  onSave: (proyecto: Omit<Proyecto, 'id'> & { id?: string }) => Promise<void>
   defaultClienteId?: string
   clientes: Cliente[]
 }
@@ -18,12 +18,16 @@ export function ProyectoModal({ open, onOpenChange, initial, onSave, defaultClie
   const [nombre,       setNombre]       = useState('')
   const [clienteId,    setClienteId]    = useState('')
   const [estado,       setEstado]       = useState<Proyecto['estado']>('ACTIVO')
+  const [error,        setError]        = useState<string | null>(null)
+  const [guardando,    setGuardando]    = useState(false)
 
   useEffect(() => {
     if (open) {
       setNombre(initial?.nombre ?? '')
       setClienteId(initial?.clienteId ?? defaultClienteId ?? '')
       setEstado(initial?.estado ?? 'ACTIVO')
+      setError(null)
+      setGuardando(false)
     }
   }, [open, initial, defaultClienteId])
 
@@ -34,25 +38,33 @@ export function ProyectoModal({ open, onOpenChange, initial, onSave, defaultClie
     return () => window.removeEventListener('keydown', h)
   }, [open, onOpenChange])
 
-  const handleSave = () => {
-    if (!nombre.trim() || !clienteId) return
-    onSave({
-      id: initial?.id,
-      clienteId,
-      nombre: nombre.trim(),
-      estado,
-    })
-    onOpenChange(false)
+  const handleSave = async () => {
+    if (!nombre.trim() || !clienteId || guardando) return
+    setGuardando(true)
+    setError(null)
+    try {
+      await onSave({
+        id: initial?.id,
+        clienteId,
+        nombre: nombre.trim(),
+        estado,
+      })
+      onOpenChange(false)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo guardar')
+    } finally {
+      setGuardando(false)
+    }
   }
 
   if (!open) return null
   const isEdit = !!initial
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={() => onOpenChange(false)} />
 
-      <div className="relative z-10 w-full max-w-sm bg-white rounded border border-[#E5E7EB] shadow-sm flex flex-col overflow-hidden">
+      <div className="relative z-10 w-full max-w-sm bg-white rounded border border-[#E5E7EB] shadow-sm flex flex-col overflow-hidden max-h-full">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB] shrink-0">
@@ -70,7 +82,13 @@ export function ProyectoModal({ open, onOpenChange, initial, onSave, defaultClie
         </div>
 
         {/* Body */}
-        <div className="px-5 py-5 flex flex-col gap-5">
+        <div className="px-5 py-5 flex flex-col gap-5 flex-1 min-h-0 overflow-y-auto">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded text-sm">
+              {error}
+            </div>
+          )}
+
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-[#705D56]">Nombre del Proyecto *</label>
             <Input value={nombre} onChange={(e: ChangeEvent<HTMLInputElement>) => setNombre(e.target.value)} placeholder="Ej. Remodelación Casa Club" autoFocus />
@@ -83,13 +101,17 @@ export function ProyectoModal({ open, onOpenChange, initial, onSave, defaultClie
             <select
               value={clienteId}
               onChange={e => setClienteId(e.target.value)}
-              className="w-full rounded border border-[#E5E7EB] bg-white px-3 py-1 text-sm text-[#022F40] outline-none focus:border-[#022F40] focus:ring-2 focus:ring-[#022F40]/10 transition-all"
+              disabled={isEdit}
+              className="w-full rounded border border-[#E5E7EB] bg-white px-3 py-1 text-sm text-[#022F40] outline-none focus:border-[#022F40] focus:ring-2 focus:ring-[#022F40]/10 transition-all disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
             >
               <option value="" disabled>Selecciona un cliente</option>
               {clientes.map(c => (
                 <option key={c.id} value={c.id}>{c.nombre}</option>
               ))}
             </select>
+            {isEdit && (
+              <p className="text-sm text-[#80727B]">El cliente de un proyecto no se cambia.</p>
+            )}
           </div>
 
           {isEdit && (
@@ -110,7 +132,7 @@ export function ProyectoModal({ open, onOpenChange, initial, onSave, defaultClie
         {/* Footer */}
         <div className="flex items-center justify-end px-5 py-4 border-t border-[#E5E7EB] bg-[#F9FAFB] shrink-0 gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded border-[#E5E7EB] text-sm">Cancelar</Button>
-          <Button onClick={handleSave} disabled={!nombre.trim() || !clienteId}
+          <Button onClick={handleSave} disabled={guardando || !nombre.trim() || !clienteId}
             className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-1">
             <Plus className="w-3.5 h-3.5" />
             {isEdit ? 'Guardar cambios' : 'Crear proyecto'}

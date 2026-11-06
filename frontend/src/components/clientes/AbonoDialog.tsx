@@ -92,7 +92,7 @@ export function AbonoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-sm font-semibold text-[#022F40]">
             {isEdit ? 'Editar abono' : 'Registrar abono'}

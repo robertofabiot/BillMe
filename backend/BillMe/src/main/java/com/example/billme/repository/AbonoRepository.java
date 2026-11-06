@@ -14,6 +14,10 @@ public interface AbonoRepository extends JpaRepository<Abono, UUID> {
 
     boolean existsByClienteId(UUID clienteId);
 
+    boolean existsByProyectoId(UUID proyectoId);
+
+    boolean existsByClienteIdAndFechaPagoBefore(UUID clienteId, LocalDate fecha);
+
     List<Abono> findByClienteIdOrderByFechaPagoAscCreatedAtAsc(UUID clienteId);
 
     @Query("SELECT COALESCE(SUM(a.monto), 0) FROM Abono a WHERE (cast(:clienteId as uuid) IS NULL OR a.cliente.id = :clienteId) " +

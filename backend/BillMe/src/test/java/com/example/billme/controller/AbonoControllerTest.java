@@ -187,4 +187,66 @@ class AbonoControllerTest extends IntegrationTest {
         mockMvc.perform(delete("/api/abonos/{id}", UUID.randomUUID()))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void crearAbonoConFechaAnteriorAInicioCuentaResponde400() throws Exception {
+        ClienteResponse clienteConInicio = clienteService.crear(new ClienteRequest(
+                "Cliente Con Inicio",
+                "12345678",
+                null,
+                BigDecimal.ZERO,
+                null,
+                BigDecimal.ZERO,
+                LocalDate.of(2026, 11, 10)
+        ));
+
+        AbonoRequest request = new AbonoRequest(
+                clienteConInicio.id(),
+                null,
+                new BigDecimal("500.00"),
+                LocalDate.of(2026, 11, 9),
+                "Abono antes de inicio"
+        );
+
+        mockMvc.perform(post("/api/abonos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value("La fecha del abono es anterior al inicio de la cuenta (10/11/2026)"));
+    }
+
+    @Test
+    void actualizarAbonoConFechaAnteriorAInicioCuentaResponde400() throws Exception {
+        ClienteResponse clienteConInicio = clienteService.crear(new ClienteRequest(
+                "Cliente Con Inicio 2",
+                "12345678",
+                null,
+                BigDecimal.ZERO,
+                null,
+                BigDecimal.ZERO,
+                LocalDate.of(2026, 11, 10)
+        ));
+
+        var abono = abonoService.registrarAbono(new AbonoRequest(
+                clienteConInicio.id(),
+                null,
+                new BigDecimal("500.00"),
+                LocalDate.of(2026, 11, 12),
+                "Abono inicial"
+        ));
+
+        AbonoRequest editado = new AbonoRequest(
+                clienteConInicio.id(),
+                null,
+                new BigDecimal("500.00"),
+                LocalDate.of(2026, 11, 9),
+                "Fecha movida atrás"
+        );
+
+        mockMvc.perform(put("/api/abonos/{id}", abono.id())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(editado)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value("La fecha del abono es anterior al inicio de la cuenta (10/11/2026)"));
+    }
 }

@@ -26,6 +26,8 @@ import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import tools.jackson.databind.json.JsonMapper;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -49,6 +51,9 @@ class ClienteControllerTest extends IntegrationTest {
 
     @Autowired
     com.example.billme.repository.ClienteRepository clienteRepository;
+
+    @Autowired
+    JsonMapper jsonMapper;
 
     @Test
     void crearSinNombreResponde400ConElCampoInvalido() throws Exception {
@@ -150,5 +155,41 @@ class ClienteControllerTest extends IntegrationTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errores[0].campo").value("descuentoPct"));
+    }
+
+    @Test
+    void actualizarClienteMoviendoInicioDespuesDeAbonoExistenteLanza409() throws Exception {
+        var cliente = clienteService.crear(new ClienteRequest(
+                "Cliente Con Historial",
+                "11111111",
+                null,
+                BigDecimal.ZERO,
+                null,
+                BigDecimal.ZERO,
+                LocalDate.of(2026, 11, 1)
+        ));
+
+        abonoRepository.save(com.example.billme.model.Abono.builder()
+                .cliente(clienteRepository.findById(cliente.id()).orElseThrow())
+                .monto(new BigDecimal("300.00"))
+                .fechaPago(LocalDate.of(2026, 11, 5))
+                .build());
+
+        // Intentar mover fechaInicioCuenta a 2026-11-10 (después del abono del 2026-11-05) -> 409
+        ClienteRequest updateReq = new ClienteRequest(
+                "Cliente Con Historial",
+                "11111111",
+                null,
+                BigDecimal.ZERO,
+                null,
+                BigDecimal.ZERO,
+                LocalDate.of(2026, 11, 10)
+        );
+
+        mockMvc.perform(put("/api/clientes/{id}", cliente.id())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(updateReq)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.mensaje").value("Hay abonos anteriores a esa fecha: cámbialos antes de mover el inicio de la cuenta"));
     }
 }
