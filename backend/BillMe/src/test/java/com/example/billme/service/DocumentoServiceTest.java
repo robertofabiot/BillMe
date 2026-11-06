@@ -3,6 +3,8 @@ package com.example.billme.service;
 import com.example.billme.dto.ClienteRequest;
 import com.example.billme.dto.ClienteResponse;
 import com.example.billme.dto.CompraRequest;
+import com.example.billme.dto.ConfiguracionRequest;
+import com.example.billme.dto.ConfiguracionResponse;
 import com.example.billme.dto.DocumentoRequest;
 import com.example.billme.dto.DocumentoResponse;
 import com.example.billme.dto.LineaRequest;
@@ -82,6 +84,9 @@ class DocumentoServiceTest extends IntegrationTest {
 
     @Autowired
     ProveedorRepository proveedorRepository;
+
+    @Autowired
+    ConfiguracionService configuracionService;
 
     @Autowired
     ReporteService reporteService;
@@ -493,6 +498,36 @@ class DocumentoServiceTest extends IntegrationTest {
         assertThat(lSnap.precioUnit()).isEqualByComparingTo("200.00");
         assertThat(lSnap.fechaEntrega()).isEqualTo(FECHA);
         assertThat(lSnap.lugarEntrega()).isEqualTo("Lugar 1");
+    }
+
+    @Test
+    void documentoGuardaTipoCambioDeConfiguracionYNoCambiaSiConfiguracionCambia() {
+        ConfiguracionResponse original = configuracionService.obtener();
+        try {
+            DocumentoResponse cot = documentoService.crear(new DocumentoRequest(
+                    TipoDocumento.COTIZACION, cliente.id(), null, FECHA, null, false, true,
+                    List.of(linea(tubo.id(), "10", "366.243"))
+            ));
+            assertThat(cot.mostrarTotalUsd()).isTrue();
+            assertThat(cot.tipoCambio()).isEqualByComparingTo("36.624300");
+            assertThat(cot.totalUsd()).isEqualByComparingTo("100.00");
+
+            configuracionService.actualizar(new ConfiguracionRequest(
+                    new BigDecimal("15.0"), new BigDecimal("40.0000"), new BigDecimal("1.80"), new BigDecimal("0.1283"), 90
+            ));
+            DocumentoResponse cotDespues = documentoService.obtener(cot.id());
+            assertThat(cotDespues.tipoCambio()).isEqualByComparingTo("36.624300");
+            assertThat(cotDespues.totalUsd()).isEqualByComparingTo("100.00");
+
+            DocumentoResponse fac = documentoService.convertirAFactura(cot.id(), FECHA);
+            assertThat(fac.mostrarTotalUsd()).isTrue();
+            assertThat(fac.tipoCambio()).isEqualByComparingTo("36.624300");
+            assertThat(fac.totalUsd()).isEqualByComparingTo("100.00");
+        } finally {
+            configuracionService.actualizar(new ConfiguracionRequest(
+                    original.ivaPct(), original.tipoCambio(), original.tarifaKgUsd(), original.densidadKgIn3(), original.diasPrecioViejo()
+            ));
+        }
     }
 
     // ── Consultas, abonos y reportes (con open-in-view desactivado) ──────────

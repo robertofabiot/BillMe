@@ -15,5 +15,11 @@ public record DocumentoRequest(
         @NotNull LocalDate fecha,
         String notas,
         Boolean mostrarEntrega,
+        Boolean mostrarTotalUsd,
         @NotEmpty List<@Valid LineaRequest> lineas
-) {}
+) {
+    public DocumentoRequest(TipoDocumento tipo, UUID clienteId, UUID proyectoId, LocalDate fecha,
+                            String notas, Boolean mostrarEntrega, List<LineaRequest> lineas) {
+        this(tipo, clienteId, proyectoId, fecha, notas, mostrarEntrega, null, lineas);
+    }
+}

@@ -32,6 +32,10 @@ public final class CalculoDocumento {
         return valor.setScale(2, RoundingMode.HALF_UP);
     }
 
+    public static BigDecimal enDolares(BigDecimal cordobas, BigDecimal tipoCambio) {
+        return r2(cordobas.divide(tipoCambio, java.math.MathContext.DECIMAL64));
+    }
+
     /** {@code pesoUnitKg} puede ser null (productos sin peso, servicios); entonces la línea no suma kilos. */
     public static LineaCalculada linea(BigDecimal cantidad, BigDecimal precioUnit, BigDecimal pesoUnitKg) {
         BigDecimal pu = r2(precioUnit);

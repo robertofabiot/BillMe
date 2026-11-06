@@ -293,6 +293,7 @@ public class DocumentoService {
         documento.setFecha(request.fecha());
         documento.setNotas(request.notas());
         documento.setMostrarEntrega(Boolean.TRUE.equals(request.mostrarEntrega()));
+        documento.setMostrarTotalUsd(Boolean.TRUE.equals(request.mostrarTotalUsd()));
         aplicarLineas(documento, request.lineas());
     }
 
@@ -363,7 +364,8 @@ public class DocumentoService {
                 .append(d.getProyecto() != null ? d.getProyecto().getId() : null).append('|')
                 .append(d.getFecha()).append('|')
                 .append(d.getNotas()).append('|')
-                .append(d.isMostrarEntrega());
+                .append(d.isMostrarEntrega()).append('|')
+                .append(d.isMostrarTotalUsd());
         for (DocumentoLinea l : d.getLineas()) {
             huella.append('\n')
                     .append(l.getProducto().getId()).append('|')
@@ -381,6 +383,7 @@ public class DocumentoService {
 
     private DocumentoResponse toResponse(Documento d, Documento facturaGenerada) {
         Documento origen = d.getCotizacionOrigen();
+        BigDecimal totalUsd = d.getTipoCambio() != null ? CalculoDocumento.enDolares(d.getTotal(), d.getTipoCambio()) : null;
         return new DocumentoResponse(
                 d.getId(),
                 d.getTipo().name(),
@@ -395,6 +398,9 @@ public class DocumentoService {
                 d.isMostrarEntrega(),
                 d.getTotal(),
                 d.getTotalKg(),
+                d.isMostrarTotalUsd(),
+                d.getTipoCambio(),
+                totalUsd,
                 origen != null ? origen.getId() : null,
                 origen != null ? origen.getFolio() : null,
                 facturaGenerada != null ? facturaGenerada.getId() : null,
