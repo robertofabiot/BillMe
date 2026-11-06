@@ -131,6 +131,20 @@ public class DocumentoService {
         return toResponse(documentoRepository.saveAndFlush(documento), null);
     }
 
+    String copia(Documento documento) {
+        return jsonMapper.writeValueAsString(toResponse(documento, null));
+    }
+
+    void registrarRevision(Documento documento, String copiaAnterior, String motivo) {
+        revisionRepository.save(DocumentoRevision.builder()
+                .documento(documento)
+                .numero(revisionRepository.countByDocumentoId(documento.getId()) + 1)
+                .snapshot(copiaAnterior)
+                .motivo(motivo)
+                .usuario(usuarioActual())
+                .build());
+    }
+
     @Transactional
     public DocumentoResponse actualizar(UUID id, DocumentoRequest request) {
         Documento documento = buscar(id);
@@ -141,18 +155,12 @@ public class DocumentoService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Esta cotización ya se convirtió en factura: edita la factura");
         }
-        String copiaAnterior = jsonMapper.writeValueAsString(toResponse(documento, null));
+        String copiaAnterior = copia(documento);
         String antes = huella(documento);
         aplicar(documento, request);
         // Guardar sin cambios no deja una versión nueva
         if (!huella(documento).equals(antes)) {
-            revisionRepository.save(DocumentoRevision.builder()
-                    .documento(documento)
-                    .numero(revisionRepository.countByDocumentoId(id) + 1)
-                    .snapshot(copiaAnterior)
-                    .motivo("Edición")
-                    .usuario(usuarioActual())
-                    .build());
+            registrarRevision(documento, copiaAnterior, "Edición");
         }
         return toResponse(documentoRepository.saveAndFlush(documento), null);
     }
@@ -165,6 +173,7 @@ public class DocumentoService {
                         r.getNumero(),
                         r.getCreatedAt(),
                         r.getUsuario() != null ? r.getUsuario().getNombre() : null,
+                        r.getMotivo(),
                         jsonMapper.readValue(r.getSnapshot(), DocumentoResponse.class)))
                 .toList();
     }
@@ -181,6 +190,7 @@ public class DocumentoService {
                     ? "Esta cotización ya se convirtió en factura"
                     : "Esta cotización está rechazada: reábrela para convertirla en factura");
         }
+        String copiaCotizacion = copia(cotizacion);
         Documento factura = Documento.builder()
                 .tipo(TipoDocumento.FACTURA)
                 .estado(EstadoDocumento.ACTIVA)
@@ -216,7 +226,9 @@ public class DocumentoService {
                     .build());
         }
         cotizacion.setEstado(EstadoDocumento.ACEPTADA);
-        return toResponse(documentoRepository.saveAndFlush(factura), null);
+        Documento facturaGuardada = documentoRepository.saveAndFlush(factura);
+        registrarRevision(cotizacion, copiaCotizacion, "Convertida en factura " + facturaGuardada.getFolio());
+        return toResponse(facturaGuardada, null);
     }
 
     /** Una cotización se puede rechazar y reabrir. La aceptación solo ocurre al convertirla en factura. */
@@ -228,7 +240,10 @@ public class DocumentoService {
         if (documento.getTipo() != TipoDocumento.COTIZACION || !(rechazar || reabrir)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ese cambio de estado no es posible");
         }
+        String copiaAnterior = copia(documento);
         documento.setEstado(nuevo);
+        String motivo = rechazar ? "Cotización rechazada" : "Cotización reabierta";
+        registrarRevision(documento, copiaAnterior, motivo);
         return toResponse(documento, null);
     }
 
@@ -239,7 +254,9 @@ public class DocumentoService {
         if (documento.getTipo() != TipoDocumento.FACTURA || documento.getEstado() != EstadoDocumento.ACTIVA) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo se puede anular una factura activa");
         }
+        String copiaAnterior = copia(documento);
         documento.setEstado(EstadoDocumento.ANULADA);
+        registrarRevision(documento, copiaAnterior, "Factura anulada");
         return toResponse(documento, null);
     }
 

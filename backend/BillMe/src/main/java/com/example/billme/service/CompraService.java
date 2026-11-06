@@ -38,6 +38,7 @@ public class CompraService {
     private final ProveedorRepository proveedorRepository;
     private final ConfiguracionService configuracionService;
     private final PrecioListaService precioListaService;
+    private final DocumentoService documentoService;
 
     @Transactional
     public CompraResponse registrar(UUID documentoId, CompraRequest request) {
@@ -47,6 +48,8 @@ public class CompraService {
         if (documento.getTipo() != TipoDocumento.FACTURA || documento.getEstado() != EstadoDocumento.ACTIVA) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo se registran compras de facturas activas");
         }
+
+        String copiaAnterior = documentoService.copia(documento);
 
         Map<UUID, DocumentoLinea> lineasMap = documento.getLineas().stream()
                 .collect(Collectors.toMap(DocumentoLinea::getId, Function.identity()));
@@ -93,6 +96,8 @@ public class CompraService {
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         documento.setTotalKg(CalculoDocumento.r2(totalKg));
+
+        documentoService.registrarRevision(documento, copiaAnterior, "Compra registrada");
 
         return new CompraResponse(
                 compra.getId(),
