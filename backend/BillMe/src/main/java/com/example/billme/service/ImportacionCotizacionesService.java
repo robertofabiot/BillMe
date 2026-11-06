@@ -450,6 +450,7 @@ public class ImportacionCotizacionesService {
                         .proyecto(proyecto)
                         .usuario(usuario)
                         .importKey(grupo.claveDoc())
+                        .tipoCambio(configuracionService.tipoCambio().setScale(6, RoundingMode.HALF_UP))
                         .notas(notas)
                         .lineas(new ArrayList<>())
                         .build();

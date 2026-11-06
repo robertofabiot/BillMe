@@ -122,6 +122,7 @@ class DocumentoControllerTest extends IntegrationTest {
                     .folio(String.format("FAC-%04d", i))
                     .fecha(LocalDate.of(2026, 1, 1).plusDays(i % 200))
                     .cliente(clienteEntity)
+                    .tipoCambio(new BigDecimal("36.6243"))
                     .total(new BigDecimal("10.00"))
                     .totalKg(BigDecimal.ZERO)
                     .build());

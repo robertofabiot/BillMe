@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
@@ -31,6 +32,7 @@ public class ConsolidadoService {
     private final DocumentoRepository documentoRepository;
     private final AbonoRepository abonoRepository;
     private final CuentaClienteService cuentaClienteService;
+    private final ConfiguracionService configuracionService;
     private final ConsolidadoExcel consolidadoExcel;
 
     public ArchivoExcel exportarExcel(UUID id, String encabezado) {
@@ -92,6 +94,7 @@ public class ConsolidadoService {
                 .proyecto(proyecto)
                 .desde(request.desde())
                 .hasta(request.hasta())
+                .tipoCambio(configuracionService.tipoCambio().setScale(6, RoundingMode.HALF_UP))
                 .grupos(new ArrayList<>())
                 .build();
 

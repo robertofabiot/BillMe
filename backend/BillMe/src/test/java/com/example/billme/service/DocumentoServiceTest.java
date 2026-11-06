@@ -286,6 +286,7 @@ class DocumentoServiceTest extends IntegrationTest {
                 .documento(documentoRepository.findById(factura.id()).orElseThrow())
                 .numero(1)
                 .snapshot(snapshotConCamposAntiguos)
+                .motivo("Edición")
                 .build());
 
         List<RevisionResponse> revisiones = documentoService.revisiones(factura.id());
@@ -390,6 +391,19 @@ class DocumentoServiceTest extends IntegrationTest {
     @Test
     void unDocumentoInexistenteNoTieneVersiones() {
         assertEstado(HttpStatus.NOT_FOUND, () -> documentoService.revisiones(UUID.randomUUID()));
+    }
+
+    @Test
+    void revisionesNoSePuedenModificarNiBorrar() {
+        DocumentoResponse factura = crear(TipoDocumento.FACTURA);
+        documentoService.actualizar(factura.id(), new DocumentoRequest(null, cliente.id(), null, FECHA, "Modificado",
+                false, List.of(linea(tubo.id(), "2", "150"))));
+
+        assertThatThrownBy(() -> jdbc.update("update documento_revisiones set snapshot = 'x'"))
+                .isInstanceOf(Exception.class);
+
+        assertThatThrownBy(() -> jdbc.update("delete from documento_revisiones"))
+                .isInstanceOf(Exception.class);
     }
 
     // ── Consultas, abonos y reportes (con open-in-view desactivado) ──────────

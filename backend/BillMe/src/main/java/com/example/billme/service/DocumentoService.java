@@ -63,6 +63,7 @@ public class DocumentoService {
     private final UsuarioRepository usuarioRepository;
     private final PrecioListaService precioListaService;
     private final DocumentoRevisionRepository revisionRepository;
+    private final ConfiguracionService configuracionService;
     private final JsonMapper jsonMapper;
     private final DocumentoExcel documentoExcel;
 
@@ -123,6 +124,7 @@ public class DocumentoService {
                 .tipo(request.tipo())
                 .estado(request.tipo() == TipoDocumento.COTIZACION ? EstadoDocumento.PENDIENTE : EstadoDocumento.ACTIVA)
                 .folio(siguienteFolio(request.tipo()))
+                .tipoCambio(configuracionService.tipoCambio().setScale(6, RoundingMode.HALF_UP))
                 .usuario(usuarioActual())
                 .build();
         aplicar(documento, request);
@@ -148,6 +150,7 @@ public class DocumentoService {
                     .documento(documento)
                     .numero(revisionRepository.countByDocumentoId(id) + 1)
                     .snapshot(copiaAnterior)
+                    .motivo("Edición")
                     .usuario(usuarioActual())
                     .build());
         }
@@ -187,6 +190,8 @@ public class DocumentoService {
                 .proyecto(cotizacion.getProyecto())
                 .notas(cotizacion.getNotas())
                 .mostrarEntrega(cotizacion.isMostrarEntrega())
+                .mostrarTotalUsd(cotizacion.isMostrarTotalUsd())
+                .tipoCambio(cotizacion.getTipoCambio())
                 .total(cotizacion.getTotal())
                 .totalKg(cotizacion.getTotalKg())
                 .usuario(usuarioActual())

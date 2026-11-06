@@ -55,6 +55,15 @@ public class Documento extends BaseEntity {
     @Builder.Default
     private boolean mostrarEntrega = false;
 
+    /** Si al exportar y visualizar se muestra el total en dólares. */
+    @Column(name = "mostrar_total_usd", nullable = false)
+    @Builder.Default
+    private boolean mostrarTotalUsd = false;
+
+    /** Tipo de cambio del momento en que se creó el documento. */
+    @Column(name = "tipo_cambio", nullable = false, precision = 12, scale = 6)
+    private BigDecimal tipoCambio;
+
     /** Identifica lo importado desde Excel, para no duplicarlo al reimportar. */
     @Column(name = "import_key", unique = true, length = 64)
     private String importKey;
