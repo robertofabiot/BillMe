@@ -66,6 +66,11 @@ public class ClienteService {
 
     @Transactional
     public ClienteResponse actualizar(UUID id, ClienteRequest request) {
+        if (request.fechaInicioCuenta() != null
+                && abonoRepository.existsByClienteIdAndFechaPagoBefore(id, request.fechaInicioCuenta())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Hay abonos anteriores a esa fecha: cámbialos antes de mover el inicio de la cuenta");
+        }
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
         cliente.setNombre(request.nombre());

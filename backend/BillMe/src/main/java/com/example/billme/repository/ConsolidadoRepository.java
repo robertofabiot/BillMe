@@ -17,4 +17,6 @@ public interface ConsolidadoRepository extends JpaRepository<Consolidado, UUID> 
     List<Consolidado> findAllByOrderByCreatedAtDesc();
 
     boolean existsByClienteId(UUID clienteId);
+
+    boolean existsByProyectoId(UUID proyectoId);
 }

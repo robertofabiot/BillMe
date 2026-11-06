@@ -168,10 +168,12 @@ export function ConsolidadoEditorPage() {
     setGuardando(true)
     setError(null)
     try {
-      const gruposPayload = Object.entries(nombresGrupos).map(([fechaEntrega, nombre]) => ({
-        fechaEntrega,
-        nombre: nombre.trim(),
-      }))
+      const gruposPayload = Object.entries(nombresGrupos)
+        .filter(([, nombre]) => nombre.trim() !== '')
+        .map(([fechaEntrega, nombre]) => ({
+          fechaEntrega,
+          nombre: nombre.trim(),
+        }))
 
       const payload = {
         clienteId,

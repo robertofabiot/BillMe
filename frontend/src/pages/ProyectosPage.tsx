@@ -89,17 +89,13 @@ export function ProyectosPage() {
   const openEdit   = (p: Proyecto) => { setEditTarget(p); setShowModal(true); setSelected(null) }
 
   const handleSave = async (data: Omit<Proyecto, 'id'> & { id?: string }) => {
-    try {
-      if (data.id) {
-        await proyectoService.actualizar(data.id, data)
-      } else {
-        await proyectoService.crear(data)
-      }
-      const newData = await proyectoService.listar()
-      setProyectos(newData)
-    } catch (e) {
-      console.error(e)
+    if (data.id) {
+      await proyectoService.actualizar(data.id, data)
+    } else {
+      await proyectoService.crear(data)
     }
+    const newData = await proyectoService.listar()
+    setProyectos(newData)
   }
 
   if (loading) return (

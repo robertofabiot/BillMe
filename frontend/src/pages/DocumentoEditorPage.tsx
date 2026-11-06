@@ -5,7 +5,7 @@ import { clienteService } from '@/services/clienteService'
 import { documentoService, type DocumentoPayload } from '@/services/documentoService'
 import { precioService } from '@/services/precioService'
 import { proyectoService } from '@/services/proyectoService'
-import { formatCurrency, hoyIso } from '@/lib/format'
+import { formatCurrency, formatFechaCorta, hoyIso } from '@/lib/format'
 import { ExportarDialog } from '@/components/export/ExportarDialog'
 import { DocumentoPlantilla } from '@/components/export/DocumentoPlantilla'
 import { nombreArchivo } from '@/lib/exportar'
@@ -146,6 +146,7 @@ export function DocumentoEditorPage() {
   const tipo: TipoDocumento = documento?.tipo
     ?? (parametros.get('tipo') === 'COTIZACION' ? 'COTIZACION' : 'FACTURA')
   const titulos = TITULOS[tipo]
+  const clienteActual = clientes.find(c => c.id === form.clienteId)
 
   const mostrar = useCallback((d: Documento) => {
     const f = formularioDe(d)
@@ -592,6 +593,11 @@ export function DocumentoEditorPage() {
           <div className="flex flex-col gap-1.5">
             <label htmlFor="fecha" className="text-sm font-medium text-[#705D56]">Fecha</label>
             <Input id="fecha" type="date" value={form.fecha} onChange={e => setForm(f => ({ ...f, fecha: e.target.value }))} />
+            {tipo === 'FACTURA' && clienteActual?.fechaInicioCuenta && form.fecha < clienteActual.fechaInicioCuenta && (
+              <p className="text-sm text-amber-700">
+                Esta fecha es anterior al inicio de la cuenta ({formatFechaCorta(clienteActual.fechaInicioCuenta)}): la factura no afectará el saldo.
+              </p>
+            )}
           </div>
         </section>
 

@@ -294,4 +294,57 @@ class ConsolidadoServiceTest extends IntegrationTest {
         ))).isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("El proyecto no pertenece a ese cliente");
     }
+
+    @Test
+    void actualizarConsolidadoRenombrandoGrupoConservaUltimoNombre() {
+        LocalDate fechaFactura = LocalDate.of(2026, 3, 5);
+        documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA,
+                cliente.id(),
+                null,
+                fechaFactura,
+                null,
+                false,
+                List.of(new LineaRequest(null, producto.id(), "Material prueba grupo", BigDecimal.ONE, null, new BigDecimal("1500.00"), null, null, null, null))
+        ));
+
+        // 1. Crear consolidado con grupo renombrado
+        ConsolidadoResponse creado = consolidadoService.crear(new ConsolidadoGuardarRequest(
+                cliente.id(),
+                null,
+                "Consolidado Grupo Test",
+                LocalDate.of(2026, 3, 1),
+                LocalDate.of(2026, 3, 31),
+                List.of(new ConsolidadoGuardarRequest.NombreGrupo(fechaFactura, "Nombre Inicial"))
+        ));
+        assertThat(creado.grupos()).hasSize(1);
+        assertThat(creado.grupos().get(0).nombre()).isEqualTo("Nombre Inicial");
+
+        // 2. Actualizar con el mismo nombre
+        ConsolidadoResponse actualizado1 = consolidadoService.actualizar(creado.id(), new ConsolidadoGuardarRequest(
+                cliente.id(),
+                null,
+                "Consolidado Grupo Test",
+                LocalDate.of(2026, 3, 1),
+                LocalDate.of(2026, 3, 31),
+                List.of(new ConsolidadoGuardarRequest.NombreGrupo(fechaFactura, "Nombre Inicial"))
+        ));
+        assertThat(actualizado1.grupos().get(0).nombre()).isEqualTo("Nombre Inicial");
+
+        // 3. Actualizar con otro nombre
+        ConsolidadoResponse actualizado2 = consolidadoService.actualizar(creado.id(), new ConsolidadoGuardarRequest(
+                cliente.id(),
+                null,
+                "Consolidado Grupo Test",
+                LocalDate.of(2026, 3, 1),
+                LocalDate.of(2026, 3, 31),
+                List.of(new ConsolidadoGuardarRequest.NombreGrupo(fechaFactura, "Nombre Final Actualizado"))
+        ));
+        assertThat(actualizado2.grupos().get(0).nombre()).isEqualTo("Nombre Final Actualizado");
+
+        // 4. Verificar con obtener que tiene el último nombre
+        ConsolidadoResponse obtenido = consolidadoService.obtener(creado.id());
+        assertThat(obtenido.grupos()).hasSize(1);
+        assertThat(obtenido.grupos().get(0).nombre()).isEqualTo("Nombre Final Actualizado");
+    }
 }

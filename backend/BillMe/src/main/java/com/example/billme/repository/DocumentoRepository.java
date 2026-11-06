@@ -18,6 +18,8 @@ public interface DocumentoRepository extends JpaRepository<Documento, UUID> {
 
     boolean existsByClienteId(UUID clienteId);
 
+    boolean existsByProyectoId(UUID proyectoId);
+
     /** La factura que salió de una cotización. */
     Optional<Documento> findFirstByCotizacionOrigenId(UUID cotizacionId);
 

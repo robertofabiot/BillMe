@@ -10,6 +10,7 @@ public final class Fechas {
 
     private static final ZoneId NICARAGUA = ZoneId.of("America/Managua");
     private static final DateTimeFormatter DIA_Y_MES = DateTimeFormatter.ofPattern("d 'de' MMMM", Locale.of("es"));
+    private static final DateTimeFormatter CORTA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private Fechas() {
     }
@@ -21,5 +22,10 @@ public final class Fechas {
     public static String diaYMes(LocalDate fecha) {
         if (fecha == null) return "";
         return fecha.format(DIA_Y_MES);
+    }
+
+    public static String corta(LocalDate fecha) {
+        if (fecha == null) return "";
+        return fecha.format(CORTA);
     }
 }

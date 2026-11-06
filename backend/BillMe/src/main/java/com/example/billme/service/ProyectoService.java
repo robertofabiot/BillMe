@@ -5,7 +5,9 @@ import com.example.billme.dto.ProyectoResponse;
 import com.example.billme.enums.EstadoProyecto;
 import com.example.billme.model.Cliente;
 import com.example.billme.model.Proyecto;
+import com.example.billme.repository.AbonoRepository;
 import com.example.billme.repository.ClienteRepository;
+import com.example.billme.repository.ConsolidadoRepository;
 import com.example.billme.repository.DocumentoRepository;
 import com.example.billme.repository.ProyectoRepository;
 import com.example.billme.repository.SumaPorProyecto;
@@ -29,6 +31,8 @@ public class ProyectoService {
     private final ProyectoRepository proyectoRepository;
     private final ClienteRepository clienteRepository;
     private final DocumentoRepository documentoRepository;
+    private final AbonoRepository abonoRepository;
+    private final ConsolidadoRepository consolidadoRepository;
 
     public List<ProyectoResponse> listarTodos() {
         Map<UUID, BigDecimal> totales = mapaTotales();
@@ -95,6 +99,11 @@ public class ProyectoService {
         }
         
         if (request.clienteId() != null && !proyecto.getCliente().getId().equals(request.clienteId())) {
+            if (documentoRepository.existsByProyectoId(id) || abonoRepository.existsByProyectoId(id)
+                    || consolidadoRepository.existsByProyectoId(id)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Este proyecto tiene movimientos: no se puede pasar a otro cliente");
+            }
             Cliente cliente = clienteRepository.findById(request.clienteId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
             proyecto.setCliente(cliente);

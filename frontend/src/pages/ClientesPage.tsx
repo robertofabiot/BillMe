@@ -71,16 +71,12 @@ export function ClientesPage() {
   const openCreate = () => { setShowModal(true) }
 
   const handleSave = async (data: Omit<Cliente, 'id'> & { id?: string }) => {
-    try {
-      if (data.id) {
-        await clienteService.actualizar(data.id, data)
-      } else {
-        await clienteService.crear(data)
-      }
-      await cargarClientes()
-    } catch (e) {
-      console.error(e)
+    if (data.id) {
+      await clienteService.actualizar(data.id, data)
+    } else {
+      await clienteService.crear(data)
     }
+    await cargarClientes()
   }
 
   if (loading) return (

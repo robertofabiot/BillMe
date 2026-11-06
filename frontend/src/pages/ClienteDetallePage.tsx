@@ -67,12 +67,8 @@ export function ClienteDetallePage() {
 
   const handleSaveCliente = async (data: ClientePayload & { id?: string }) => {
     if (!id) return
-    try {
-      await clienteService.actualizar(id, data)
-      await cargarDatos()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al actualizar el cliente')
-    }
+    await clienteService.actualizar(id, data)
+    await cargarDatos()
   }
 
   const handleNuevoAbono = () => {

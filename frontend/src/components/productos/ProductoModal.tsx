@@ -10,7 +10,7 @@ interface Props {
   open: boolean
   onOpenChange: (v: boolean) => void
   initial?: Producto | null
-  onSave: (producto: ProductoPayload & { id?: string }) => void
+  onSave: (producto: ProductoPayload & { id?: string }) => Promise<void>
 }
 
 export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
@@ -22,6 +22,8 @@ export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
   const [aliasIn,   setAliasIn]  = useState('')
 
   const [unidad,    setUnidad]   = useState('UND')
+  const [error,     setError]    = useState<string | null>(null)
+  const [guardando, setGuardando]= useState(false)
 
   const aliasRef = useRef<HTMLInputElement>(null)
 
@@ -35,6 +37,8 @@ export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
       setAliasIn('')
 
       setUnidad(initial?.unidad ?? 'UND')
+      setError(null)
+      setGuardando(false)
     }
   }, [open, initial])
 
@@ -59,28 +63,36 @@ export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
     if (e.key === 'Backspace' && !aliasIn && aliases.length) setAliases(prev => prev.slice(0, -1))
   }
 
-  const handleSave = () => {
-    if (!codigo.trim() || !nombre.trim()) return
-    onSave({
-      id: initial?.id,
-      codigoInterno:   codigo.trim(),
-      nombrePrincipal: nombre.trim(),
-      descripcion:     desc.trim() || undefined,
-      peso:            parseFloat(peso) || 0,
-      unidad:          unidad.trim() || 'UND',
-      aliases,
-    })
-    onOpenChange(false)
+  const handleSave = async () => {
+    if (!codigo.trim() || !nombre.trim() || guardando) return
+    setGuardando(true)
+    setError(null)
+    try {
+      await onSave({
+        id: initial?.id,
+        codigoInterno:   codigo.trim(),
+        nombrePrincipal: nombre.trim(),
+        descripcion:     desc.trim() || undefined,
+        peso:            parseFloat(peso) || 0,
+        unidad:          unidad.trim() || 'UND',
+        aliases,
+      })
+      onOpenChange(false)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo guardar')
+    } finally {
+      setGuardando(false)
+    }
   }
 
   if (!open) return null
   const isEdit = !!initial
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={() => onOpenChange(false)} />
 
-      <div className="relative z-10 w-full max-w-lg bg-white rounded border border-[#E5E7EB] shadow-sm flex flex-col overflow-hidden max-h-[calc(100vh-4rem)]">
+      <div className="relative z-10 w-full max-w-lg bg-white rounded border border-[#E5E7EB] shadow-sm flex flex-col overflow-hidden max-h-full">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB] shrink-0">
@@ -98,7 +110,12 @@ export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4">
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-5 flex flex-col gap-4">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded text-sm">
+              {error}
+            </div>
+          )}
 
           {/* Código + Peso */}
           <div className="grid grid-cols-2 gap-3">
@@ -161,7 +178,7 @@ export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
         {/* Footer */}
         <div className="flex items-center justify-end px-5 py-4 border-t border-[#E5E7EB] bg-[#F9FAFB] shrink-0 gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded border-[#E5E7EB] text-sm">Cancelar</Button>
-          <Button onClick={handleSave} disabled={!codigo.trim() || !nombre.trim()}
+          <Button onClick={handleSave} disabled={guardando || !codigo.trim() || !nombre.trim()}
             className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-1">
             <Plus className="w-3.5 h-3.5" />
             {isEdit ? 'Guardar cambios' : 'Crear producto'}

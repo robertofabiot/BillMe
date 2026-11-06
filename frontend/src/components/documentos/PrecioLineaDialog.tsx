@@ -51,7 +51,15 @@ export function PrecioLineaDialog({
     precioService.sugerido(clienteId, linea.productoId, desc)
       .then(res => {
         setSugerido(res)
-        setDescuentoPct(res.descuentoPct != null ? String(res.descuentoPct) : '0')
+        const dPct = res.descuentoPct != null ? String(res.descuentoPct) : '0'
+        setDescuentoPct(dPct)
+        if (res.precioLista != null && res.precioFormula != null) {
+          setFormulaRes({
+            precioLista: res.precioLista,
+            descuentoPct: res.descuentoPct != null ? res.descuentoPct : 0,
+            precioUnit: res.precioFormula,
+          })
+        }
         if (res.precioUnit != null) {
           setMetodo('ULTIMO_PRECIO')
           setPrecioRef(String(res.precioUnit))
@@ -105,6 +113,10 @@ export function PrecioLineaDialog({
 
   const admitePorPeso = linea.productoForma === 'PLACA' || linea.productoForma === 'PLATINA'
 
+  const descuento = parseFloat(descuentoPct)
+  const descuentoValido = !isNaN(descuento) && descuento >= 0 && descuento < 100
+  const formulaAlDia = formulaRes != null && Number(formulaRes.descuentoPct) === descuento
+
   const handleAplicar = () => {
     if (metodo === 'ULTIMO_PRECIO' && sugerido?.precioUnit != null) {
       const parametros = JSON.stringify({
@@ -118,15 +130,12 @@ export function PrecioLineaDialog({
       onAplicar(String(sugerido.precioUnit), 'ULTIMO_PRECIO', parametros)
       onOpenChange(false)
     } else if (metodo === 'FORMULA_LISTA' && sugerido?.precioLista != null) {
-      const pu = formulaRes?.precioUnit ?? sugerido.precioFormula
-      if (pu != null) {
-        const parametros = JSON.stringify({
-          lista: sugerido.precioLista,
-          descuentoPct: parseFloat(descuentoPct) || 0,
-        })
-        onAplicar(String(pu), 'FORMULA_LISTA', parametros)
-        onOpenChange(false)
-      }
+      const parametros = JSON.stringify({
+        lista: sugerido.precioLista,
+        descuentoPct: parseFloat(descuentoPct) || 0,
+      })
+      onAplicar(String(formulaRes!.precioUnit), 'FORMULA_LISTA', parametros)
+      onOpenChange(false)
     } else if (metodo === 'POR_METRO' && puMetro != null) {
       const parametros = JSON.stringify({
         precioReferencia: parseFloat(precioRef),
@@ -140,7 +149,7 @@ export function PrecioLineaDialog({
 
   const puedeAplicar =
     (metodo === 'ULTIMO_PRECIO' && sugerido?.precioUnit != null) ||
-    (metodo === 'FORMULA_LISTA' && (formulaRes?.precioUnit != null || sugerido?.precioFormula != null)) ||
+    (metodo === 'FORMULA_LISTA' && descuentoValido && formulaAlDia) ||
     (metodo === 'POR_METRO' && puMetro != null)
 
   return (
@@ -213,9 +222,13 @@ export function PrecioLineaDialog({
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-[#022F40]">Fórmula de lista</span>
                   {sugerido?.precioLista != null ? (
-                    <span className="font-semibold text-[#022F40]">
-                      {formatCurrency(formulaRes?.precioUnit ?? sugerido.precioFormula ?? 0)}
-                    </span>
+                    !descuentoValido ? (
+                      <span className="text-sm text-red-600 font-medium">Descuento no válido</span>
+                    ) : (
+                      <span className="font-semibold text-[#022F40]">
+                        {formatCurrency(formulaRes?.precioUnit ?? sugerido.precioFormula ?? 0)}
+                      </span>
+                    )
                   ) : (
                     <span className="text-sm text-[#80727B]">No tiene precio de lista</span>
                   )}
@@ -233,6 +246,7 @@ export function PrecioLineaDialog({
                         step="0.01"
                         value={descuentoPct}
                         onChange={e => setDescuentoPct(e.target.value)}
+                        onFocus={() => setMetodo('FORMULA_LISTA')}
                         className="w-16 h-7 text-sm px-1.5"
                         onClick={e => e.stopPropagation()}
                       />
@@ -294,6 +308,7 @@ export function PrecioLineaDialog({
                       placeholder="Ej. 2700"
                       value={precioRef}
                       onChange={e => setPrecioRef(e.target.value)}
+                      onFocus={() => setMetodo('POR_METRO')}
                       className="h-7 text-sm px-2"
                     />
                   </div>
@@ -306,6 +321,7 @@ export function PrecioLineaDialog({
                       placeholder="Ej. 6.75"
                       value={largoRef}
                       onChange={e => setLargoRef(e.target.value)}
+                      onFocus={() => setMetodo('POR_METRO')}
                       className="h-7 text-sm px-2"
                     />
                   </div>
@@ -318,6 +334,7 @@ export function PrecioLineaDialog({
                       placeholder="Ej. 5.40"
                       value={largoNuevo}
                       onChange={e => setLargoNuevo(e.target.value)}
+                      onFocus={() => setMetodo('POR_METRO')}
                       className="h-7 text-sm px-2"
                     />
                   </div>
