@@ -20,6 +20,7 @@ export interface ConsolidadoGuardarPayload {
   desde: string
   hasta: string
   grupos?: NombreGrupoPayload[]
+  mostrarTotalUsd?: boolean
 }
 
 export const consolidadoService = {

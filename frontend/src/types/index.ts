@@ -134,6 +134,10 @@ export interface Consolidado {
   abonos: ConsolidadoAbono[]
   totalAbonos: number
   totalActualizado: number
+  mostrarTotalUsd?: boolean | null
+  tipoCambio?: number | null
+  totalUsd?: number | null
+  totalActualizadoUsd?: number | null
 }
 
 export interface Proveedor {
