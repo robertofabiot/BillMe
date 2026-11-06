@@ -404,6 +404,7 @@ export interface Documento {
 /** Cómo estaba un documento antes de una edición. */
 export interface RevisionDocumento {
   numero: number
+  motivo: string
   editadoEn: string
   editadoPor?: string | null
   documento: Documento

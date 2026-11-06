@@ -731,7 +731,7 @@ export function DocumentoEditorPage() {
           descargarExcel={(enc) => documentoService.descargarExcel(documento.id, enc)}
         />
       )}
-      {documento && <RevisionesDialog documentoId={documento.id} open={viendoCambios} onOpenChange={setViendoCambios} />}
+      {documento && <RevisionesDialog documentoActual={documento} open={viendoCambios} onOpenChange={setViendoCambios} />}
       {documento && (
         <RegistrarCompraDialog
           open={registrandoCompra}
