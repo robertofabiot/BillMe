@@ -51,6 +51,7 @@ public class ConsolidadoExcel {
             short fmtCantidad = df.getFormat("0.###");
             short fmtPeso = df.getFormat("#,##0.00");
             short fmtMoneda = df.getFormat("\"C$\"#,##0.00");
+            short fmtUsd = df.getFormat("\"U$\"#,##0.00");
 
             Font fontBold = workbook.createFont();
             fontBold.setBold(true);
@@ -129,6 +130,12 @@ public class ConsolidadoExcel {
             aplicarBordes(styleTotalPeso);
             styleTotalPeso.setDataFormat(fmtPeso);
             styleTotalPeso.setAlignment(HorizontalAlignment.RIGHT);
+
+            CellStyle styleTotalUsd = workbook.createCellStyle();
+            styleTotalUsd.setFont(fontBold);
+            aplicarBordes(styleTotalUsd);
+            styleTotalUsd.setDataFormat(fmtUsd);
+            styleTotalUsd.setAlignment(HorizontalAlignment.RIGHT);
 
             // Fila 1 (rowIdx 0): H1:I1 Fecha
             Row r0 = sheet.createRow(0);
@@ -346,6 +353,19 @@ public class ConsolidadoExcel {
             cTotalCValue.setCellFormula(formulaTotalC);
             cTotalCValue.setCellStyle(styleTotalPrecio);
 
+            if (Boolean.TRUE.equals(consolidado.mostrarTotalUsd())) {
+                int totalUsdRowIdx = currentRowIdx++;
+                Row rTotalUsd = sheet.createRow(totalUsdRowIdx);
+                Cell cTotalUsdLabel = rTotalUsd.createCell(7);
+                cTotalUsdLabel.setCellValue("Total U$");
+                cTotalUsdLabel.setCellStyle(styleTotalEtiqueta);
+
+                String tc = consolidado.tipoCambio() != null ? consolidado.tipoCambio().toPlainString() : "1";
+                Cell cTotalUsdValue = rTotalUsd.createCell(8);
+                cTotalUsdValue.setCellFormula("ROUND(I" + rTotC + "/" + tc + ",2)");
+                cTotalUsdValue.setCellStyle(styleTotalUsd);
+            }
+
             // Fila Total KG
             int totalKgRowIdx = currentRowIdx++;
             Row rTotalKg = sheet.createRow(totalKgRowIdx);
@@ -417,6 +437,20 @@ public class ConsolidadoExcel {
                 Cell cActVal = rAct.createCell(8);
                 cActVal.setCellFormula(formulaAct.toString());
                 cActVal.setCellStyle(styleTotalPrecio);
+
+                if (Boolean.TRUE.equals(consolidado.mostrarTotalUsd())) {
+                    int rActC = totalActRowIdx + 1; // 1-based
+                    int totalActUsdRowIdx = currentRowIdx++;
+                    Row rActUsd = sheet.createRow(totalActUsdRowIdx);
+                    Cell cActUsdLabel = rActUsd.createCell(7);
+                    cActUsdLabel.setCellValue("Total actualizado U$");
+                    cActUsdLabel.setCellStyle(styleTotalEtiqueta);
+
+                    String tc = consolidado.tipoCambio() != null ? consolidado.tipoCambio().toPlainString() : "1";
+                    Cell cActUsdVal = rActUsd.createCell(8);
+                    cActUsdVal.setCellFormula("ROUND(I" + rActC + "/" + tc + ",2)");
+                    cActUsdVal.setCellStyle(styleTotalUsd);
+                }
             }
 
             // Pre-evaluación de fórmulas

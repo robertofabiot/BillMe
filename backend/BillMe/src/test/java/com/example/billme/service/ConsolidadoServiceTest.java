@@ -58,6 +58,9 @@ class ConsolidadoServiceTest extends IntegrationTest {
     @Autowired
     AbonoRepository abonoRepository;
 
+    @Autowired
+    ConfiguracionService configuracionService;
+
     private ClienteResponse cliente;
     private ProyectoResponse obraCentro;
     private ProductoResponse producto;
@@ -346,5 +349,59 @@ class ConsolidadoServiceTest extends IntegrationTest {
         ConsolidadoResponse obtenido = consolidadoService.obtener(creado.id());
         assertThat(obtenido.grupos()).hasSize(1);
         assertThat(obtenido.grupos().get(0).nombre()).isEqualTo("Nombre Final Actualizado");
+    }
+
+    @Test
+    void consolidadoGuardaTipoCambioYActualizarNoLoCambiaAunqueCambieConfiguracion() {
+        ConfiguracionResponse original = configuracionService.obtener();
+        try {
+            documentoService.crear(new DocumentoRequest(
+                    TipoDocumento.FACTURA,
+                    cliente.id(),
+                    null,
+                    LocalDate.of(2026, 3, 5),
+                    null,
+                    false,
+                    List.of(new LineaRequest(null, producto.id(), "Prod 1", BigDecimal.ONE, null, new BigDecimal("3662.43"), null, null, null, null))
+            ));
+
+            ConsolidadoResponse creado = consolidadoService.crear(new ConsolidadoGuardarRequest(
+                    cliente.id(),
+                    null,
+                    "Consolidado USD Test",
+                    LocalDate.of(2026, 3, 1),
+                    LocalDate.of(2026, 3, 31),
+                    List.of(),
+                    true
+            ));
+
+            assertThat(creado.mostrarTotalUsd()).isTrue();
+            assertThat(creado.tipoCambio()).isEqualByComparingTo("36.624300");
+            assertThat(creado.totalUsd()).isEqualByComparingTo("100.00");
+
+            // Cambiar la configuración global
+            configuracionService.actualizar(new ConfiguracionRequest(
+                    new BigDecimal("15.0"), new BigDecimal("40.0000"), new BigDecimal("1.80"), new BigDecimal("0.1283"), 90
+            ));
+
+            // Actualizar el consolidado
+            ConsolidadoResponse actualizado = consolidadoService.actualizar(creado.id(), new ConsolidadoGuardarRequest(
+                    cliente.id(),
+                    null,
+                    "Consolidado USD Test Editado",
+                    LocalDate.of(2026, 3, 1),
+                    LocalDate.of(2026, 3, 31),
+                    List.of(),
+                    true
+            ));
+
+            assertThat(actualizado.nombre()).isEqualTo("Consolidado USD Test Editado");
+            assertThat(actualizado.tipoCambio()).isEqualByComparingTo("36.624300");
+            assertThat(actualizado.totalUsd()).isEqualByComparingTo("100.00");
+        } finally {
+            configuracionService.actualizar(new ConfiguracionRequest(
+                    original.ivaPct(), original.tipoCambio(), original.tarifaKgUsd(), original.densidadKgIn3(), original.diasPrecioViejo()
+            ));
+        }
     }
 }

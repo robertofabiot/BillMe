@@ -1,5 +1,6 @@
 package com.example.billme.service;
 
+import com.example.billme.calculo.CalculoDocumento;
 import com.example.billme.dto.ConsolidadoGuardarRequest;
 import com.example.billme.dto.ConsolidadoRangoRequest;
 import com.example.billme.dto.ConsolidadoResponse;
@@ -68,7 +69,7 @@ public class ConsolidadoService {
         }
 
         return armar(null, null, "Consolidado " + cliente.getNombre(), cliente, proyecto,
-                request.desde(), request.hasta(), null, Map.of());
+                request.desde(), request.hasta(), null, Map.of(), false, configuracionService.tipoCambio().setScale(6, RoundingMode.HALF_UP));
     }
 
     @Transactional
@@ -94,6 +95,7 @@ public class ConsolidadoService {
                 .proyecto(proyecto)
                 .desde(request.desde())
                 .hasta(request.hasta())
+                .mostrarTotalUsd(Boolean.TRUE.equals(request.mostrarTotalUsd()))
                 .tipoCambio(configuracionService.tipoCambio().setScale(6, RoundingMode.HALF_UP))
                 .grupos(new ArrayList<>())
                 .build();
@@ -117,6 +119,7 @@ public class ConsolidadoService {
         consolidado.setNombre(request.nombre().trim());
         consolidado.setDesde(request.desde());
         consolidado.setHasta(request.hasta());
+        consolidado.setMostrarTotalUsd(Boolean.TRUE.equals(request.mostrarTotalUsd()));
 
         consolidado.getGrupos().clear();
         consolidadoRepository.flush();
@@ -139,7 +142,7 @@ public class ConsolidadoService {
                                        List<ConsolidadoGuardarRequest.NombreGrupo> gruposReq) {
         if (gruposReq == null || gruposReq.isEmpty()) return;
 
-        ConsolidadoResponse base = armar(null, null, consolidado.getNombre(), cliente, proyecto, desde, hasta, null, Map.of());
+        ConsolidadoResponse base = armar(null, null, consolidado.getNombre(), cliente, proyecto, desde, hasta, null, Map.of(), false, configuracionService.tipoCambio().setScale(6, RoundingMode.HALF_UP));
         Map<LocalDate, String> nombresDefecto = base.grupos().stream()
                 .collect(Collectors.toMap(ConsolidadoResponse.Grupo::fechaEntrega, ConsolidadoResponse.Grupo::nombre));
 
@@ -171,14 +174,17 @@ public class ConsolidadoService {
         Map<LocalDate, String> nombresGuardados = c.getGrupos().stream()
                 .collect(Collectors.toMap(ConsolidadoGrupo::getFechaEntrega, ConsolidadoGrupo::getNombre));
         return armar(c.getId(), c.getFolio(), c.getNombre(), c.getCliente(), c.getProyecto(),
-                c.getDesde(), c.getHasta(), c.getCreatedAt(), nombresGuardados);
+                c.getDesde(), c.getHasta(), c.getCreatedAt(), nombresGuardados,
+                c.isMostrarTotalUsd(), c.getTipoCambio());
     }
 
     public ConsolidadoResponse armar(UUID id, String folio, String nombreConsolidado,
                                      Cliente cliente, Proyecto proyecto,
                                      LocalDate desde, LocalDate hasta,
                                      Instant createdAt,
-                                     Map<LocalDate, String> nombresGuardados) {
+                                     Map<LocalDate, String> nombresGuardados,
+                                     boolean mostrarTotalUsd,
+                                     BigDecimal tipoCambio) {
         validarRangoYProyecto(cliente, proyecto, desde, hasta);
 
         LocalDate inicio = cliente.getFechaInicioCuenta() != null && cliente.getFechaInicioCuenta().isAfter(desde)
@@ -254,6 +260,9 @@ public class ConsolidadoService {
         BigDecimal saldoAnterior = cuentaClienteService.saldoAl(cliente.getId(), proyectoId, desde.minusDays(1));
         BigDecimal totalActualizado = saldoAnterior.add(total).subtract(totalAbonos);
 
+        BigDecimal totalUsd = (mostrarTotalUsd && tipoCambio != null) ? CalculoDocumento.enDolares(total, tipoCambio) : null;
+        BigDecimal totalActualizadoUsd = (mostrarTotalUsd && tipoCambio != null) ? CalculoDocumento.enDolares(totalActualizado, tipoCambio) : null;
+
         return new ConsolidadoResponse(
                 id,
                 folio,
@@ -271,7 +280,11 @@ public class ConsolidadoService {
                 saldoAnterior,
                 abonosDtos,
                 totalAbonos,
-                totalActualizado
+                totalActualizado,
+                mostrarTotalUsd,
+                tipoCambio,
+                totalUsd,
+                totalActualizadoUsd
         );
     }
 }

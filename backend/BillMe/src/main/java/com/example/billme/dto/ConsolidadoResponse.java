@@ -23,8 +23,24 @@ public record ConsolidadoResponse(
         BigDecimal saldoAnterior,
         List<AbonoDelPeriodo> abonos,
         BigDecimal totalAbonos,
-        BigDecimal totalActualizado
+        BigDecimal totalActualizado,
+        Boolean mostrarTotalUsd,
+        BigDecimal tipoCambio,
+        BigDecimal totalUsd,
+        BigDecimal totalActualizadoUsd
 ) {
+    public ConsolidadoResponse(
+            UUID id, String folio, String nombre, UUID clienteId, String clienteNombre,
+            UUID proyectoId, String proyectoNombre, LocalDate desde, LocalDate hasta,
+            Instant createdAt, List<Grupo> grupos, BigDecimal total, BigDecimal totalKg,
+            BigDecimal saldoAnterior, List<AbonoDelPeriodo> abonos, BigDecimal totalAbonos,
+            BigDecimal totalActualizado
+    ) {
+        this(id, folio, nombre, clienteId, clienteNombre, proyectoId, proyectoNombre, desde, hasta,
+                createdAt, grupos, total, totalKg, saldoAnterior, abonos, totalAbonos, totalActualizado,
+                false, null, null, null);
+    }
+
     public record Grupo(
             LocalDate fechaEntrega,
             String nombre,
