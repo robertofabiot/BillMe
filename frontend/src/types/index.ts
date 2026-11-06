@@ -383,6 +383,9 @@ export interface Documento {
   proyectoNombre?: string | null
   notas?: string | null
   mostrarEntrega: boolean
+  mostrarTotalUsd?: boolean | null
+  tipoCambio?: number | null
+  totalUsd?: number | null
   total: number
   totalKg: number
   cotizacionOrigenId?: string | null

@@ -8,6 +8,10 @@ export function formatCurrency(amount: number): string {
   return fmt.format(amount)
 }
 
+export function formatUsd(monto: number): string {
+  return 'U$' + monto.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 export function formatDate(dateStr: string): string {
   if (!dateStr) return 'N/A'
   // Si ya es un timestamp ISO, no agregamos T12
