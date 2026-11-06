@@ -218,6 +218,53 @@ class DocumentoExcelTest {
     }
 
     @Test
+    @DisplayName("Genera fila Total U$ cuando mostrarTotalUsd es true")
+    void generaFilaTotalUsdCuandoMostrarTotalUsdEsTrue() throws IOException {
+        Cliente cliente = Cliente.builder().nombre("María López").build();
+        DocumentoLinea linea = DocumentoLinea.builder()
+                .orden(0)
+                .descripcion("Tubo de 2 pulgadas")
+                .cantidad(new BigDecimal("10"))
+                .pesoUnitKg(new BigDecimal("5.50"))
+                .precioUnit(new BigDecimal("366.243"))
+                .build();
+
+        Documento doc = Documento.builder()
+                .folio("FAC-0015")
+                .tipo(TipoDocumento.FACTURA)
+                .fecha(LocalDate.of(2026, 11, 10))
+                .cliente(cliente)
+                .mostrarEntrega(false)
+                .mostrarTotalUsd(true)
+                .tipoCambio(new BigDecimal("36.6243"))
+                .lineas(List.of(linea))
+                .build();
+
+        byte[] contenido = generador.generar(doc, "María López");
+        assertThat(contenido).isNotEmpty();
+
+        try (XSSFWorkbook libro = new XSSFWorkbook(new ByteArrayInputStream(contenido))) {
+            Sheet hoja = libro.getSheetAt(0);
+
+            // Row 7 (rowIdx 7): Total C$
+            Row filaTotalC = hoja.getRow(7);
+            assertThat(filaTotalC.getCell(7).getStringCellValue()).isEqualTo("Total C$");
+
+            // Row 8 (rowIdx 8): Total U$
+            Row filaTotalUsd = hoja.getRow(8);
+            assertThat(filaTotalUsd.getCell(7).getStringCellValue()).isEqualTo("Total U$");
+            Cell cellTotalUsd = filaTotalUsd.getCell(8);
+            assertThat(cellTotalUsd.getCellType()).isEqualTo(CellType.FORMULA);
+            assertThat(cellTotalUsd.getCellFormula()).isEqualTo("ROUND(I8/36.6243,2)");
+            assertThat(cellTotalUsd.getNumericCellValue()).isEqualTo(100.0);
+
+            // Row 9 (rowIdx 9): Total KG
+            Row filaTotalKg = hoja.getRow(9);
+            assertThat(filaTotalKg.getCell(7).getStringCellValue()).isEqualTo("Total KG");
+        }
+    }
+
+    @Test
     @DisplayName("NombreArchivo normaliza caracteres diacríticos, espacios y extensiones")
     void normalizacionNombreArchivo() {
         String nombre1 = NombreArchivo.de("FAC-0012", "María López", LocalDate.of(2026, 10, 30), "pdf");
