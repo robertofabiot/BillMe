@@ -4,7 +4,7 @@ import type { Cliente, Proyecto, Consolidado } from '@/types'
 import { clienteService } from '@/services/clienteService'
 import { proyectoService } from '@/services/proyectoService'
 import { consolidadoService } from '@/services/consolidadoService'
-import { formatCurrency, formatDate, hoyIso } from '@/lib/format'
+import { formatCurrency, formatDate, formatUsd, hoyIso } from '@/lib/format'
 import { nombreArchivo } from '@/lib/exportar'
 import { ExportarDialog } from '@/components/export/ExportarDialog'
 import { ConsolidadoPlantilla } from '@/components/export/ConsolidadoPlantilla'
@@ -35,6 +35,7 @@ export function ConsolidadoEditorPage() {
   })
   const [hasta, setHasta] = useState(hoyIso())
   const [nombreConsolidado, setNombreConsolidado] = useState('')
+  const [mostrarTotalUsd, setMostrarTotalUsd] = useState(false)
 
   // Nombres editados recordados por fechaEntrega
   const [nombresGrupos, setNombresGrupos] = useState<Record<string, string>>({})
@@ -75,6 +76,7 @@ export function ConsolidadoEditorPage() {
       setDesde(data.desde)
       setHasta(data.hasta)
       setNombreConsolidado(data.nombre)
+      setMostrarTotalUsd(Boolean(data.mostrarTotalUsd))
 
       const inicialesNombres: Record<string, string> = {}
       data.grupos.forEach(g => {
@@ -97,6 +99,7 @@ export function ConsolidadoEditorPage() {
       setClienteId('')
       setProyectoId('')
       setNombreConsolidado('')
+      setMostrarTotalUsd(false)
       setNombresGrupos({})
       setCambiosSinGuardar(false)
     }
@@ -182,6 +185,7 @@ export function ConsolidadoEditorPage() {
         desde,
         hasta,
         grupos: gruposPayload,
+        mostrarTotalUsd,
       }
 
       if (isGuardado && consolidado?.id) {
@@ -455,6 +459,14 @@ export function ConsolidadoEditorPage() {
                 <span className="text-[#705D56]">Total C$:</span>
                 <span className="font-bold text-[#022F40]">{formatCurrency(consolidado.total)}</span>
               </div>
+              {mostrarTotalUsd && (
+                <div className="flex justify-between text-sm py-1">
+                  <span className="text-[#705D56]">Total U$:</span>
+                  <span className="font-bold text-[#022F40]">
+                    {formatUsd(consolidado.totalUsd ?? (consolidado.tipoCambio ? Math.round(((consolidado.total / consolidado.tipoCambio) + Number.EPSILON) * 100) / 100 : 0))}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between text-sm py-1">
                 <span className="text-[#705D56]">Total KG:</span>
                 <span className="font-bold text-[#022F40]">{(consolidado.totalKg ?? 0).toFixed(2)} kg</span>
@@ -479,38 +491,62 @@ export function ConsolidadoEditorPage() {
               )}
 
               {(consolidado.saldoAnterior !== 0 || consolidado.totalAbonos !== 0) && (
-                <div className="flex justify-between text-sm py-2 border-t border-[#022F40]/10 bg-[#F9FAFB] px-2 rounded">
-                  <span className="font-semibold text-[#022F40]">Total actualizado C$:</span>
-                  <span className="font-extrabold text-[#022F40]">
-                    {formatCurrency(consolidado.totalActualizado)}
-                  </span>
-                </div>
+                <>
+                  <div className="flex justify-between text-sm py-2 border-t border-[#022F40]/10 bg-[#F9FAFB] px-2 rounded">
+                    <span className="font-semibold text-[#022F40]">Total actualizado C$:</span>
+                    <span className="font-extrabold text-[#022F40]">
+                      {formatCurrency(consolidado.totalActualizado)}
+                    </span>
+                  </div>
+                  {mostrarTotalUsd && (
+                    <div className="flex justify-between text-sm py-2 bg-[#F9FAFB] px-2 rounded">
+                      <span className="font-semibold text-[#022F40]">Total actualizado U$:</span>
+                      <span className="font-extrabold text-[#022F40]">
+                        {formatUsd(consolidado.totalActualizadoUsd ?? (consolidado.tipoCambio ? Math.round(((consolidado.totalActualizado / consolidado.tipoCambio) + Number.EPSILON) * 100) / 100 : 0))}
+                      </span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
 
           {/* ── 4. Nombre del Consolidado & Guardar ── */}
-          <div className="bg-white border border-[#E5E7EB] rounded p-5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex flex-col gap-1.5 w-full sm:max-w-md">
-              <label className="text-sm font-medium text-[#705D56]">Nombre del consolidado *</label>
-              <Input
-                value={nombreConsolidado}
+          <div className="bg-white border border-[#E5E7EB] rounded p-5 shadow-sm flex flex-col gap-4">
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-[#705D56]">
+              <input
+                type="checkbox"
+                checked={mostrarTotalUsd}
                 onChange={e => {
-                  setNombreConsolidado(e.target.value)
+                  setMostrarTotalUsd(e.target.checked)
                   setCambiosSinGuardar(true)
                 }}
-                placeholder="Ej. Consolidado Constructora Norte SA"
               />
-            </div>
+              Mostrar total en dólares
+            </label>
 
-            <Button
-              onClick={handleGuardar}
-              disabled={guardando || !nombreConsolidado.trim()}
-              className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-1.5 w-full sm:w-auto"
-            >
-              <Save className="w-4 h-4" />
-              {guardando ? 'Guardando…' : isGuardado ? 'Guardar cambios' : 'Guardar consolidado'}
-            </Button>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex flex-col gap-1.5 w-full sm:max-w-md">
+                <label className="text-sm font-medium text-[#705D56]">Nombre del consolidado *</label>
+                <Input
+                  value={nombreConsolidado}
+                  onChange={e => {
+                    setNombreConsolidado(e.target.value)
+                    setCambiosSinGuardar(true)
+                  }}
+                  placeholder="Ej. Consolidado Constructora Norte SA"
+                />
+              </div>
+
+              <Button
+                onClick={handleGuardar}
+                disabled={guardando || !nombreConsolidado.trim()}
+                className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-1.5 w-full sm:w-auto"
+              >
+                <Save className="w-4 h-4" />
+                {guardando ? 'Guardando…' : isGuardado ? 'Guardar cambios' : 'Guardar consolidado'}
+              </Button>
+            </div>
           </div>
         </div>
       )}

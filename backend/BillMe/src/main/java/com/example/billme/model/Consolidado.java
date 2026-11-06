@@ -40,6 +40,15 @@ public class Consolidado extends BaseEntity {
     @Column(name = "hasta", nullable = false)
     private LocalDate hasta;
 
+    /** Si al exportar y visualizar se muestra el total en dólares. */
+    @Column(name = "mostrar_total_usd", nullable = false)
+    @Builder.Default
+    private boolean mostrarTotalUsd = false;
+
+    /** Tipo de cambio del momento en que se creó el consolidado. */
+    @Column(name = "tipo_cambio", nullable = false, precision = 12, scale = 6)
+    private java.math.BigDecimal tipoCambio;
+
     @OneToMany(mappedBy = "consolidado", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("fechaEntrega ASC")
     @Builder.Default

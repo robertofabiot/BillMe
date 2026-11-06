@@ -1,6 +1,6 @@
 import { forwardRef } from 'react'
 import type { Documento } from '@/types'
-import { formatCurrency, formatFechaCorta } from '@/lib/format'
+import { formatCurrency, formatFechaCorta, formatUsd } from '@/lib/format'
 
 export interface DocumentoPlantillaProps {
   documento: Documento
@@ -112,6 +112,16 @@ export const DocumentoPlantilla = forwardRef<HTMLDivElement, DocumentoPlantillaP
                   {formatCurrency(documento.total)}
                 </td>
               </tr>
+              {documento.mostrarTotalUsd && (
+                <tr className="border-b border-black">
+                  <td className="border-r border-black px-3 py-1 font-bold text-sm">
+                    Total U$
+                  </td>
+                  <td className="px-3 py-1 font-bold text-sm text-right">
+                    {formatUsd(documento.totalUsd ?? 0)}
+                  </td>
+                </tr>
+              )}
               <tr>
                 <td className="border-r border-black px-3 py-1 font-bold text-sm">
                   Total KG

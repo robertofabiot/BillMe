@@ -49,4 +49,10 @@ class CalculoDocumentoTest {
         assertThat(totales.total()).isEqualByComparingTo("0");
         assertThat(totales.totalKg()).isEqualByComparingTo("0");
     }
+
+    @Test
+    void enDolaresConvierteYRedondeaADosDecimales() {
+        assertThat(CalculoDocumento.enDolares(new BigDecimal("36624.30"), new BigDecimal("36.6243")))
+                .isEqualByComparingTo("1000.00");
+    }
 }

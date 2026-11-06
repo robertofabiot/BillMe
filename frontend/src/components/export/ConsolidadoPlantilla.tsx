@@ -1,6 +1,6 @@
 import { Fragment, forwardRef } from 'react'
 import type { Consolidado } from '@/types'
-import { formatCurrency, formatFechaCorta } from '@/lib/format'
+import { formatCurrency, formatFechaCorta, formatUsd } from '@/lib/format'
 
 export interface ConsolidadoPlantillaProps {
   consolidado: Consolidado
@@ -135,6 +135,14 @@ export const ConsolidadoPlantilla = forwardRef<HTMLDivElement, ConsolidadoPlanti
                   {formatCurrency(consolidado.total)}
                 </td>
               </tr>
+              {consolidado.mostrarTotalUsd && (
+                <tr className="border-b border-black">
+                  <td className="border-r border-black px-3 py-1 font-bold text-sm">Total U$</td>
+                  <td className="px-3 py-1 font-bold text-sm text-right">
+                    {formatUsd(consolidado.totalUsd ?? 0)}
+                  </td>
+                </tr>
+              )}
               <tr className={tieneSaldo || tieneAbonos ? 'border-b border-black' : ''}>
                 <td className="border-r border-black px-3 py-1 font-bold text-sm">Total KG</td>
                 <td className="px-3 py-1 font-bold text-sm text-right">
@@ -162,14 +170,26 @@ export const ConsolidadoPlantilla = forwardRef<HTMLDivElement, ConsolidadoPlanti
                 </tr>
               )}
               {(tieneSaldo || tieneAbonos) && (
-                <tr>
-                  <td className="border-r border-black px-3 py-1 font-bold text-sm">
-                    Total actualizado C$
-                  </td>
-                  <td className="px-3 py-1 font-bold text-sm text-right">
-                    {formatCurrency(consolidado.totalActualizado)}
-                  </td>
-                </tr>
+                <>
+                  <tr className={consolidado.mostrarTotalUsd ? 'border-b border-black' : ''}>
+                    <td className="border-r border-black px-3 py-1 font-bold text-sm">
+                      Total actualizado C$
+                    </td>
+                    <td className="px-3 py-1 font-bold text-sm text-right">
+                      {formatCurrency(consolidado.totalActualizado)}
+                    </td>
+                  </tr>
+                  {consolidado.mostrarTotalUsd && (
+                    <tr>
+                      <td className="border-r border-black px-3 py-1 font-bold text-sm">
+                        Total actualizado U$
+                      </td>
+                      <td className="px-3 py-1 font-bold text-sm text-right">
+                        {formatUsd(consolidado.totalActualizadoUsd ?? 0)}
+                      </td>
+                    </tr>
+                  )}
+                </>
               )}
             </tbody>
           </table>

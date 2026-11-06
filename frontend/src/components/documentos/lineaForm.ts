@@ -19,7 +19,7 @@ export interface LineaForm {
   lugarEntrega: string
 }
 
-const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
+export const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
 
 /** Solo para mostrar mientras se escribe: al guardar, los montos oficiales los calcula el backend. */
 export function calcularLinea(l: LineaForm) {

@@ -134,6 +134,10 @@ export interface Consolidado {
   abonos: ConsolidadoAbono[]
   totalAbonos: number
   totalActualizado: number
+  mostrarTotalUsd?: boolean | null
+  tipoCambio?: number | null
+  totalUsd?: number | null
+  totalActualizadoUsd?: number | null
 }
 
 export interface Proveedor {
@@ -383,6 +387,9 @@ export interface Documento {
   proyectoNombre?: string | null
   notas?: string | null
   mostrarEntrega: boolean
+  mostrarTotalUsd?: boolean | null
+  tipoCambio?: number | null
+  totalUsd?: number | null
   total: number
   totalKg: number
   cotizacionOrigenId?: string | null
@@ -397,6 +404,7 @@ export interface Documento {
 /** Cómo estaba un documento antes de una edición. */
 export interface RevisionDocumento {
   numero: number
+  motivo: string
   editadoEn: string
   editadoPor?: string | null
   documento: Documento

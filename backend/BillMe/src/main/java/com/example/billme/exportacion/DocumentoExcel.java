@@ -55,6 +55,7 @@ public class DocumentoExcel {
             short fmtCantidad = df.getFormat("0.###");
             short fmtPeso = df.getFormat("#,##0.00");
             short fmtMoneda = df.getFormat("\"C$\"#,##0.00");
+            short fmtUsd = df.getFormat("\"U$\"#,##0.00");
 
             Font fontBold = workbook.createFont();
             fontBold.setBold(true);
@@ -127,6 +128,12 @@ public class DocumentoExcel {
             aplicarBordes(styleTotalPrecio);
             styleTotalPrecio.setDataFormat(fmtMoneda);
             styleTotalPrecio.setAlignment(HorizontalAlignment.RIGHT);
+
+            CellStyle styleTotalUsd = workbook.createCellStyle();
+            styleTotalUsd.setFont(fontBold);
+            aplicarBordes(styleTotalUsd);
+            styleTotalUsd.setDataFormat(fmtUsd);
+            styleTotalUsd.setAlignment(HorizontalAlignment.RIGHT);
 
             CellStyle styleTotalPeso = workbook.createCellStyle();
             styleTotalPeso.setFont(fontBold);
@@ -303,9 +310,25 @@ public class DocumentoExcel {
             cTotalCValue.setCellFormula(formulaTotalC);
             cTotalCValue.setCellStyle(styleTotalPrecio);
 
-            // Fila n+4: Total KG
-            int totalKgRowIdx = totalCRowIdx + 1;
-            Row rTotalKg = sheet.createRow(totalKgRowIdx);
+            int siguienteFilaIdx = totalCRowIdx + 1;
+
+            if (documento.isMostrarTotalUsd()) {
+                Row rTotalUsd = sheet.createRow(siguienteFilaIdx);
+                Cell cTotalUsdLabel = rTotalUsd.createCell(7);
+                cTotalUsdLabel.setCellValue("Total U$");
+                cTotalUsdLabel.setCellStyle(styleTotalEtiqueta);
+
+                Cell cTotalUsdValue = rTotalUsd.createCell(8);
+                int filaTotalC = totalCRowIdx + 1;
+                String tc = documento.getTipoCambio() != null ? documento.getTipoCambio().toPlainString() : "1";
+                cTotalUsdValue.setCellFormula("ROUND(I" + filaTotalC + "/" + tc + ",2)");
+                cTotalUsdValue.setCellStyle(styleTotalUsd);
+
+                siguienteFilaIdx++;
+            }
+
+            // Total KG
+            Row rTotalKg = sheet.createRow(siguienteFilaIdx);
             Cell cTotalKgLabel = rTotalKg.createCell(7);
             cTotalKgLabel.setCellValue("Total KG");
             cTotalKgLabel.setCellStyle(styleTotalEtiqueta);

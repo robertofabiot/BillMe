@@ -2,16 +2,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import type { Cliente, Documento, MetodoPrecio, Producto, Proyecto, TipoDocumento } from '@/types'
 import { clienteService } from '@/services/clienteService'
+import { configuracionService } from '@/services/configuracionService'
 import { documentoService, type DocumentoPayload } from '@/services/documentoService'
 import { precioService } from '@/services/precioService'
 import { proyectoService } from '@/services/proyectoService'
-import { formatCurrency, formatFechaCorta, hoyIso } from '@/lib/format'
+import { formatCurrency, formatFechaCorta, formatUsd, hoyIso } from '@/lib/format'
 import { ExportarDialog } from '@/components/export/ExportarDialog'
 import { DocumentoPlantilla } from '@/components/export/DocumentoPlantilla'
 import { nombreArchivo } from '@/lib/exportar'
 import { EstadoDocumentoBadge } from '@/components/documentos/EstadoDocumentoBadge'
 import { LineasTabla } from '@/components/documentos/LineasTabla'
-import { calcularLinea, type LineaForm } from '@/components/documentos/lineaForm'
+import { calcularLinea, r2, type LineaForm } from '@/components/documentos/lineaForm'
 import { ProductoBuscador } from '@/components/documentos/ProductoBuscador'
 import { RevisionesDialog } from '@/components/documentos/RevisionesDialog'
 import { PrecioLineaDialog } from '@/components/documentos/PrecioLineaDialog'
@@ -27,6 +28,7 @@ interface Formulario {
   fecha: string
   notas: string
   mostrarEntrega: boolean
+  mostrarTotalUsd: boolean
   lineas: LineaForm[]
 }
 
@@ -40,7 +42,7 @@ const SALIR_SIN_GUARDAR = 'Hay cambios sin guardar. ¿Salir sin guardar?'
 const SELECT = 'h-9 w-full rounded border border-[#E5E7EB] bg-white px-3 text-sm text-[#022F40] outline-none focus:border-[#022F40] disabled:opacity-60'
 
 function formularioVacio(): Formulario {
-  return { clienteId: '', proyectoId: '', fecha: hoyIso(), notas: '', mostrarEntrega: false, lineas: [] }
+  return { clienteId: '', proyectoId: '', fecha: hoyIso(), notas: '', mostrarEntrega: false, mostrarTotalUsd: false, lineas: [] }
 }
 
 function formularioDe(d: Documento): Formulario {
@@ -50,6 +52,7 @@ function formularioDe(d: Documento): Formulario {
     fecha: d.fecha,
     notas: d.notas ?? '',
     mostrarEntrega: d.mostrarEntrega,
+    mostrarTotalUsd: Boolean(d.mostrarTotalUsd),
     lineas: d.lineas.map(l => ({
       clave: l.id,
       id: l.id,
@@ -91,6 +94,7 @@ function payloadDe(f: Formulario, tipo: TipoDocumento): DocumentoPayload {
     fecha: f.fecha,
     notas: f.notas.trim() || null,
     mostrarEntrega: f.mostrarEntrega,
+    mostrarTotalUsd: f.mostrarTotalUsd,
     lineas: f.lineas.map(l => ({
       id: l.id,
       productoId: l.productoId,
@@ -130,9 +134,12 @@ export function DocumentoEditorPage() {
   const [exportando, setExportando] = useState(false)
   const [viendoCambios, setViendoCambios] = useState(false)
   const [registrandoCompra, setRegistrandoCompra] = useState(false)
+  const [tipoCambioConfig, setTipoCambioConfig] = useState<number | null>(null)
   const [lineaParaPrecio, setLineaParaPrecio] = useState<string | null>(null)
   const [lineaParaCalculadora, setLineaParaCalculadora] = useState<string | null>(null)
   const [modoCalculadoraSoloPeso, setModoCalculadoraSoloPeso] = useState(false)
+
+  const tipoCambio = documento?.tipoCambio ?? tipoCambioConfig
 
   const lineaActivaPrecio = useMemo(
     () => form.lineas.find(l => l.clave === lineaParaPrecio) ?? null,
@@ -158,6 +165,7 @@ export function DocumentoEditorPage() {
 
   useEffect(() => {
     clienteService.listar().then(setClientes).catch(console.error)
+    configuracionService.obtener().then(c => setTipoCambioConfig(c.tipoCambio)).catch(console.error)
   }, [])
 
   useEffect(() => {
@@ -648,6 +656,14 @@ export function DocumentoEditorPage() {
                   Mostrarlos también al exportar
                 </label>
               )}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.mostrarTotalUsd}
+                  onChange={e => setForm(f => ({ ...f, mostrarTotalUsd: e.target.checked }))}
+                />
+                Mostrar total en dólares
+              </label>
             </div>
 
             <dl className="text-right">
@@ -655,6 +671,14 @@ export function DocumentoEditorPage() {
                 <dt className="text-sm text-[#705D56]">Total</dt>
                 <dd className="text-2xl font-bold text-[#022F40]">{formatCurrency(totales.total)}</dd>
               </div>
+              {form.mostrarTotalUsd && (
+                <div className="flex items-baseline justify-end gap-3">
+                  <dt className="text-sm text-[#705D56]">Total U$</dt>
+                  <dd className="text-lg font-bold text-[#022F40]">
+                    {tipoCambio ? formatUsd(r2(totales.total / tipoCambio)) : '—'}
+                  </dd>
+                </div>
+              )}
               <div className="flex items-baseline justify-end gap-3">
                 <dt className="text-sm text-[#705D56]">Total KG</dt>
                 <dd className="text-sm font-semibold text-[#022F40]">{totales.kilos.toFixed(2)}</dd>
@@ -707,7 +731,7 @@ export function DocumentoEditorPage() {
           descargarExcel={(enc) => documentoService.descargarExcel(documento.id, enc)}
         />
       )}
-      {documento && <RevisionesDialog documentoId={documento.id} open={viendoCambios} onOpenChange={setViendoCambios} />}
+      {documento && <RevisionesDialog documentoActual={documento} open={viendoCambios} onOpenChange={setViendoCambios} />}
       {documento && (
         <RegistrarCompraDialog
           open={registrandoCompra}

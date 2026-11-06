@@ -15,8 +15,14 @@ public record ConsolidadoGuardarRequest(
         @NotBlank @Size(max = 200) String nombre,
         @NotNull LocalDate desde,
         @NotNull LocalDate hasta,
-        List<@Valid NombreGrupo> grupos
+        List<@Valid NombreGrupo> grupos,
+        Boolean mostrarTotalUsd
 ) {
+    public ConsolidadoGuardarRequest(UUID clienteId, UUID proyectoId, String nombre,
+                                     LocalDate desde, LocalDate hasta, List<NombreGrupo> grupos) {
+        this(clienteId, proyectoId, nombre, desde, hasta, grupos, null);
+    }
+
     public record NombreGrupo(
             @NotNull LocalDate fechaEntrega,
             @NotBlank @Size(max = 200) String nombre

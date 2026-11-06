@@ -2,6 +2,9 @@ package com.example.billme.service;
 
 import com.example.billme.dto.ClienteRequest;
 import com.example.billme.dto.ClienteResponse;
+import com.example.billme.dto.CompraRequest;
+import com.example.billme.dto.ConfiguracionRequest;
+import com.example.billme.dto.ConfiguracionResponse;
 import com.example.billme.dto.DocumentoRequest;
 import com.example.billme.dto.DocumentoResponse;
 import com.example.billme.dto.LineaRequest;
@@ -15,12 +18,14 @@ import com.example.billme.enums.MetodoPrecio;
 import com.example.billme.enums.TipoDocumento;
 import com.example.billme.model.Abono;
 import com.example.billme.model.DocumentoRevision;
+import com.example.billme.model.Proveedor;
 import com.example.billme.model.Usuario;
 import com.example.billme.repository.AbonoRepository;
 import com.example.billme.repository.ClienteRepository;
 import com.example.billme.repository.DocumentoRepository;
 import com.example.billme.repository.DocumentoRevisionRepository;
 import com.example.billme.repository.ProductoRepository;
+import com.example.billme.repository.ProveedorRepository;
 import com.example.billme.repository.UsuarioRepository;
 import com.example.billme.support.IntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,6 +78,15 @@ class DocumentoServiceTest extends IntegrationTest {
 
     @Autowired
     DocumentoRevisionRepository revisionRepository;
+
+    @Autowired
+    CompraService compraService;
+
+    @Autowired
+    ProveedorRepository proveedorRepository;
+
+    @Autowired
+    ConfiguracionService configuracionService;
 
     @Autowired
     ReporteService reporteService;
@@ -286,6 +300,7 @@ class DocumentoServiceTest extends IntegrationTest {
                 .documento(documentoRepository.findById(factura.id()).orElseThrow())
                 .numero(1)
                 .snapshot(snapshotConCamposAntiguos)
+                .motivo("Edición")
                 .build());
 
         List<RevisionResponse> revisiones = documentoService.revisiones(factura.id());
@@ -390,6 +405,129 @@ class DocumentoServiceTest extends IntegrationTest {
     @Test
     void unDocumentoInexistenteNoTieneVersiones() {
         assertEstado(HttpStatus.NOT_FOUND, () -> documentoService.revisiones(UUID.randomUUID()));
+    }
+
+    @Test
+    void revisionesNoSePuedenModificarNiBorrar() {
+        DocumentoResponse factura = crear(TipoDocumento.FACTURA);
+        documentoService.actualizar(factura.id(), new DocumentoRequest(null, cliente.id(), null, FECHA, "Modificado",
+                false, List.of(linea(tubo.id(), "2", "150"))));
+
+        assertThatThrownBy(() -> jdbc.update("update documento_revisiones set snapshot = 'x'"))
+                .isInstanceOf(Exception.class);
+
+        assertThatThrownBy(() -> jdbc.update("delete from documento_revisiones"))
+                .isInstanceOf(Exception.class);
+    }
+
+    @Test
+    void registrarCompraAnularYCambiarEstadoDejanVersionConSuMotivo() {
+        // 1. Cotización: rechazar y reabrir dejan versión
+        DocumentoResponse cot = documentoService.crear(new DocumentoRequest(TipoDocumento.COTIZACION, cliente.id(), null, FECHA,
+                null, false, List.of(linea(tubo.id(), "1", "100"))));
+
+        documentoService.cambiarEstadoCotizacion(cot.id(), EstadoDocumento.RECHAZADA);
+        List<RevisionResponse> revRechazo = documentoService.revisiones(cot.id());
+        assertThat(revRechazo).hasSize(1);
+        assertThat(revRechazo.get(0).motivo()).isEqualTo("Cotización rechazada");
+
+        documentoService.cambiarEstadoCotizacion(cot.id(), EstadoDocumento.PENDIENTE);
+        List<RevisionResponse> revReabierta = documentoService.revisiones(cot.id());
+        assertThat(revReabierta).hasSize(2);
+        assertThat(revReabierta.get(0).motivo()).isEqualTo("Cotización reabierta");
+
+        // 2. Convertir en factura deja versión sobre la cotización
+        DocumentoResponse fac = documentoService.convertirAFactura(cot.id(), FECHA);
+        List<RevisionResponse> revConvertida = documentoService.revisiones(cot.id());
+        assertThat(revConvertida).hasSize(3);
+        assertThat(revConvertida.get(0).motivo()).isEqualTo("Convertida en factura " + fac.folio());
+
+        // 3. Registrar compra sobre la factura deja versión
+        Proveedor prov = proveedorRepository.save(Proveedor.builder().nombre("Proveedor Central").build());
+        compraService.registrar(fac.id(), new CompraRequest(
+                prov.getId(),
+                FECHA,
+                "F-123",
+                "Nota compra",
+                List.of(new CompraRequest.Linea(fac.lineas().get(0).id(), new BigDecimal("80.00"), BigDecimal.ZERO, new BigDecimal("10.00")))
+        ));
+        List<RevisionResponse> revCompra = documentoService.revisiones(fac.id());
+        assertThat(revCompra).hasSize(1);
+        assertThat(revCompra.get(0).motivo()).isEqualTo("Compra registrada");
+
+        // 4. Anular factura deja versión
+        documentoService.anular(fac.id());
+        List<RevisionResponse> revAnulada = documentoService.revisiones(fac.id());
+        assertThat(revAnulada).hasSize(2);
+        assertThat(revAnulada.get(0).motivo()).isEqualTo("Factura anulada");
+    }
+
+    @Test
+    void editarTodosLosCamposDejaVersionConValoresAnteriores() {
+        var cliente2 = clienteService.crear(new ClienteRequest("Cliente 2", null, null));
+        var proy1 = proyectoService.crear(new ProyectoRequest(cliente.id(), "Proyecto 1", null));
+        var proy2 = proyectoService.crear(new ProyectoRequest(cliente2.id(), "Proyecto 2", null));
+
+        DocumentoResponse factura = documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA, cliente.id(), proy1.id(), FECHA, "Notas iniciales", true,
+                List.of(new LineaRequest(null, tubo.id(), "Desc 1", new BigDecimal("5.000"), new BigDecimal("10.00"),
+                        new BigDecimal("200.00"), MetodoPrecio.MANUAL, null, FECHA, "Lugar 1"))
+        ));
+        UUID lineaId = factura.lineas().get(0).id();
+
+        documentoService.actualizar(factura.id(), new DocumentoRequest(
+                null, cliente2.id(), proy2.id(), FECHA.plusDays(5), "Notas editadas", false,
+                List.of(new LineaRequest(lineaId, tubo.id(), "Desc 2", new BigDecimal("8.000"), new BigDecimal("15.00"),
+                        new BigDecimal("250.00"), MetodoPrecio.MANUAL, null, FECHA.plusDays(1), "Lugar 2"))
+        ));
+
+        List<RevisionResponse> revs = documentoService.revisiones(factura.id());
+        assertThat(revs).hasSize(1);
+        RevisionResponse rev = revs.get(0);
+        assertThat(rev.motivo()).isEqualTo("Edición");
+        DocumentoResponse snapshot = rev.documento();
+        assertThat(snapshot.clienteId()).isEqualTo(cliente.id());
+        assertThat(snapshot.proyectoId()).isEqualTo(proy1.id());
+        assertThat(snapshot.fecha()).isEqualTo(FECHA);
+        assertThat(snapshot.notas()).isEqualTo("Notas iniciales");
+        assertThat(snapshot.mostrarEntrega()).isTrue();
+        LineaResponse lSnap = snapshot.lineas().get(0);
+        assertThat(lSnap.descripcion()).isEqualTo("Desc 1");
+        assertThat(lSnap.cantidad()).isEqualByComparingTo("5.000");
+        assertThat(lSnap.pesoUnitKg()).isEqualByComparingTo("10.00");
+        assertThat(lSnap.precioUnit()).isEqualByComparingTo("200.00");
+        assertThat(lSnap.fechaEntrega()).isEqualTo(FECHA);
+        assertThat(lSnap.lugarEntrega()).isEqualTo("Lugar 1");
+    }
+
+    @Test
+    void documentoGuardaTipoCambioDeConfiguracionYNoCambiaSiConfiguracionCambia() {
+        ConfiguracionResponse original = configuracionService.obtener();
+        try {
+            DocumentoResponse cot = documentoService.crear(new DocumentoRequest(
+                    TipoDocumento.COTIZACION, cliente.id(), null, FECHA, null, false, true,
+                    List.of(linea(tubo.id(), "10", "366.243"))
+            ));
+            assertThat(cot.mostrarTotalUsd()).isTrue();
+            assertThat(cot.tipoCambio()).isEqualByComparingTo("36.624300");
+            assertThat(cot.totalUsd()).isEqualByComparingTo("100.00");
+
+            configuracionService.actualizar(new ConfiguracionRequest(
+                    new BigDecimal("15.0"), new BigDecimal("40.0000"), new BigDecimal("1.80"), new BigDecimal("0.1283"), 90
+            ));
+            DocumentoResponse cotDespues = documentoService.obtener(cot.id());
+            assertThat(cotDespues.tipoCambio()).isEqualByComparingTo("36.624300");
+            assertThat(cotDespues.totalUsd()).isEqualByComparingTo("100.00");
+
+            DocumentoResponse fac = documentoService.convertirAFactura(cot.id(), FECHA);
+            assertThat(fac.mostrarTotalUsd()).isTrue();
+            assertThat(fac.tipoCambio()).isEqualByComparingTo("36.624300");
+            assertThat(fac.totalUsd()).isEqualByComparingTo("100.00");
+        } finally {
+            configuracionService.actualizar(new ConfiguracionRequest(
+                    original.ivaPct(), original.tipoCambio(), original.tarifaKgUsd(), original.densidadKgIn3(), original.diasPrecioViejo()
+            ));
+        }
     }
 
     // ── Consultas, abonos y reportes (con open-in-view desactivado) ──────────

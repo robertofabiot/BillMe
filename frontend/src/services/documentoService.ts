@@ -22,6 +22,7 @@ export interface DocumentoPayload {
   fecha: string
   notas?: string | null
   mostrarEntrega?: boolean
+  mostrarTotalUsd?: boolean
   lineas: LineaPayload[]
 }
 

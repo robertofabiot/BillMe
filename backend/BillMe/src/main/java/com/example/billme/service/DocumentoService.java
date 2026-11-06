@@ -63,6 +63,7 @@ public class DocumentoService {
     private final UsuarioRepository usuarioRepository;
     private final PrecioListaService precioListaService;
     private final DocumentoRevisionRepository revisionRepository;
+    private final ConfiguracionService configuracionService;
     private final JsonMapper jsonMapper;
     private final DocumentoExcel documentoExcel;
 
@@ -123,10 +124,25 @@ public class DocumentoService {
                 .tipo(request.tipo())
                 .estado(request.tipo() == TipoDocumento.COTIZACION ? EstadoDocumento.PENDIENTE : EstadoDocumento.ACTIVA)
                 .folio(siguienteFolio(request.tipo()))
+                .tipoCambio(configuracionService.tipoCambio().setScale(6, RoundingMode.HALF_UP))
                 .usuario(usuarioActual())
                 .build();
         aplicar(documento, request);
         return toResponse(documentoRepository.saveAndFlush(documento), null);
+    }
+
+    String copia(Documento documento) {
+        return jsonMapper.writeValueAsString(toResponse(documento, null));
+    }
+
+    void registrarRevision(Documento documento, String copiaAnterior, String motivo) {
+        revisionRepository.save(DocumentoRevision.builder()
+                .documento(documento)
+                .numero(revisionRepository.countByDocumentoId(documento.getId()) + 1)
+                .snapshot(copiaAnterior)
+                .motivo(motivo)
+                .usuario(usuarioActual())
+                .build());
     }
 
     @Transactional
@@ -139,17 +155,12 @@ public class DocumentoService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Esta cotización ya se convirtió en factura: edita la factura");
         }
-        String copiaAnterior = jsonMapper.writeValueAsString(toResponse(documento, null));
+        String copiaAnterior = copia(documento);
         String antes = huella(documento);
         aplicar(documento, request);
         // Guardar sin cambios no deja una versión nueva
         if (!huella(documento).equals(antes)) {
-            revisionRepository.save(DocumentoRevision.builder()
-                    .documento(documento)
-                    .numero(revisionRepository.countByDocumentoId(id) + 1)
-                    .snapshot(copiaAnterior)
-                    .usuario(usuarioActual())
-                    .build());
+            registrarRevision(documento, copiaAnterior, "Edición");
         }
         return toResponse(documentoRepository.saveAndFlush(documento), null);
     }
@@ -162,6 +173,7 @@ public class DocumentoService {
                         r.getNumero(),
                         r.getCreatedAt(),
                         r.getUsuario() != null ? r.getUsuario().getNombre() : null,
+                        r.getMotivo(),
                         jsonMapper.readValue(r.getSnapshot(), DocumentoResponse.class)))
                 .toList();
     }
@@ -178,6 +190,7 @@ public class DocumentoService {
                     ? "Esta cotización ya se convirtió en factura"
                     : "Esta cotización está rechazada: reábrela para convertirla en factura");
         }
+        String copiaCotizacion = copia(cotizacion);
         Documento factura = Documento.builder()
                 .tipo(TipoDocumento.FACTURA)
                 .estado(EstadoDocumento.ACTIVA)
@@ -187,6 +200,8 @@ public class DocumentoService {
                 .proyecto(cotizacion.getProyecto())
                 .notas(cotizacion.getNotas())
                 .mostrarEntrega(cotizacion.isMostrarEntrega())
+                .mostrarTotalUsd(cotizacion.isMostrarTotalUsd())
+                .tipoCambio(cotizacion.getTipoCambio())
                 .total(cotizacion.getTotal())
                 .totalKg(cotizacion.getTotalKg())
                 .usuario(usuarioActual())
@@ -211,7 +226,9 @@ public class DocumentoService {
                     .build());
         }
         cotizacion.setEstado(EstadoDocumento.ACEPTADA);
-        return toResponse(documentoRepository.saveAndFlush(factura), null);
+        Documento facturaGuardada = documentoRepository.saveAndFlush(factura);
+        registrarRevision(cotizacion, copiaCotizacion, "Convertida en factura " + facturaGuardada.getFolio());
+        return toResponse(facturaGuardada, null);
     }
 
     /** Una cotización se puede rechazar y reabrir. La aceptación solo ocurre al convertirla en factura. */
@@ -223,7 +240,10 @@ public class DocumentoService {
         if (documento.getTipo() != TipoDocumento.COTIZACION || !(rechazar || reabrir)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ese cambio de estado no es posible");
         }
+        String copiaAnterior = copia(documento);
         documento.setEstado(nuevo);
+        String motivo = rechazar ? "Cotización rechazada" : "Cotización reabierta";
+        registrarRevision(documento, copiaAnterior, motivo);
         return toResponse(documento, null);
     }
 
@@ -234,7 +254,9 @@ public class DocumentoService {
         if (documento.getTipo() != TipoDocumento.FACTURA || documento.getEstado() != EstadoDocumento.ACTIVA) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo se puede anular una factura activa");
         }
+        String copiaAnterior = copia(documento);
         documento.setEstado(EstadoDocumento.ANULADA);
+        registrarRevision(documento, copiaAnterior, "Factura anulada");
         return toResponse(documento, null);
     }
 
@@ -271,6 +293,7 @@ public class DocumentoService {
         documento.setFecha(request.fecha());
         documento.setNotas(request.notas());
         documento.setMostrarEntrega(Boolean.TRUE.equals(request.mostrarEntrega()));
+        documento.setMostrarTotalUsd(Boolean.TRUE.equals(request.mostrarTotalUsd()));
         aplicarLineas(documento, request.lineas());
     }
 
@@ -341,7 +364,8 @@ public class DocumentoService {
                 .append(d.getProyecto() != null ? d.getProyecto().getId() : null).append('|')
                 .append(d.getFecha()).append('|')
                 .append(d.getNotas()).append('|')
-                .append(d.isMostrarEntrega());
+                .append(d.isMostrarEntrega()).append('|')
+                .append(d.isMostrarTotalUsd());
         for (DocumentoLinea l : d.getLineas()) {
             huella.append('\n')
                     .append(l.getProducto().getId()).append('|')
@@ -359,6 +383,7 @@ public class DocumentoService {
 
     private DocumentoResponse toResponse(Documento d, Documento facturaGenerada) {
         Documento origen = d.getCotizacionOrigen();
+        BigDecimal totalUsd = d.getTipoCambio() != null ? CalculoDocumento.enDolares(d.getTotal(), d.getTipoCambio()) : null;
         return new DocumentoResponse(
                 d.getId(),
                 d.getTipo().name(),
@@ -373,6 +398,9 @@ public class DocumentoService {
                 d.isMostrarEntrega(),
                 d.getTotal(),
                 d.getTotalKg(),
+                d.isMostrarTotalUsd(),
+                d.getTipoCambio(),
+                totalUsd,
                 origen != null ? origen.getId() : null,
                 origen != null ? origen.getFolio() : null,
                 facturaGenerada != null ? facturaGenerada.getId() : null,

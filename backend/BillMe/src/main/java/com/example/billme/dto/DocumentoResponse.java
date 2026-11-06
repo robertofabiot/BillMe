@@ -23,6 +23,9 @@ public record DocumentoResponse(
         boolean mostrarEntrega,
         BigDecimal total,
         BigDecimal totalKg,
+        Boolean mostrarTotalUsd,
+        BigDecimal tipoCambio,
+        BigDecimal totalUsd,
         /** En una factura: la cotización de la que salió. */
         UUID cotizacionOrigenId,
         String cotizacionOrigenFolio,

@@ -202,9 +202,102 @@ class ConsolidadoExcelTest {
                         assertThat(txt).doesNotContain("Saldo anterior");
                         assertThat(txt).doesNotContain("Menos abonos");
                         assertThat(txt).doesNotContain("Total actualizado C$");
+                        assertThat(txt).doesNotContain("Total U$");
+                        assertThat(txt).doesNotContain("Total actualizado U$");
                     }
                 }
             }
+        }
+    }
+
+    @Test
+    @DisplayName("Con mostrarTotalUsd=true genera fila Total U$ y Total actualizado U$")
+    void generaFilasTotalUsdCuandoMostrarTotalUsdEsTrue() throws IOException {
+        UUID clienteId = UUID.randomUUID();
+        LocalDate desde = LocalDate.of(2026, 3, 1);
+        LocalDate hasta = LocalDate.of(2026, 3, 31);
+
+        ConsolidadoResponse.Linea l1 = new ConsolidadoResponse.Linea(
+                UUID.randomUUID(), "FAC-0001", new BigDecimal("1"), "Línea 1",
+                new BigDecimal("10.00"), new BigDecimal("10.00"), new BigDecimal("3662.43"), new BigDecimal("3662.43"), null
+        );
+
+        ConsolidadoResponse.Grupo g1 = new ConsolidadoResponse.Grupo(
+                LocalDate.of(2026, 3, 2), "Subtotal 1 (2 de marzo)", List.of(l1),
+                new BigDecimal("3662.43"), new BigDecimal("10.00")
+        );
+
+        ConsolidadoResponse.AbonoDelPeriodo abono = new ConsolidadoResponse.AbonoDelPeriodo(
+                LocalDate.of(2026, 3, 20), new BigDecimal("1500.00"), "Transferencia"
+        );
+
+        ConsolidadoResponse response = new ConsolidadoResponse(
+                UUID.randomUUID(),
+                "CONS-0001",
+                "Consolidado USD",
+                clienteId,
+                "Cliente USD",
+                null,
+                null,
+                desde,
+                hasta,
+                Instant.now(),
+                List.of(g1),
+                new BigDecimal("3662.43"),
+                new BigDecimal("10.00"),
+                new BigDecimal("4000.00"),
+                List.of(abono),
+                new BigDecimal("1500.00"),
+                new BigDecimal("6162.43"),
+                true,
+                new BigDecimal("36.624300"),
+                new BigDecimal("100.00"),
+                new BigDecimal("168.26")
+        );
+
+        byte[] bytes = generador.generar(response, null);
+        assertThat(bytes).isNotEmpty();
+
+        try (XSSFWorkbook libro = new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
+            Sheet hoja = libro.getSheetAt(0);
+
+            // Fila 9 (rowIdx 8): Total C$
+            Row rTotC = hoja.getRow(8);
+            assertThat(rTotC.getCell(7).getStringCellValue()).isEqualTo("Total C$");
+            assertThat(rTotC.getCell(8).getNumericCellValue()).isEqualTo(3662.43);
+
+            // Fila 10 (rowIdx 9): Total U$
+            Row rTotUsd = hoja.getRow(9);
+            assertThat(rTotUsd.getCell(7).getStringCellValue()).isEqualTo("Total U$");
+            assertThat(rTotUsd.getCell(8).getCellFormula()).isEqualTo("ROUND(I9/36.624300,2)");
+            assertThat(rTotUsd.getCell(8).getNumericCellValue()).isEqualTo(100.0);
+
+            // Fila 11 (rowIdx 10): Total KG
+            Row rTotKg = hoja.getRow(10);
+            assertThat(rTotKg.getCell(7).getStringCellValue()).isEqualTo("Total KG");
+            assertThat(rTotKg.getCell(8).getNumericCellValue()).isEqualTo(10.0);
+
+            // Fila 13 (rowIdx 12): Saldo anterior
+            Row rSaldo = hoja.getRow(12);
+            assertThat(rSaldo.getCell(7).getStringCellValue()).isEqualTo("Saldo anterior");
+            assertThat(rSaldo.getCell(8).getNumericCellValue()).isEqualTo(4000.0);
+
+            // Fila 14 (rowIdx 13): Menos abonos
+            Row rAbonos = hoja.getRow(13);
+            assertThat(rAbonos.getCell(7).getStringCellValue()).isEqualTo("Menos abonos");
+            assertThat(rAbonos.getCell(8).getNumericCellValue()).isEqualTo(1500.0);
+
+            // Fila 16 (rowIdx 15): Total actualizado C$
+            Row rActC = hoja.getRow(15);
+            assertThat(rActC.getCell(7).getStringCellValue()).isEqualTo("Total actualizado C$");
+            assertThat(rActC.getCell(8).getCellFormula()).isEqualTo("I9+I13-I14");
+            assertThat(rActC.getCell(8).getNumericCellValue()).isEqualTo(6162.43);
+
+            // Fila 17 (rowIdx 16): Total actualizado U$
+            Row rActUsd = hoja.getRow(16);
+            assertThat(rActUsd.getCell(7).getStringCellValue()).isEqualTo("Total actualizado U$");
+            assertThat(rActUsd.getCell(8).getCellFormula()).isEqualTo("ROUND(I16/36.624300,2)");
+            assertThat(rActUsd.getCell(8).getNumericCellValue()).isEqualTo(168.26);
         }
     }
 }
