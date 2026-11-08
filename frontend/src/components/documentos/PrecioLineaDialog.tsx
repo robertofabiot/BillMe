@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { MetodoPrecio, PrecioFormula, PrecioSugerido } from '@/types'
+import type { MetodoPrecio, MonedaTarifa, PrecioFormula, PrecioSugerido } from '@/types'
 import { precioService } from '@/services/precioService'
 import { calculoService } from '@/services/calculoService'
 import { formatCurrency, formatDate } from '@/lib/format'
@@ -13,6 +13,7 @@ interface Props {
   onOpenChange: (open: boolean) => void
   clienteId: string
   linea: LineaForm | null
+  tipoCambio?: number | null
   onAplicar: (precioUnit: string, metodoPrecio: MetodoPrecio, parametros: string | null) => void
   onAbrirCalculadoraPeso: () => void
 }
@@ -22,6 +23,7 @@ export function PrecioLineaDialog({
   onOpenChange,
   clienteId,
   linea,
+  tipoCambio,
   onAplicar,
   onAbrirCalculadoraPeso,
 }: Props) {
@@ -32,6 +34,11 @@ export function PrecioLineaDialog({
   // Estado para Fórmula de lista
   const [descuentoPct, setDescuentoPct] = useState('')
   const [formulaRes, setFormulaRes] = useState<PrecioFormula | null>(null)
+
+  // Estado para Por peso
+  const [tarifaPeso, setTarifaPeso] = useState('')
+  const [monedaPeso, setMonedaPeso] = useState<MonedaTarifa>('USD')
+  const [puPeso, setPuPeso] = useState<number | null>(null)
 
   // Estado para Por metro
   const [precioRef, setPrecioRef] = useState('')
@@ -44,8 +51,28 @@ export function PrecioLineaDialog({
     setCargando(true)
     setFormulaRes(null)
     setPuMetro(null)
+    setPuPeso(null)
     setLargoRef('')
     setLargoNuevo('')
+
+    let initTarifa = ''
+    let initMoneda: MonedaTarifa = 'USD'
+    if (linea.metodoPrecio === 'POR_PESO' && linea.parametros) {
+      try {
+        const p = typeof linea.parametros === 'string' ? JSON.parse(linea.parametros) : linea.parametros
+        if (p) {
+          if (p.tarifa != null) initTarifa = String(p.tarifa)
+          if (p.moneda) initMoneda = p.moneda
+        }
+      } catch {
+        // Ignorar
+      }
+    }
+    setTarifaPeso(initTarifa)
+    setMonedaPeso(initMoneda)
+    if (linea.metodoPrecio === 'POR_PESO' && Number(linea.precioUnit) > 0) {
+      setPuPeso(Number(linea.precioUnit))
+    }
 
     const desc = linea.productoGenerico ? linea.descripcion.trim() : undefined
     precioService.sugerido(clienteId, linea.productoId, desc)
@@ -60,7 +87,21 @@ export function PrecioLineaDialog({
             precioUnit: res.precioFormula,
           })
         }
-        if (res.precioUnit != null) {
+
+        // Precargar tarifa de sugerido si no es POR_PESO
+        if (linea.metodoPrecio !== 'POR_PESO' || !initTarifa) {
+          if (res.tarifaKg != null) {
+            setTarifaPeso(String(res.tarifaKg))
+          }
+          if (res.monedaTarifa) {
+            setMonedaPeso(res.monedaTarifa)
+          }
+        }
+
+        const tienePeso = Number(linea.pesoUnitKg) > 0
+        if (linea.metodoPrecio === 'POR_PESO' && tienePeso) {
+          setMetodo('POR_PESO')
+        } else if (res.precioUnit != null) {
           setMetodo('ULTIMO_PRECIO')
           setPrecioRef(String(res.precioUnit))
         } else if (res.precioFormula != null) {
@@ -73,7 +114,12 @@ export function PrecioLineaDialog({
       })
       .catch(() => {
         setSugerido(null)
-        setMetodo('POR_METRO')
+        const tienePeso = Number(linea.pesoUnitKg) > 0
+        if (linea.metodoPrecio === 'POR_PESO' && tienePeso) {
+          setMetodo('POR_PESO')
+        } else {
+          setMetodo('POR_METRO')
+        }
       })
       .finally(() => setCargando(false))
   }, [open, linea, clienteId])
@@ -108,6 +154,28 @@ export function PrecioLineaDialog({
       setPuMetro(null)
     }
   }, [open, precioRef, largoRef, largoNuevo])
+
+  // Recalcular por peso con espera de 300 ms
+  useEffect(() => {
+    if (!open || !linea) return
+    const peso = Number(linea.pesoUnitKg)
+    const tarifa = Number(tarifaPeso)
+    if (!(peso > 0) || !(tarifa > 0)) {
+      setPuPeso(null)
+      return
+    }
+    const temporizador = setTimeout(() => {
+      calculoService.precioPorPeso({
+        pesoUnitKg: peso,
+        tarifa,
+        moneda: monedaPeso,
+        tipoCambio: tipoCambio ?? undefined,
+      })
+        .then(res => setPuPeso(res.precioUnit))
+        .catch(() => setPuPeso(null))
+    }, 300)
+    return () => clearTimeout(temporizador)
+  }, [open, linea, linea?.pesoUnitKg, tarifaPeso, monedaPeso, tipoCambio])
 
   if (!linea) return null
 
@@ -144,13 +212,29 @@ export function PrecioLineaDialog({
       })
       onAplicar(String(puMetro), 'POR_METRO', parametros)
       onOpenChange(false)
+    } else if (metodo === 'POR_PESO' && puPeso != null) {
+      let parametrosDeLaLinea: Record<string, unknown> = {}
+      if (linea.metodoPrecio === 'POR_PESO' && linea.parametros) {
+        try {
+          parametrosDeLaLinea = typeof linea.parametros === 'string'
+            ? JSON.parse(linea.parametros)
+            : linea.parametros
+        } catch {
+          parametrosDeLaLinea = {}
+        }
+      }
+      const tarifa = Number(tarifaPeso)
+      const moneda = monedaPeso
+      onAplicar(String(puPeso), 'POR_PESO', JSON.stringify({ ...parametrosDeLaLinea, tarifa, moneda }))
+      onOpenChange(false)
     }
   }
 
   const puedeAplicar =
     (metodo === 'ULTIMO_PRECIO' && sugerido?.precioUnit != null) ||
     (metodo === 'FORMULA_LISTA' && descuentoValido && formulaAlDia) ||
-    (metodo === 'POR_METRO' && puMetro != null)
+    (metodo === 'POR_METRO' && puMetro != null) ||
+    (metodo === 'POR_PESO' && puPeso != null && Number(tarifaPeso) > 0)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -257,13 +341,67 @@ export function PrecioLineaDialog({
               </div>
             </label>
 
-            {/* 3. Por peso (solo Placa o Platina) */}
+            {/* 3. Por peso */}
+            {Number(linea.pesoUnitKg) > 0 && (
+              <label className="flex items-start gap-3 p-3 rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] cursor-pointer">
+                <input
+                  type="radio"
+                  name="metodoPrecio"
+                  value="POR_PESO"
+                  checked={metodo === 'POR_PESO'}
+                  onChange={() => setMetodo('POR_PESO')}
+                  className="mt-1 text-[#022F40]"
+                />
+                <div className="flex-1 text-sm flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-[#022F40]">Por peso</span>
+                    {puPeso != null && (
+                      <span className="font-semibold text-[#022F40]">{formatCurrency(puPeso)}</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1.5" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center gap-2">
+                      <label htmlFor="tarifa-peso-input" className="text-sm font-medium text-[#705D56] whitespace-nowrap">
+                        Tarifa por kg:
+                      </label>
+                      <Input
+                        id="tarifa-peso-input"
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={tarifaPeso}
+                        onChange={e => setTarifaPeso(e.target.value)}
+                        onFocus={() => setMetodo('POR_PESO')}
+                        className="w-24 h-7 text-sm px-2"
+                      />
+                      <select
+                        value={monedaPeso}
+                        onChange={e => {
+                          setMetodo('POR_PESO')
+                          setMonedaPeso(e.target.value as MonedaTarifa)
+                        }}
+                        onFocus={() => setMetodo('POR_PESO')}
+                        className="h-7 rounded border border-[#E5E7EB] bg-white px-2 text-sm text-[#022F40] outline-none"
+                      >
+                        <option value="USD">USD</option>
+                        <option value="NIO">C$</option>
+                      </select>
+                    </div>
+                    <p className="text-xs text-[#80727B]">
+                      Solo para esta línea: la tarifa del cliente no cambia.
+                    </p>
+                  </div>
+                </div>
+              </label>
+            )}
+
+            {/* Calculadora (si la forma es PLACA o PLATINA, tenga o no peso) */}
             {admitePorPeso && (
               <div className="flex items-start gap-3 p-3 rounded border border-[#E5E7EB] hover:bg-[#F9FAFB]">
                 <div className="flex-1 text-sm flex items-center justify-between">
                   <div>
-                    <span className="font-semibold text-[#022F40]">Por peso</span>
-                    <p className="text-sm text-[#705D56] mt-0.5">Calcula medidas y precio según tarifa por kg</p>
+                    <span className="font-semibold text-[#022F40]">Calculadora de medidas</span>
+                    <p className="text-sm text-[#705D56] mt-0.5">Calcula medidas y peso según dimensiones</p>
                   </div>
                   <Button
                     type="button"

@@ -21,6 +21,23 @@ export interface LineaForm {
 
 export const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
 
+export function recalcularPrecioPorPeso(
+  metodoPrecio: MetodoPrecio, parametros: string | null | undefined,
+  pesoTexto: string, tipoCambio: number, ivaPct: number,
+): string | null {
+  if (metodoPrecio !== 'POR_PESO' || !parametros) return null
+  try {
+    const p = JSON.parse(parametros)
+    const peso = Number(pesoTexto)
+    const tarifa = Number(p.tarifa)
+    if (!(peso > 0) || !(tarifa > 0)) return null
+    const cambio = p.moneda === 'NIO' ? 1 : tipoCambio
+    return String(r2(r2(peso) * tarifa * cambio * (1 + ivaPct / 100)))
+  } catch {
+    return null
+  }
+}
+
 /** Solo para mostrar mientras se escribe: al guardar, los montos oficiales los calcula el backend. */
 export function calcularLinea(l: LineaForm) {
   const cantidad = Number(l.cantidad) || 0
@@ -44,7 +61,7 @@ export function formatearTagPrecio(l: LineaForm): { texto: string; viejo?: boole
       return { texto: `Lista ${formatCurrency(p.lista)} − ${p.descuentoPct} %` }
     }
     if (l.metodoPrecio === 'POR_PESO') {
-      return { texto: `${Number(p.tarifaUsd).toFixed(2)} USD por kg` }
+      return { texto: `${Number(p.tarifa).toFixed(2)} ${p.moneda === 'NIO' ? 'C$' : 'USD'} por kg` }
     }
     if (l.metodoPrecio === 'POR_METRO') {
       const puMetro = p.largoReferencia ? p.precioReferencia / p.largoReferencia : 0

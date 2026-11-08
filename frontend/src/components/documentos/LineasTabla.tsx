@@ -10,6 +10,7 @@ interface Props {
   /** La línea recién agregada recibe el cursor. */
   claveNueva: string | null
   onCambiar: (clave: string, cambios: Partial<LineaForm>) => void
+  onCambiarPeso: (clave: string, peso: string) => void
   onQuitar: (clave: string) => void
   onAbrirPrecio?: (clave: string) => void
   onAbrirCalculadora?: (clave: string) => void
@@ -24,6 +25,7 @@ export function LineasTabla({
   soloLectura,
   claveNueva,
   onCambiar,
+  onCambiarPeso,
   onQuitar,
   onAbrirPrecio,
   onAbrirCalculadora,
@@ -94,7 +96,7 @@ export function LineasTabla({
                       aria-label={`Peso unitario de la línea ${i + 1}`}
                       type="number" min="0" step="any"
                       value={l.pesoUnitKg}
-                      onChange={e => onCambiar(l.clave, { pesoUnitKg: e.target.value })}
+                      onChange={e => onCambiarPeso(l.clave, e.target.value)}
                       className="h-10 text-sm"
                     />
                     {!soloLectura && onAbrirCalculadora && (
@@ -236,7 +238,7 @@ export function LineasTabla({
                         aria-label={`Peso unitario de la línea ${i + 1}`}
                         type="number" min="0" step="any"
                         value={l.pesoUnitKg}
-                        onChange={e => onCambiar(l.clave, { pesoUnitKg: e.target.value })}
+                        onChange={e => onCambiarPeso(l.clave, e.target.value)}
                         className={CELDA}
                       />
                       {!soloLectura && onAbrirCalculadora && (

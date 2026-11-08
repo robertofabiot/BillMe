@@ -1,6 +1,6 @@
 import { useState, useEffect, type ChangeEvent } from 'react'
 import { createPortal } from 'react-dom'
-import type { Cliente } from '@/types'
+import type { Cliente, MonedaTarifa } from '@/types'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { User, X } from 'lucide-react'
@@ -17,7 +17,8 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
   const [telefono,          setTelefono]          = useState('')
   const [detalles,          setDetalles]          = useState('')
   const [descuentoPct,      setDescuentoPct]      = useState('')
-  const [tarifaKgUsd,       setTarifaKgUsd]       = useState('')
+  const [tarifaKg,          setTarifaKg]          = useState('')
+  const [tarifaMoneda,      setTarifaMoneda]      = useState<MonedaTarifa>('USD')
   const [saldoInicial,      setSaldoInicial]      = useState('')
   const [fechaInicioCuenta, setFechaInicioCuenta] = useState('')
   const [error,             setError]             = useState<string | null>(null)
@@ -29,7 +30,8 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
       setTelefono(initial?.telefono ?? '')
       setDetalles(initial?.detalles ?? '')
       setDescuentoPct(initial?.descuentoPct != null ? String(initial.descuentoPct) : '0')
-      setTarifaKgUsd(initial?.tarifaKgUsd != null ? String(initial.tarifaKgUsd) : '')
+      setTarifaKg(initial?.tarifaKg != null ? String(initial.tarifaKg) : '')
+      setTarifaMoneda(initial?.tarifaMoneda ?? 'USD')
       setSaldoInicial(initial?.saldoInicial != null ? String(initial.saldoInicial) : '0')
       setFechaInicioCuenta(initial?.fechaInicioCuenta ?? '')
       setError(null)
@@ -49,7 +51,7 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
     setGuardando(true)
     setError(null)
     const descVal = parseFloat(descuentoPct)
-    const tarifaVal = parseFloat(tarifaKgUsd)
+    const tarifaVal = parseFloat(tarifaKg)
     const saldoVal = parseFloat(saldoInicial)
     try {
       await onSave({
@@ -58,7 +60,8 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
         telefono: telefono.trim() || undefined,
         detalles: detalles.trim() || undefined,
         descuentoPct: !isNaN(descVal) ? descVal : 0,
-        tarifaKgUsd: !isNaN(tarifaVal) && tarifaVal > 0 ? tarifaVal : null,
+        tarifaKg: !isNaN(tarifaVal) && tarifaVal > 0 ? tarifaVal : null,
+        tarifaMoneda,
         saldoInicial: !isNaN(saldoVal) ? saldoVal : 0,
         fechaInicioCuenta: fechaInicioCuenta ? fechaInicioCuenta : null,
       })
@@ -134,16 +137,29 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-[#705D56]">Tarifa por kg para placas y platinas (USD, sin IVA)</label>
-            <Input
-              type="number"
-              step="0.0001"
-              min="0"
-              value={tarifaKgUsd}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setTarifaKgUsd(e.target.value)}
-              placeholder="Opcional"
-            />
-            <span className="text-sm text-[#80727B]">Si lo dejas vacío se usa la de Configuración</span>
+            <label className="text-sm font-medium text-[#705D56]">Tarifa por kg para placas y platinas (sin IVA)</label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                step="0.0001"
+                min="0"
+                value={tarifaKg}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setTarifaKg(e.target.value)}
+                placeholder="Opcional"
+                className="flex-1"
+              />
+              <select
+                value={tarifaMoneda}
+                onChange={e => setTarifaMoneda(e.target.value as MonedaTarifa)}
+                className="h-9 rounded border border-[#E5E7EB] bg-white px-2.5 text-sm text-[#022F40] outline-none focus:border-[#022F40]"
+              >
+                <option value="USD">USD</option>
+                <option value="NIO">C$</option>
+              </select>
+            </div>
+            <span className="text-sm text-[#80727B]">
+              Si lo dejas vacío se usa la de Configuración. En USD se convierte con el tipo de cambio configurado. Al facturar puedes usar otra tarifa sin cambiar esta.
+            </span>
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-[#705D56]">Saldo inicial (C$)</label>

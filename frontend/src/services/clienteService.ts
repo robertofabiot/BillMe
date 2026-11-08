@@ -1,12 +1,13 @@
 import { api } from './api'
-import type { Cliente, CuentaCliente } from '@/types'
+import type { Cliente, CuentaCliente, MonedaTarifa } from '@/types'
 
 export interface ClientePayload {
   nombre: string
   telefono?: string
   detalles?: string
   descuentoPct?: number
-  tarifaKgUsd?: number | null
+  tarifaKg?: number | null
+  tarifaMoneda?: MonedaTarifa
   saldoInicial?: number
   fechaInicioCuenta?: string | null
 }

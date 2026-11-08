@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import type { Cliente, Documento, MetodoPrecio, Producto, Proyecto, TipoDocumento } from '@/types'
+import type { Cliente, ConfiguracionSistema, Documento, MetodoPrecio, Producto, Proyecto, TipoDocumento } from '@/types'
 import { clienteService } from '@/services/clienteService'
 import { configuracionService } from '@/services/configuracionService'
 import { documentoService, type DocumentoPayload } from '@/services/documentoService'
@@ -12,7 +12,7 @@ import { DocumentoPlantilla } from '@/components/export/DocumentoPlantilla'
 import { nombreArchivo } from '@/lib/exportar'
 import { EstadoDocumentoBadge } from '@/components/documentos/EstadoDocumentoBadge'
 import { LineasTabla } from '@/components/documentos/LineasTabla'
-import { calcularLinea, r2, type LineaForm } from '@/components/documentos/lineaForm'
+import { calcularLinea, r2, recalcularPrecioPorPeso, type LineaForm } from '@/components/documentos/lineaForm'
 import { ProductoBuscador } from '@/components/documentos/ProductoBuscador'
 import { RevisionesDialog } from '@/components/documentos/RevisionesDialog'
 import { PrecioLineaDialog } from '@/components/documentos/PrecioLineaDialog'
@@ -136,6 +136,7 @@ export function DocumentoEditorPage() {
   const [viendoCambios, setViendoCambios] = useState(false)
   const [registrandoCompra, setRegistrandoCompra] = useState(false)
   const [tipoCambioConfig, setTipoCambioConfig] = useState<number | null>(null)
+  const [config, setConfig] = useState<ConfiguracionSistema | null>(null)
   const [lineaParaPrecio, setLineaParaPrecio] = useState<string | null>(null)
   const [lineaParaCalculadora, setLineaParaCalculadora] = useState<string | null>(null)
   const [modoCalculadoraSoloPeso, setModoCalculadoraSoloPeso] = useState(false)
@@ -166,7 +167,10 @@ export function DocumentoEditorPage() {
 
   useEffect(() => {
     clienteService.listar().then(setClientes).catch(console.error)
-    configuracionService.obtener().then(c => setTipoCambioConfig(c.tipoCambio)).catch(console.error)
+    configuracionService.obtener().then(c => {
+      setConfig(c)
+      setTipoCambioConfig(c.tipoCambio)
+    }).catch(console.error)
   }, [])
 
   useEffect(() => {
@@ -331,6 +335,14 @@ export function DocumentoEditorPage() {
 
   const cambiarLinea = (clave: string, cambios: Partial<LineaForm>) =>
     setForm(f => ({ ...f, lineas: f.lineas.map(l => (l.clave === clave ? { ...l, ...cambios } : l)) }))
+
+  const cambiarPeso = (clave: string, pesoUnitKg: string) => {
+    const linea = form.lineas.find(l => l.clave === clave)
+    const precio = linea && tipoCambio && config
+      ? recalcularPrecioPorPeso(linea.metodoPrecio, linea.parametros, pesoUnitKg, tipoCambio, config.ivaPct)
+      : null
+    cambiarLinea(clave, precio ? { pesoUnitKg, precioUnit: precio } : { pesoUnitKg })
+  }
 
   const quitarLinea = (clave: string) =>
     setForm(f => ({ ...f, lineas: f.lineas.filter(l => l.clave !== clave) }))
@@ -665,6 +677,7 @@ export function DocumentoEditorPage() {
             soloLectura={soloLectura}
             claveNueva={claveNueva}
             onCambiar={cambiarLinea}
+            onCambiarPeso={cambiarPeso}
             onQuitar={quitarLinea}
             onAbrirPrecio={clave => setLineaParaPrecio(clave)}
             onAbrirCalculadora={clave => {
@@ -779,6 +792,8 @@ export function DocumentoEditorPage() {
           onOpenChange={setRegistrandoCompra}
           documentoId={documento.id}
           lineas={documento.lineas}
+          tipoCambio={tipoCambio ?? 0}
+          ivaPct={config?.ivaPct ?? 15}
           onCompraRegistrada={() => void alRegistrarCompra()}
         />
       )}
@@ -788,6 +803,7 @@ export function DocumentoEditorPage() {
         onOpenChange={v => { if (!v) setLineaParaPrecio(null) }}
         clienteId={form.clienteId}
         linea={lineaActivaPrecio}
+        tipoCambio={tipoCambio}
         onAplicar={(precioUnit, metodoPrecio, parametros) => {
           if (lineaParaPrecio) {
             cambiarLinea(lineaParaPrecio, { precioUnit, metodoPrecio, parametros })
@@ -806,8 +822,12 @@ export function DocumentoEditorPage() {
         clienteId={form.clienteId}
         linea={lineaActivaCalculadora}
         soloPeso={modoCalculadoraSoloPeso}
+        tipoCambio={tipoCambio}
         onAplicar={datos => {
           if (lineaParaCalculadora) {
+            if (!datos.precioUnit) {
+              cambiarPeso(lineaParaCalculadora, datos.pesoUnitKg)
+            }
             const cambios: Partial<LineaForm> = { pesoUnitKg: datos.pesoUnitKg }
             if (datos.descripcion) cambios.descripcion = datos.descripcion
             if (datos.precioUnit) cambios.precioUnit = datos.precioUnit

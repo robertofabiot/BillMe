@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import type { LineaDocumento, Proveedor, CompraRequest } from '@/types'
+import type { LineaDocumento, MetodoPrecio, Proveedor, CompraRequest } from '@/types'
 import { proveedorService } from '@/services/proveedorService'
 import { compraService } from '@/services/compraService'
 import { precioListaService } from '@/services/precioListaService'
-import { hoyIso } from '@/lib/format'
+import { formatCurrency, hoyIso } from '@/lib/format'
+import { recalcularPrecioPorPeso } from './lineaForm'
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,8 @@ interface Props {
   onOpenChange: (open: boolean) => void
   documentoId: string
   lineas: LineaDocumento[]
+  tipoCambio: number
+  ivaPct: number
   onCompraRegistrada: () => void
 }
 
@@ -34,6 +37,9 @@ interface LineaCompraItem {
   precioSinIva: string
   descuentoPct: string
   pesoUnitKg: string
+  metodoPrecio: MetodoPrecio
+  parametros?: string | null
+  precioUnit: number
 }
 
 const SELECT =
@@ -44,6 +50,8 @@ export function RegistrarCompraDialog({
   onOpenChange,
   documentoId,
   lineas,
+  tipoCambio,
+  ivaPct,
   onCompraRegistrada,
 }: Props) {
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
@@ -79,6 +87,9 @@ export function RegistrarCompraDialog({
       precioSinIva: '',
       descuentoPct: '',
       pesoUnitKg: '',
+      metodoPrecio: l.metodoPrecio,
+      parametros: l.parametros,
+      precioUnit: l.precioUnit,
     }))
     setLineasCompra(items)
 
@@ -397,6 +408,16 @@ export function RegistrarCompraDialog({
                         }
                         className="w-28 text-right text-sm ml-auto font-mono"
                       />
+                      {(() => {
+                        if (!l.incluida || l.metodoPrecio !== 'POR_PESO' || !l.pesoUnitKg.trim()) return null
+                        const nuevo = recalcularPrecioPorPeso(l.metodoPrecio, l.parametros, l.pesoUnitKg, tipoCambio, ivaPct)
+                        if (!nuevo) return null
+                        return (
+                          <p className="text-xs text-[#705D56] mt-1 text-right">
+                            El precio unitario cambiará de {formatCurrency(l.precioUnit)} a {formatCurrency(Number(nuevo))}.
+                          </p>
+                        )
+                      })()}
                     </td>
                   </tr>
                 ))}
