@@ -30,7 +30,7 @@ Ambos comandos deben pasar. `./mvnw` necesita `JAVA_HOME` apuntando a un JDK 21.
 |---|---|---|---|---|
 | C1 | `fix/bloqueantes-pre-deploy` | Fallos que bloquean el deploy | — | Hecho |
 | C2 | `feat/historial-y-total-usd` | Historial inmutable y total en dólares | V9 | Hecho |
-| C3 | `feat/historico-de-precios` | Histórico de precios, conversión y anulación | V10 | Pendiente |
+| C3 | `feat/historico-de-precios` | Histórico de precios, conversión y anulación | V10 | Hecho |
 | C4 | `feat/tarifa-por-cliente` | Tarifa por cliente y precio por peso | V11 | Pendiente |
 | C5 | `fix/interfaz-pre-deploy` | Legibilidad, barra fija, consolidados y PDF | — | Pendiente |
 | C6 | `fix/logica-menor` | Búsqueda, orden, cambio de cliente y mensajes | — | Pendiente |
