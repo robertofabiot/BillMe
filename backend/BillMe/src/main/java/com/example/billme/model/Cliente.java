@@ -1,5 +1,6 @@
 package com.example.billme.model;
 
+import com.example.billme.enums.MonedaTarifa;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -37,8 +38,13 @@ public class Cliente extends BaseEntity {
     @Builder.Default
     private BigDecimal descuentoPct = BigDecimal.ZERO;
 
-    @Column(name = "tarifa_kg_usd", precision = 8, scale = 4)
-    private BigDecimal tarifaKgUsd;
+    @Column(name = "tarifa_kg", precision = 8, scale = 4)
+    private BigDecimal tarifaKg;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tarifa_moneda", nullable = false, length = 3)
+    @Builder.Default
+    private MonedaTarifa tarifaMoneda = MonedaTarifa.USD;
 
     @Column(name = "saldo_inicial", nullable = false, precision = 14, scale = 2)
     @Builder.Default

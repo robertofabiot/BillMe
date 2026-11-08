@@ -12,7 +12,8 @@ public record ClienteResponse(
         String detalles,
         Instant createdAt,
         BigDecimal descuentoPct,
-        BigDecimal tarifaKgUsd,
+        BigDecimal tarifaKg,
+        String tarifaMoneda,
         BigDecimal saldoInicial,
         LocalDate fechaInicioCuenta,
         BigDecimal saldo

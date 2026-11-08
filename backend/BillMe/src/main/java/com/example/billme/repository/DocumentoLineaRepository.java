@@ -26,12 +26,6 @@ public interface DocumentoLineaRepository extends JpaRepository<DocumentoLinea, 
     List<DocumentoLinea> ultimosPrecios(@Param("productoId") UUID productoId, @Param("clienteId") UUID clienteId,
                                         @Param("descripcionNorm") String descripcionNorm, Pageable pagina);
 
-    @Query("SELECT l FROM DocumentoLinea l JOIN l.documento d " +
-           "WHERE d.cliente.id = :clienteId AND l.metodoPrecio = com.example.billme.enums.MetodoPrecio.POR_PESO " +
-           "AND d.estado <> com.example.billme.enums.EstadoDocumento.ANULADA " +
-           "ORDER BY d.fecha DESC, d.createdAt DESC")
-    List<DocumentoLinea> ultimasPorPeso(@Param("clienteId") UUID clienteId, Pageable pagina);
-
     @Query(value = """
             select l.* from documento_lineas l join documentos d on d.id = l.documento_id
             where d.estado <> 'ANULADA'

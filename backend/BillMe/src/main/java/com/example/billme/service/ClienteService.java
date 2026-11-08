@@ -2,6 +2,7 @@ package com.example.billme.service;
 
 import com.example.billme.dto.ClienteRequest;
 import com.example.billme.dto.ClienteResponse;
+import com.example.billme.enums.MonedaTarifa;
 import com.example.billme.model.Cliente;
 import com.example.billme.repository.AbonoRepository;
 import com.example.billme.repository.ClienteRepository;
@@ -57,7 +58,8 @@ public class ClienteService {
         cliente.setTelefono(request.telefono());
         cliente.setDetalles(request.detalles());
         cliente.setDescuentoPct(request.descuentoPct() != null ? request.descuentoPct() : BigDecimal.ZERO);
-        cliente.setTarifaKgUsd(request.tarifaKgUsd());
+        cliente.setTarifaKg(request.tarifaKg());
+        cliente.setTarifaMoneda(request.tarifaMoneda() != null ? request.tarifaMoneda() : MonedaTarifa.USD);
         cliente.setSaldoInicial(request.saldoInicial() != null ? request.saldoInicial() : BigDecimal.ZERO);
         cliente.setFechaInicioCuenta(request.fechaInicioCuenta());
         cliente = clienteRepository.save(cliente);
@@ -77,7 +79,8 @@ public class ClienteService {
         cliente.setTelefono(request.telefono());
         cliente.setDetalles(request.detalles());
         cliente.setDescuentoPct(request.descuentoPct() != null ? request.descuentoPct() : BigDecimal.ZERO);
-        cliente.setTarifaKgUsd(request.tarifaKgUsd());
+        cliente.setTarifaKg(request.tarifaKg());
+        cliente.setTarifaMoneda(request.tarifaMoneda() != null ? request.tarifaMoneda() : MonedaTarifa.USD);
         cliente.setSaldoInicial(request.saldoInicial() != null ? request.saldoInicial() : BigDecimal.ZERO);
         cliente.setFechaInicioCuenta(request.fechaInicioCuenta());
         cliente = clienteRepository.save(cliente);
@@ -106,7 +109,8 @@ public class ClienteService {
                 entity.getDetalles(),
                 entity.getCreatedAt(),
                 entity.getDescuentoPct(),
-                entity.getTarifaKgUsd(),
+                entity.getTarifaKg(),
+                entity.getTarifaMoneda() != null ? entity.getTarifaMoneda().name() : null,
                 entity.getSaldoInicial(),
                 entity.getFechaInicioCuenta(),
                 saldo

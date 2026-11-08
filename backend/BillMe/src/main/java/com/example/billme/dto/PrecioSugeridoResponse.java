@@ -14,6 +14,7 @@ public record PrecioSugeridoResponse(
         BigDecimal precioLista,
         BigDecimal descuentoPct,
         BigDecimal precioFormula,
-        BigDecimal tarifaKgUsd,
+        BigDecimal tarifaKg,
+        String monedaTarifa,
         String origenTarifa
 ) {}

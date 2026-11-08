@@ -6,6 +6,7 @@ import com.example.billme.dto.CompraResponse;
 import com.example.billme.dto.PrecioListaRequest;
 import com.example.billme.enums.EstadoDocumento;
 import com.example.billme.enums.FuentePrecio;
+import com.example.billme.enums.MetodoPrecio;
 import com.example.billme.enums.TipoDocumento;
 import com.example.billme.model.Compra;
 import com.example.billme.model.Documento;
@@ -39,6 +40,7 @@ public class CompraService {
     private final ConfiguracionService configuracionService;
     private final PrecioListaService precioListaService;
     private final DocumentoService documentoService;
+    private final PrecioPorPesoService precioPorPesoService;
 
     @Transactional
     public CompraResponse registrar(UUID documentoId, CompraRequest request) {
@@ -77,7 +79,15 @@ public class CompraService {
             linea.setCostoUnitConIva(CalculoDocumento.r2(reqLine.precioSinIva().multiply(configuracionService.factorIva())));
 
             if (reqLine.pesoUnitKg() != null) {
-                CalculoDocumento.LineaCalculada calc = CalculoDocumento.linea(linea.getCantidad(), linea.getPrecioUnit(), reqLine.pesoUnitKg());
+                BigDecimal precio = linea.getPrecioUnit();
+                if (linea.getMetodoPrecio() == MetodoPrecio.POR_PESO) {
+                    precio = precioPorPesoService
+                            .recalcular(linea.getParametros(), reqLine.pesoUnitKg(), documento.getTipoCambio())
+                            .orElse(precio);
+                }
+                CalculoDocumento.LineaCalculada calc = CalculoDocumento.linea(linea.getCantidad(), precio, reqLine.pesoUnitKg());
+                linea.setPrecioUnit(calc.precioUnit());
+                linea.setTotal(calc.total());
                 linea.setPesoUnitKg(calc.pesoUnitKg());
                 linea.setPesoTotalKg(calc.pesoTotalKg());
             }
@@ -96,6 +106,12 @@ public class CompraService {
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         documento.setTotalKg(CalculoDocumento.r2(totalKg));
+
+        BigDecimal totalDoc = documento.getLineas().stream()
+                .map(DocumentoLinea::getTotal)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        documento.setTotal(CalculoDocumento.r2(totalDoc));
 
         documentoService.registrarRevision(documento, copiaAnterior, "Compra registrada");
 
