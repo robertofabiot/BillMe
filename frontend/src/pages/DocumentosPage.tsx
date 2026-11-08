@@ -8,12 +8,18 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { FileText, Plus, ReceiptText, Search } from 'lucide-react'
 
-const TEXTOS = {
+const TEXTOS: Record<Exclude<TipoDocumento, 'HISTORICO'>, {
+  titulo: string
+  subtitulo: string
+  nuevo: string
+  vacio: string
+  icono: typeof FileText
+}> = {
   COTIZACION: { titulo: 'Cotizaciones', subtitulo: 'Precios que se le dan a un cliente antes de la venta', nuevo: 'Nueva cotización', vacio: 'Todavía no hay cotizaciones.', icono: FileText },
   FACTURA: { titulo: 'Facturas', subtitulo: 'Ventas confirmadas', nuevo: 'Nueva factura', vacio: 'Todavía no hay facturas.', icono: ReceiptText },
 }
 
-const ESTADOS: Record<TipoDocumento, { valor: EstadoDocumento; texto: string }[]> = {
+const ESTADOS: Record<Exclude<TipoDocumento, 'HISTORICO'>, { valor: EstadoDocumento; texto: string }[]> = {
   COTIZACION: [
     { valor: 'PENDIENTE', texto: 'Pendientes' },
     { valor: 'ACEPTADA', texto: 'Aceptadas' },
@@ -26,7 +32,7 @@ const ESTADOS: Record<TipoDocumento, { valor: EstadoDocumento; texto: string }[]
 }
 
 /** Lista de cotizaciones o de facturas. Al hacer clic en una fila se abre el documento. */
-export function DocumentosPage({ tipo }: { tipo: TipoDocumento }) {
+export function DocumentosPage({ tipo }: { tipo: Exclude<TipoDocumento, 'HISTORICO'> }) {
   const textos = TEXTOS[tipo]
   const navigate = useNavigate()
   const [documentos, setDocumentos] = useState<Documento[]>([])

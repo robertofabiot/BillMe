@@ -86,14 +86,12 @@ export function ImportarCotizacionesPanel() {
     <div className="bg-white border border-[#E5E7EB] rounded shadow-sm flex flex-col overflow-hidden">
       <div className="px-6 py-4 border-b border-[#E5E7EB] bg-[#F9FAFB] flex items-center gap-2">
         <FileSpreadsheet className="w-4 h-4 text-[#022F40]" />
-        <h2 className="text-sm font-semibold text-[#022F40]">Cotizaciones y facturas históricas</h2>
+        <h2 className="text-sm font-semibold text-[#022F40]">Histórico de precios</h2>
       </div>
 
       <div className="p-6 flex flex-col gap-5">
         <p className="text-sm text-[#705D56]">
-          Sube el Excel con el historial de cotizaciones y facturas. Primero se muestra qué se va a
-          importar; nada se guarda hasta que presiones "Importar". Puedes subir el mismo archivo otra
-          vez sin que se duplique nada.
+          Sube el Excel con el historial de precios. Primero se muestra qué se va a importar; nada se guarda hasta que presiones "Importar". Puedes subir el mismo archivo otra vez sin que se duplique nada. Estos registros no aparecen en Facturas ni cuentan en saldos o reportes: solo sirven de referencia de precios. Para usar uno como venta, ábrelo desde Precios y conviértelo en factura activa.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -144,7 +142,7 @@ export function ImportarCotizacionesPanel() {
           <div className="flex flex-col gap-4">
             {resumen.aplicada && (
               <p className="text-sm text-[#558564] flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-[#558564]" /> Cotizaciones importadas.
+                <CheckCircle2 className="w-4 h-4 text-[#558564]" /> Histórico importado.
               </p>
             )}
 
@@ -165,14 +163,14 @@ export function ImportarCotizacionesPanel() {
               <Cifra etiqueta="Filas leídas" valor={resumen.filasLeidas} />
               <Cifra etiqueta="Filas nuevas" valor={resumen.filasNuevas} destacar />
               <Cifra etiqueta="Ya importadas" valor={resumen.filasYaImportadas} />
-              <Cifra etiqueta="Facturas nuevas" valor={resumen.facturasNuevas} destacar />
+              <Cifra etiqueta="Registros nuevos" valor={resumen.registrosNuevos} destacar />
             </div>
 
-            {resumen.facturasConLineasNuevas > 0 && (
+            {resumen.registrosConLineasNuevas > 0 && (
               <p className="text-sm text-[#705D56]">
-                {resumen.facturasConLineasNuevas === 1
-                  ? '1 factura existente recibirá líneas nuevas.'
-                  : `${resumen.facturasConLineasNuevas} facturas existentes recibirán líneas nuevas.`}
+                {resumen.registrosConLineasNuevas === 1
+                  ? '1 registro existente recibirá líneas nuevas.'
+                  : `${resumen.registrosConLineasNuevas} registros existentes recibirán líneas nuevas.`}
               </p>
             )}
 

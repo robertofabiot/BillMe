@@ -69,6 +69,12 @@ export const documentoService = {
   anular: (id: string) =>
     api.post<Documento>(`/documentos/${id}/anular`, {}),
 
+  convertirHistorico: (id: string) =>
+    api.post<Documento>('/documentos/' + id + '/convertir-historico', {}),
+
+  reactivar: (id: string) =>
+    api.post<Documento>('/documentos/' + id + '/reactivar', {}),
+
   revisiones: (id: string) =>
     api.get<RevisionDocumento[]>(`/documentos/${id}/revisiones`),
 
