@@ -76,7 +76,7 @@ export function ProyectoModal({ open, onOpenChange, initial, onSave, defaultClie
               {isEdit ? 'Editar proyecto' : 'Nuevo proyecto'}
             </h2>
           </div>
-          <button onClick={() => onOpenChange(false)} className="w-7 h-7 flex items-center justify-center rounded hover:bg-[#F9FAFB] text-[#80727B] transition-colors">
+          <button onClick={() => onOpenChange(false)} className="w-11 h-11 flex items-center justify-center rounded hover:bg-[#F9FAFB] text-[#80727B] transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -102,7 +102,7 @@ export function ProyectoModal({ open, onOpenChange, initial, onSave, defaultClie
               value={clienteId}
               onChange={e => setClienteId(e.target.value)}
               disabled={isEdit}
-              className="w-full rounded border border-[#E5E7EB] bg-white px-3 py-1 text-sm text-[#022F40] outline-none focus:border-[#022F40] focus:ring-2 focus:ring-[#022F40]/10 transition-all disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+              className="w-full h-11 rounded border border-[#E5E7EB] bg-white px-3 text-base text-[#022F40] outline-none focus:border-[#022F40] focus:ring-2 focus:ring-[#022F40]/10 transition-all disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
             >
               <option value="" disabled>Selecciona un cliente</option>
               {clientes.map(c => (
@@ -120,7 +120,7 @@ export function ProyectoModal({ open, onOpenChange, initial, onSave, defaultClie
               <select
                 value={estado}
                 onChange={e => setEstado(e.target.value as Proyecto['estado'])}
-                className="w-full rounded border border-[#E5E7EB] bg-white px-3 py-1 text-sm text-[#022F40] outline-none focus:border-[#022F40] focus:ring-2 focus:ring-[#022F40]/10 transition-all"
+                className="w-full h-11 rounded border border-[#E5E7EB] bg-white px-3 text-base text-[#022F40] outline-none focus:border-[#022F40] focus:ring-2 focus:ring-[#022F40]/10 transition-all"
               >
                 <option value="ACTIVO">Activo</option>
                 <option value="FINALIZADO">Finalizado</option>
@@ -131,9 +131,9 @@ export function ProyectoModal({ open, onOpenChange, initial, onSave, defaultClie
 
         {/* Footer */}
         <div className="flex items-center justify-end px-5 py-4 border-t border-[#E5E7EB] bg-[#F9FAFB] shrink-0 gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded border-[#E5E7EB] text-sm">Cancelar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded border-[#E5E7EB]">Cancelar</Button>
           <Button onClick={handleSave} disabled={guardando || !nombre.trim() || !clienteId}
-            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-1">
+            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white gap-1">
             <Plus className="w-3.5 h-3.5" />
             {isEdit ? 'Guardar cambios' : 'Crear proyecto'}
           </Button>

@@ -280,12 +280,12 @@ export function CalculadoraPesoDialog({
                   value={anchoTexto}
                   onChange={e => setAnchoTexto(e.target.value)}
                   placeholder="Ej. 10 o 1 1/2"
-                  className="text-sm flex-1"
+                  className="flex-1"
                 />
                 <select
                   value={anchoUnidad}
                   onChange={e => setAnchoUnidad(e.target.value as UnidadLongitud)}
-                  className="rounded border border-[#E5E7EB] bg-white px-2 text-sm text-[#022F40] outline-none"
+                  className="h-11 rounded border border-[#E5E7EB] bg-white px-2 text-base text-[#022F40] outline-none"
                 >
                   {UNIDADES.map(u => (
                     <option key={u.valor} value={u.valor}>{u.etiqueta}</option>
@@ -303,12 +303,12 @@ export function CalculadoraPesoDialog({
                     value={ala2Texto}
                     onChange={e => setAla2Texto(e.target.value)}
                     placeholder="Ej. 2 o 1/4"
-                    className="text-sm flex-1"
+                    className="flex-1"
                   />
                   <select
                     value={ala2Unidad}
                     onChange={e => setAla2Unidad(e.target.value as UnidadLongitud)}
-                    className="rounded border border-[#E5E7EB] bg-white px-2 text-sm text-[#022F40] outline-none"
+                    className="h-11 rounded border border-[#E5E7EB] bg-white px-2 text-base text-[#022F40] outline-none"
                   >
                     {UNIDADES.map(u => (
                       <option key={u.valor} value={u.valor}>{u.etiqueta}</option>
@@ -326,12 +326,12 @@ export function CalculadoraPesoDialog({
                   value={espesorTexto}
                   onChange={e => setEspesorTexto(e.target.value)}
                   placeholder="Ej. 1/4 o 3/16"
-                  className="text-sm flex-1"
+                  className="flex-1"
                 />
                 <select
                   value={espesorUnidad}
                   onChange={e => setEspesorUnidad(e.target.value as UnidadLongitud)}
-                  className="rounded border border-[#E5E7EB] bg-white px-2 text-sm text-[#022F40] outline-none"
+                  className="h-11 rounded border border-[#E5E7EB] bg-white px-2 text-base text-[#022F40] outline-none"
                 >
                   {UNIDADES.map(u => (
                     <option key={u.valor} value={u.valor}>{u.etiqueta}</option>
@@ -348,12 +348,12 @@ export function CalculadoraPesoDialog({
                   value={largoTexto}
                   onChange={e => setLargoTexto(e.target.value)}
                   placeholder={forma === 'PLACA' ? 'Ej. 8' : 'Ej. 3.05 o 6'}
-                  className="text-sm flex-1"
+                  className="flex-1"
                 />
                 <select
                   value={largoUnidad}
                   onChange={e => setLargoUnidad(e.target.value as UnidadLongitud)}
-                  className="rounded border border-[#E5E7EB] bg-white px-2 text-sm text-[#022F40] outline-none"
+                  className="h-11 rounded border border-[#E5E7EB] bg-white px-2 text-base text-[#022F40] outline-none"
                 >
                   {UNIDADES.map(u => (
                     <option key={u.valor} value={u.valor}>{u.etiqueta}</option>
@@ -377,13 +377,13 @@ export function CalculadoraPesoDialog({
                 value={tarifa}
                 onChange={e => setTarifa(e.target.value)}
                 placeholder="Ej. 1.80"
-                className="text-sm max-w-xs"
+                className="max-w-xs"
               />
               <div className="flex items-center gap-2">
                 <select
                   value={moneda}
                   onChange={e => setMoneda(e.target.value as MonedaTarifa)}
-                  className="h-8 rounded border border-[#E5E7EB] bg-white px-2 text-sm text-[#022F40] outline-none focus:border-[#022F40]"
+                  className="h-11 rounded border border-[#E5E7EB] bg-white px-2 text-base text-[#022F40] outline-none focus:border-[#022F40]"
                 >
                   <option value="USD">USD</option>
                   <option value="NIO">C$</option>
@@ -432,7 +432,6 @@ export function CalculadoraPesoDialog({
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="text-sm"
           >
             Cancelar
           </Button>
@@ -440,7 +439,7 @@ export function CalculadoraPesoDialog({
             type="button"
             onClick={handleUsar}
             disabled={!puedeUsar}
-            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm"
+            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white"
           >
             Usar
           </Button>

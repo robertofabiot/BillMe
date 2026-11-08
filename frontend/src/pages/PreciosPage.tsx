@@ -77,14 +77,14 @@ export function PreciosPage() {
             value={texto}
             onChange={e => setTexto(e.target.value)}
             placeholder="Buscar por descripción del producto..."
-            className="pl-9 bg-[#F9FAFB] border-[#E5E7EB] text-sm"
+            className="pl-9 bg-[#F9FAFB] border-[#E5E7EB]"
           />
         </div>
         <div className="w-full sm:w-64">
           <select
             value={clienteId}
             onChange={e => setClienteId(e.target.value)}
-            className="w-full h-9 rounded-md border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-1 text-sm text-[#022F40] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#022F40]"
+            className="w-full h-11 rounded-md border border-[#E5E7EB] bg-[#F9FAFB] px-3 text-base text-[#022F40] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#022F40]"
           >
             <option value="">Todos los clientes</option>
             {clientes.map(c => (

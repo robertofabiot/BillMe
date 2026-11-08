@@ -10,6 +10,7 @@ import { ExportarDialog } from '@/components/export/ExportarDialog'
 import { ConsolidadoPlantilla } from '@/components/export/ConsolidadoPlantilla'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { useAvisoSalir, SALIR_SIN_GUARDAR } from '@/hooks/useAvisoSalir'
 import {
   ArrowLeft,
   Save,
@@ -48,6 +49,8 @@ export function ConsolidadoEditorPage() {
   const [error, setError] = useState<string | null>(null)
   const [cambiosSinGuardar, setCambiosSinGuardar] = useState(false)
 
+  useAvisoSalir(cambiosSinGuardar)
+
   const isGuardado = !!consolidado?.id
 
   // Carga inicial de clientes
@@ -80,7 +83,9 @@ export function ConsolidadoEditorPage() {
 
       const inicialesNombres: Record<string, string> = {}
       data.grupos.forEach(g => {
-        inicialesNombres[g.fechaEntrega] = g.nombre
+        if (g.editado) {
+          inicialesNombres[g.fechaEntrega] = g.nombre
+        }
       })
       setNombresGrupos(inicialesNombres)
       setCambiosSinGuardar(false)
@@ -191,6 +196,13 @@ export function ConsolidadoEditorPage() {
       if (isGuardado && consolidado?.id) {
         const actualizado = await consolidadoService.actualizar(consolidado.id, payload)
         setConsolidado(actualizado)
+        const inicialesNombres: Record<string, string> = {}
+        actualizado.grupos.forEach(g => {
+          if (g.editado) {
+            inicialesNombres[g.fechaEntrega] = g.nombre
+          }
+        })
+        setNombresGrupos(inicialesNombres)
         setCambiosSinGuardar(false)
       } else {
         const nuevo = await consolidadoService.crear(payload)
@@ -205,7 +217,7 @@ export function ConsolidadoEditorPage() {
   }
 
   const volver = () => {
-    if (!cambiosSinGuardar || window.confirm('Hay cambios sin guardar. ¿Deseas salir de todas formas?')) {
+    if (!cambiosSinGuardar || window.confirm(SALIR_SIN_GUARDAR)) {
       navigate('/consolidados')
     }
   }
@@ -216,23 +228,25 @@ export function ConsolidadoEditorPage() {
       <div className="flex items-center justify-between">
         <button
           onClick={volver}
-          className="inline-flex items-center gap-1.5 text-sm text-[#705D56] hover:text-[#022F40] transition-colors"
+          className="inline-flex items-center min-h-11 gap-1.5 text-sm text-[#705D56] hover:text-[#022F40] transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Volver a Consolidados
         </button>
 
         {isGuardado && (
           <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setExportando(true)}
-              className="rounded border-[#E5E7EB] text-sm h-9 gap-1.5"
-            >
-              <FileDown className="w-4 h-4 text-[#022F40]" />
-              Exportar
-            </Button>
+            <span title={cambiosSinGuardar ? 'Guarda primero los cambios' : undefined}>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={cambiosSinGuardar}
+                onClick={() => setExportando(true)}
+                className="rounded border-[#E5E7EB] gap-1.5"
+              >
+                <FileDown className="w-4 h-4 text-[#022F40]" />
+                Exportar
+              </Button>
+            </span>
           </div>
         )}
       </div>
@@ -260,10 +274,13 @@ export function ConsolidadoEditorPage() {
               onChange={e => {
                 setClienteId(e.target.value)
                 setProyectoId('')
+                setConsolidado(null)
+                setNombreConsolidado('')
+                setNombresGrupos({})
                 setCambiosSinGuardar(true)
               }}
               disabled={isGuardado}
-              className="w-full rounded border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#022F40] outline-none focus:border-[#022F40] disabled:bg-[#F9FAFB] disabled:text-[#80727B]"
+              className="w-full h-11 rounded border border-[#E5E7EB] bg-white px-3 text-base text-[#022F40] outline-none focus:border-[#022F40] disabled:bg-[#F9FAFB] disabled:text-[#80727B]"
             >
               <option value="">Selecciona cliente…</option>
               {clientes.map(c => (
@@ -281,10 +298,13 @@ export function ConsolidadoEditorPage() {
               value={proyectoId}
               onChange={e => {
                 setProyectoId(e.target.value)
+                setConsolidado(null)
+                setNombreConsolidado('')
+                setNombresGrupos({})
                 setCambiosSinGuardar(true)
               }}
               disabled={isGuardado}
-              className="w-full rounded border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#022F40] outline-none focus:border-[#022F40] disabled:bg-[#F9FAFB] disabled:text-[#80727B]"
+              className="w-full h-11 rounded border border-[#E5E7EB] bg-white px-3 text-base text-[#022F40] outline-none focus:border-[#022F40] disabled:bg-[#F9FAFB] disabled:text-[#80727B]"
             >
               <option value="">Todos los proyectos</option>
               {proyectos.map(p => (
@@ -303,6 +323,9 @@ export function ConsolidadoEditorPage() {
               value={desde}
               onChange={e => {
                 setDesde(e.target.value)
+                if (!isGuardado) {
+                  setConsolidado(null)
+                }
                 setCambiosSinGuardar(true)
               }}
             />
@@ -316,6 +339,9 @@ export function ConsolidadoEditorPage() {
               value={hasta}
               onChange={e => {
                 setHasta(e.target.value)
+                if (!isGuardado) {
+                  setConsolidado(null)
+                }
                 setCambiosSinGuardar(true)
               }}
             />
@@ -327,7 +353,7 @@ export function ConsolidadoEditorPage() {
             type="button"
             onClick={handleVerConsolidado}
             disabled={cargando || !clienteId}
-            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-1.5"
+            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white gap-1.5"
           >
             <Search className="w-4 h-4" />
             {cargando ? 'Cargando…' : 'Ver consolidado'}
@@ -356,7 +382,7 @@ export function ConsolidadoEditorPage() {
                         value={nombreMostrado}
                         onChange={e => handleNombreGrupoChange(g.fechaEntrega, e.target.value)}
                         placeholder="Nombre del subtotal…"
-                        className="text-sm font-semibold text-[#022F40] bg-white"
+                        className="font-semibold text-[#022F40] bg-white"
                       />
                     </div>
                     <div className="flex items-center gap-4 text-sm font-semibold">
@@ -541,7 +567,7 @@ export function ConsolidadoEditorPage() {
               <Button
                 onClick={handleGuardar}
                 disabled={guardando || !nombreConsolidado.trim()}
-                className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-1.5 w-full sm:w-auto"
+                className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white gap-1.5 w-full sm:w-auto"
               >
                 <Save className="w-4 h-4" />
                 {guardando ? 'Guardando…' : isGuardado ? 'Guardar cambios' : 'Guardar consolidado'}

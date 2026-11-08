@@ -111,6 +111,7 @@ export interface ConsolidadoGrupo {
   lineas: ConsolidadoLinea[]
   subtotal: number
   subtotalKg: number
+  editado: boolean
 }
 
 export interface ConsolidadoAbono {

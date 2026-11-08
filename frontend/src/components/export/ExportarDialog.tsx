@@ -91,7 +91,7 @@ export function ExportarDialog({
       >
         <DialogHeader className="pl-6 pr-12 py-4 border-b border-[#E5E7EB] bg-white shrink-0">
           <DialogTitle className="text-[#022F40] font-semibold text-base">
-            Exportar Documento
+            Exportar
           </DialogTitle>
         </DialogHeader>
 
@@ -110,7 +110,6 @@ export function ExportarDialog({
               onChange={(e) => setEncabezado(e.target.value)}
               disabled={generando}
               placeholder="Encabezado del documento"
-              className="h-9"
             />
           </div>
 
@@ -118,10 +117,9 @@ export function ExportarDialog({
             <Button
               type="button"
               variant="outline"
-              size="sm"
               onClick={handleExportPng}
               disabled={generando}
-              className="h-9 gap-1.5"
+              className="gap-1.5"
             >
               {generando && <Loader2 className="w-4 h-4 animate-spin" />}
               Imagen (PNG)
@@ -129,10 +127,9 @@ export function ExportarDialog({
             <Button
               type="button"
               variant="outline"
-              size="sm"
               onClick={handleExportPdf}
               disabled={generando}
-              className="h-9 gap-1.5"
+              className="gap-1.5"
             >
               {generando && <Loader2 className="w-4 h-4 animate-spin" />}
               PDF
@@ -140,10 +137,9 @@ export function ExportarDialog({
             <Button
               type="button"
               variant="outline"
-              size="sm"
               onClick={handleExportExcel}
               disabled={generando}
-              className="h-9 gap-1.5"
+              className="gap-1.5"
             >
               {generando && <Loader2 className="w-4 h-4 animate-spin" />}
               Excel

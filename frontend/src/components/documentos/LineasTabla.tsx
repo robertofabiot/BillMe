@@ -71,7 +71,7 @@ export function LineasTabla({
                   placeholder={l.productoGenerico ? 'Escribe la descripción…' : undefined}
                   onChange={e => onCambiar(l.clave, { descripcion: e.target.value })}
                   onBlur={() => onBlurDescripcion?.(l.clave)}
-                  className="h-10 text-sm"
+                  className="h-11 text-base"
                 />
                 {!l.productoGenerico && <p className="text-sm text-[#80727B] font-mono mt-1 px-1">{l.productoCodigo}</p>}
               </div>
@@ -85,7 +85,7 @@ export function LineasTabla({
                     autoFocus={l.clave === claveNueva}
                     value={l.cantidad}
                     onChange={e => onCambiar(l.clave, { cantidad: e.target.value })}
-                    className="h-10 text-sm"
+                    className="h-11 text-base"
                   />
                 </div>
 
@@ -97,14 +97,14 @@ export function LineasTabla({
                       type="number" min="0" step="any"
                       value={l.pesoUnitKg}
                       onChange={e => onCambiarPeso(l.clave, e.target.value)}
-                      className="h-10 text-sm"
+                      className="h-11 text-base"
                     />
                     {!soloLectura && onAbrirCalculadora && (
                       <button
                         type="button"
                         aria-label={`Calcular peso de la línea ${i + 1}`}
                         onClick={() => onAbrirCalculadora(l.clave)}
-                        className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#705D56]"
+                        className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#705D56]"
                         title="Calcular peso"
                       >
                         <Calculator className="w-4 h-4" />
@@ -127,14 +127,14 @@ export function LineasTabla({
                       type="number" min="0" step="any"
                       value={l.precioUnit}
                       onChange={e => onCambiar(l.clave, { precioUnit: e.target.value, metodoPrecio: 'MANUAL', parametros: null })}
-                      className="h-10 text-sm"
+                      className="h-11 text-base"
                     />
                     {!soloLectura && onAbrirPrecio && (
                       <button
                         type="button"
                         aria-label={`Elegir precio de la línea ${i + 1}`}
                         onClick={() => onAbrirPrecio(l.clave)}
-                        className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#705D56]"
+                        className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#705D56]"
                         title="Elegir precio"
                       >
                         <Tag className="w-4 h-4" />
@@ -163,7 +163,7 @@ export function LineasTabla({
                       type="date"
                       value={l.fechaEntrega}
                       onChange={e => onCambiar(l.clave, { fechaEntrega: e.target.value })}
-                      className="h-10 text-sm"
+                      className="h-11 text-base"
                     />
                   </div>
                   <div>
@@ -173,7 +173,7 @@ export function LineasTabla({
                       value={l.lugarEntrega}
                       maxLength={200}
                       onChange={e => onCambiar(l.clave, { lugarEntrega: e.target.value })}
-                      className="h-10 text-sm"
+                      className="h-11 text-base"
                     />
                   </div>
                 </div>
@@ -246,7 +246,7 @@ export function LineasTabla({
                           type="button"
                           aria-label={`Calcular peso de la línea ${i + 1}`}
                           onClick={() => onAbrirCalculadora(l.clave)}
-                          className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#705D56]"
+                          className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#705D56]"
                           title="Calcular peso"
                         >
                           <Calculator className="w-3.5 h-3.5" />
@@ -271,7 +271,7 @@ export function LineasTabla({
                           type="button"
                           aria-label={`Elegir precio de la línea ${i + 1}`}
                           onClick={() => onAbrirPrecio(l.clave)}
-                          className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#705D56]"
+                          className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#705D56]"
                           title="Elegir precio"
                         >
                           <Tag className="w-3.5 h-3.5" />
@@ -320,7 +320,7 @@ export function LineasTabla({
                         type="button"
                         aria-label={`Quitar la línea ${i + 1}`}
                         onClick={() => onQuitar(l.clave)}
-                        className="w-8 h-8 flex items-center justify-center rounded text-[#80727B] hover:text-red-600 hover:bg-red-50"
+                        className="w-9 h-9 flex items-center justify-center rounded text-[#80727B] hover:text-red-600 hover:bg-red-50"
                       >
                         <X className="w-4 h-4" />
                       </button>

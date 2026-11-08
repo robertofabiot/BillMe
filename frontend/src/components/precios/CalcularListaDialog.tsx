@@ -110,7 +110,7 @@ export function CalcularListaDialog({ producto, descuentoSugerido, open, onOpenC
               <p className="text-sm text-[#80727B]">{producto.nombrePrincipal}</p>
             </div>
           </div>
-          <button onClick={() => onOpenChange(false)} className="w-7 h-7 flex items-center justify-center rounded hover:bg-[#F9FAFB] text-[#80727B]">
+          <button onClick={() => onOpenChange(false)} className="w-11 h-11 flex items-center justify-center rounded hover:bg-[#F9FAFB] text-[#80727B]">
             <X className="w-4 h-4" />
           </button>
         </div>

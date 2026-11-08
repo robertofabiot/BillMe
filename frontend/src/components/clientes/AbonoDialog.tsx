@@ -135,7 +135,7 @@ export function AbonoDialog({
             <select
               value={proyectoId}
               onChange={(e: ChangeEvent<HTMLSelectElement>) => setProyectoId(e.target.value)}
-              className="w-full rounded border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#022F40] outline-none focus:border-[#022F40] focus:ring-2 focus:ring-[#022F40]/10"
+              className="w-full h-11 rounded border border-[#E5E7EB] bg-white px-3 text-base text-[#022F40] outline-none focus:border-[#022F40] focus:ring-2 focus:ring-[#022F40]/10"
             >
               <option value="">Sin proyecto</option>
               {proyectos.map(p => (
@@ -161,14 +161,14 @@ export function AbonoDialog({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="rounded border-[#E5E7EB] text-sm"
+              className="rounded border-[#E5E7EB]"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={guardando}
-              className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm"
+              className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white"
             >
               {guardando ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Registrar abono'}
             </Button>

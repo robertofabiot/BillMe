@@ -88,7 +88,7 @@ export function MenuNavegacion({ onNavigate }: { onNavigate?: () => void }) {
               onNavigate?.()
               logout()
             }}
-            className="flex items-center justify-center gap-2 w-full px-2 py-2 rounded bg-white border border-[#E5E7EB] text-sm font-medium text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors"
+            className="flex items-center justify-center gap-2 w-full min-h-11 px-2 py-2 rounded bg-white border border-[#E5E7EB] text-sm font-medium text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors"
           >
             <LogOut className="w-4 h-4" />
             Cerrar sesión
@@ -101,7 +101,7 @@ export function MenuNavegacion({ onNavigate }: { onNavigate?: () => void }) {
 
 export function AppSidebar() {
   return (
-    <aside className="flex flex-col w-56 min-h-screen border-r border-[#E5E7EB] bg-white shrink-0">
+    <aside className="flex flex-col w-56 h-full overflow-y-auto border-r border-[#E5E7EB] bg-white shrink-0">
       {/* Logo */}
       <div className="flex items-center gap-2 px-6 py-5 border-b border-[#E5E7EB]">
         <div className="w-7 h-7 rounded bg-[#022F40] flex items-center justify-center">
