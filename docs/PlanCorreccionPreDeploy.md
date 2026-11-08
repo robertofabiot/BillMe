@@ -34,7 +34,7 @@ Ambos comandos deben pasar. `./mvnw` necesita `JAVA_HOME` apuntando a un JDK 21.
 | C4 | `feat/tarifa-por-cliente` | Tarifa por cliente y precio por peso | V11 | Hecho |
 | C5 | `fix/interfaz-pre-deploy` | Legibilidad, barra fija, consolidados y PDF | — | Hecho |
 | C6 | `fix/logica-menor` | Búsqueda, orden, cambio de cliente y mensajes | — | Hecho |
-| C7 | `docs/actualizacion-final` | Documentación final | — | Pendiente |
+| C7 | `docs/actualizacion-final` | Documentación final | — | Hecho |
 
 Después de C7 sigue la sección [Deploy](#deploy). El backend vive en `backend/BillMe/src/main/java/com/example/billme/` (abreviado `BE/`) y el frontend en `frontend/src/` (abreviado `FE/`).
 

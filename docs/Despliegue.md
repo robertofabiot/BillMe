@@ -42,7 +42,7 @@ Todo corre en planes gratuitos. Antes de crear cada servicio, revisa los límite
    | `BILLME_NOMBRE_INICIAL` | nombre visible (ej. `Juan Pérez`) |
    | `JWT_SECRET` | la genera Render; no tocar |
 
-3. En el primer despliegue, los logs deben mostrar `Successfully applied 2 migrations` y `Usuario inicial '…' creado`.
+3. En el primer despliegue, los logs deben mostrar `Successfully applied 12 migrations` y `Usuario inicial '…' creado`.
 4. Abre `https://<servicio>.onrender.com/actuator/health`: debe responder `{"status":"UP"}`.
 5. Entra a la app, cambia la contraseña en *Configuración → Usuarios* y agrega al segundo usuario. Después puedes borrar `BILLME_PASSWORD_INICIAL` de Render: solo se usa cuando la base no tiene usuarios.
 
@@ -81,6 +81,7 @@ En *Settings → Secrets and variables → Actions*:
 
    ```bash
    createdb billme_prueba
+   psql -d billme_prueba -c 'create extension if not exists pg_trgm'
    pg_restore --no-owner --dbname=billme_prueba billme.dump
    ```
 
@@ -103,3 +104,5 @@ En *Settings → Secrets and variables → Actions*:
 - [ ] Recargar `https://<app>.vercel.app/clientes` no da 404.
 - [ ] *Respaldo semanal* corre a mano y el archivo se descifra con `RESPALDO_CLAVE`.
 - [ ] *Mantener despierto el backend* corre a mano sin errores.
+- [ ] Restaurar un respaldo en una base vacía y confirmar que trae datos.
+- [ ] Importar el histórico y confirmar que Facturas sigue vacía.
