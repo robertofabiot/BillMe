@@ -36,11 +36,27 @@ class CalculoControllerTest extends IntegrationTest {
                         .content("""
                                 {
                                   "pesoUnitKg": 2.58,
-                                  "tarifaUsd": 1.80
+                                  "tarifa": 1.80,
+                                  "moneda": "USD"
                                 }
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.precioUnit").value(195.60));
+    }
+
+    @Test
+    void calcularPrecioPorPesoEnCordobasResponde200ConPrecioUnit() throws Exception {
+        mockMvc.perform(post("/api/calculos/precio-por-peso")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "pesoUnitKg": 2.58,
+                                  "tarifa": 70,
+                                  "moneda": "NIO"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.precioUnit").value(207.69));
     }
 
     @Test

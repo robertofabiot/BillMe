@@ -15,6 +15,7 @@ import com.example.billme.dto.ProyectoRequest;
 import com.example.billme.dto.RevisionResponse;
 import com.example.billme.enums.EstadoDocumento;
 import com.example.billme.enums.MetodoPrecio;
+import com.example.billme.enums.MonedaTarifa;
 import com.example.billme.enums.TipoDocumento;
 import com.example.billme.model.Abono;
 import com.example.billme.model.Documento;
@@ -770,6 +771,137 @@ class DocumentoServiceTest extends IntegrationTest {
                     assertThat(e.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
                     assertThat(e.getReason()).isEqualTo("La cotización ya tiene otra factura: no se puede reactivar esta");
                 });
+    }
+
+    @Test
+    void lineaPorPesoConOtraTarifaNoCambiaTarifaCliente() {
+        ClienteResponse clienteConTarifa = clienteService.crear(new ClienteRequest(
+                "Cliente Tarifa Propia", "12345678", null, BigDecimal.ZERO, new BigDecimal("2.0000"),
+                MonedaTarifa.USD, BigDecimal.ZERO, null));
+
+        String params = "{\"tarifa\": 1.80, \"moneda\": \"USD\"}";
+        DocumentoResponse doc = documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA,
+                clienteConTarifa.id(),
+                null,
+                FECHA,
+                null,
+                false,
+                List.of(new LineaRequest(null, tubo.id(), null, BigDecimal.ONE, new BigDecimal("2.58"),
+                        null, MetodoPrecio.POR_PESO, params, null, null))
+        ));
+
+        assertThat(doc.lineas().get(0).precioUnit()).isEqualByComparingTo("195.60");
+
+        // La tarifa del cliente en su ficha no cambia
+        ClienteResponse clienteActual = clienteService.obtenerPorId(clienteConTarifa.id());
+        assertThat(clienteActual.tarifaKg()).isEqualByComparingTo("2.0000");
+        assertThat(clienteActual.tarifaMoneda()).isEqualTo("USD");
+    }
+
+    @Test
+    void cambioDePesoRecalculaLineaPorPeso() {
+        String params = "{\"tarifa\": 1.80, \"moneda\": \"USD\"}";
+        DocumentoResponse doc = documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA,
+                cliente.id(),
+                null,
+                FECHA,
+                null,
+                false,
+                List.of(new LineaRequest(null, tubo.id(), null, BigDecimal.ONE, new BigDecimal("2.58"),
+                        new BigDecimal("195.60"), MetodoPrecio.POR_PESO, params, null, null))
+        ));
+        UUID lineaId = doc.lineas().get(0).id();
+
+        // Actualizar cambiando el peso a 3.00
+        DocumentoResponse docActualizado = documentoService.actualizar(doc.id(), new DocumentoRequest(
+                TipoDocumento.FACTURA,
+                cliente.id(),
+                null,
+                FECHA,
+                null,
+                false,
+                List.of(new LineaRequest(lineaId, tubo.id(), null, BigDecimal.ONE, new BigDecimal("3.00"),
+                        new BigDecimal("195.60"), MetodoPrecio.POR_PESO, params, null, null))
+        ));
+
+        // 3.00 * 1.80 * 36.6243 * 1.15 = 227.44
+        assertThat(docActualizado.lineas().get(0).precioUnit()).isEqualByComparingTo("227.44");
+        assertThat(docActualizado.total()).isEqualByComparingTo("227.44");
+    }
+
+    @Test
+    void edicionEnManualNoRecalculaPrecioAlCambiarPeso() {
+        DocumentoResponse doc = documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA,
+                cliente.id(),
+                null,
+                FECHA,
+                null,
+                false,
+                List.of(new LineaRequest(null, tubo.id(), null, BigDecimal.ONE, new BigDecimal("2.58"),
+                        new BigDecimal("195.60"), MetodoPrecio.MANUAL, null, null, null))
+        ));
+        UUID lineaId = doc.lineas().get(0).id();
+
+        // Cambiar peso de 2.58 a 3.00 manteniendo MANUAL
+        DocumentoResponse docActualizado = documentoService.actualizar(doc.id(), new DocumentoRequest(
+                TipoDocumento.FACTURA,
+                cliente.id(),
+                null,
+                FECHA,
+                null,
+                false,
+                List.of(new LineaRequest(lineaId, tubo.id(), null, BigDecimal.ONE, new BigDecimal("3.00"),
+                        new BigDecimal("195.60"), MetodoPrecio.MANUAL, null, null, null))
+        ));
+
+        // El precio unitario debe seguir en 195.60
+        assertThat(docActualizado.lineas().get(0).precioUnit()).isEqualByComparingTo("195.60");
+    }
+
+    @Test
+    void cambioDeConfigPosteriorNoAlteraPrecioDeLineaGuardada() {
+        String params = "{\"tarifa\": 1.80, \"moneda\": \"USD\"}";
+        DocumentoResponse doc = documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA,
+                cliente.id(),
+                null,
+                FECHA,
+                null,
+                false,
+                List.of(new LineaRequest(null, tubo.id(), null, BigDecimal.ONE, new BigDecimal("2.58"),
+                        new BigDecimal("195.60"), MetodoPrecio.POR_PESO, params, null, null))
+        ));
+        UUID lineaId = doc.lineas().get(0).id();
+
+        // Cambiar configuración global
+        ConfiguracionResponse original = configuracionService.obtener();
+        try {
+            configuracionService.actualizar(new ConfiguracionRequest(
+                    original.ivaPct(), new BigDecimal("40.0000"), new BigDecimal("3.00"), original.densidadKgIn3(), original.diasPrecioViejo()
+            ));
+
+            // Editar solo notas en el documento (sin cambiar peso ni params de la línea)
+            DocumentoResponse docActualizado = documentoService.actualizar(doc.id(), new DocumentoRequest(
+                    TipoDocumento.FACTURA,
+                    cliente.id(),
+                    null,
+                    FECHA,
+                    "Nota actualizada",
+                    false,
+                    List.of(new LineaRequest(lineaId, tubo.id(), null, BigDecimal.ONE, new BigDecimal("2.58"),
+                            new BigDecimal("195.60"), MetodoPrecio.POR_PESO, params, null, null))
+            ));
+
+            // El precio unitario debe mantenerse en 195.60
+            assertThat(docActualizado.lineas().get(0).precioUnit()).isEqualByComparingTo("195.60");
+        } finally {
+            configuracionService.actualizar(new ConfiguracionRequest(
+                    original.ivaPct(), original.tipoCambio(), original.tarifaKgUsd(), original.densidadKgIn3(), original.diasPrecioViejo()
+            ));
+        }
     }
 
     // ── Ayudas ───────────────────────────────────────────────────────────────

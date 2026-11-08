@@ -166,25 +166,20 @@ class PrecioSugeridoServiceTest extends IntegrationTest {
     }
 
     @Test
-    void tresPrioridadesDeTarifa() {
-        // Prioridad 1: última usada con ese cliente en una línea POR_PESO
+    void dosPrioridadesDeTarifa() {
+        // Una línea POR_PESO previa con otra tarifa ya no influye
         crearDocPorPeso(clienteB.id(), productoPlaca.id(), new BigDecimal("250.00"), "2.35", Fechas.hoy().minusDays(2));
-        PrecioSugeridoResponse res1 = precioSugeridoService.sugerir(clienteB.id(), productoPlaca.id(), null);
-        assertThat(res1.tarifaKgUsd()).isEqualByComparingTo("2.35");
-        assertThat(res1.origenTarifa()).isEqualTo("ULTIMA");
 
-        // Prioridad 2: sin línea POR_PESO previa, toma la tarifa propia del cliente (clienteB tiene 2.1000)
-        PrecioSugeridoResponse res2 = precioSugeridoService.sugerir(clienteB.id(), productoPlaca.id(), null);
-        // Cuando clienteA no tiene líneas POR_PESO, pero le asignamos tarifa al cliente
-        clienteService.actualizar(clienteA.id(), new ClienteRequest("Cliente Alpha", "11111111", null, new BigDecimal("4.00"), new BigDecimal("1.9500")));
-        PrecioSugeridoResponse resCliente = precioSugeridoService.sugerir(clienteA.id(), productoPlaca.id(), null);
-        assertThat(resCliente.tarifaKgUsd()).isEqualByComparingTo("1.9500");
+        // Prioridad 1: ficha del cliente (clienteB tiene 2.1000)
+        PrecioSugeridoResponse resCliente = precioSugeridoService.sugerir(clienteB.id(), productoPlaca.id(), null);
+        assertThat(resCliente.tarifaKg()).isEqualByComparingTo("2.1000");
+        assertThat(resCliente.monedaTarifa()).isEqualTo("USD");
         assertThat(resCliente.origenTarifa()).isEqualTo("CLIENTE");
 
-        // Prioridad 3: cliente sin tarifa propia y sin líneas POR_PESO -> configuración (1.80)
-        clienteService.actualizar(clienteA.id(), new ClienteRequest("Cliente Alpha", "11111111", null, new BigDecimal("4.00"), null));
+        // Prioridad 2: cliente sin tarifa propia -> configuración (1.80 USD)
         PrecioSugeridoResponse resConfig = precioSugeridoService.sugerir(clienteA.id(), productoPlaca.id(), null);
-        assertThat(resConfig.tarifaKgUsd()).isEqualByComparingTo("1.80");
+        assertThat(resConfig.tarifaKg()).isEqualByComparingTo("1.80");
+        assertThat(resConfig.monedaTarifa()).isEqualTo("USD");
         assertThat(resConfig.origenTarifa()).isEqualTo("CONFIGURACION");
     }
 
@@ -286,8 +281,8 @@ class PrecioSugeridoServiceTest extends IntegrationTest {
         ));
     }
 
-    private DocumentoResponse crearDocPorPeso(UUID clienteId, UUID productoId, BigDecimal pu, String tarifaUsd, LocalDate fecha) {
-        String params = String.format("{\"tarifaUsd\":%s}", tarifaUsd);
+    private DocumentoResponse crearDocPorPeso(UUID clienteId, UUID productoId, BigDecimal pu, String tarifa, LocalDate fecha) {
+        String params = String.format("{\"tarifa\":%s,\"moneda\":\"USD\"}", tarifa);
         return documentoService.crear(new DocumentoRequest(
                 TipoDocumento.COTIZACION,
                 clienteId,

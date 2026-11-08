@@ -133,14 +133,32 @@ class ClienteControllerTest extends IntegrationTest {
                                 {
                                   "nombre": "Cliente Especial",
                                   "descuentoPct": 5.5,
-                                  "tarifaKgUsd": 1.7500
+                                  "tarifaKg": 1.7500,
+                                  "tarifaMoneda": "USD"
                                 }
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.nombre").value("Cliente Especial"))
                 .andExpect(jsonPath("$.descuentoPct").value(5.5))
-                .andExpect(jsonPath("$.tarifaKgUsd").value(1.75));
+                .andExpect(jsonPath("$.tarifaKg").value(1.75))
+                .andExpect(jsonPath("$.tarifaMoneda").value("USD"));
+    }
+
+    @Test
+    void crearConTarifaEnCordobasGuardaLosValores() throws Exception {
+        mockMvc.perform(post("/api/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nombre": "Cliente Cordobas",
+                                  "tarifaKg": 70.00,
+                                  "tarifaMoneda": "NIO"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tarifaKg").value(70.0))
+                .andExpect(jsonPath("$.tarifaMoneda").value("NIO"));
     }
 
     @Test
