@@ -14,6 +14,7 @@ interface Props {
 export function ProductoBuscador({ onElegir, deshabilitado }: Props) {
   const [texto, setTexto] = useState('')
   const [resultados, setResultados] = useState<Producto[]>([])
+  const [resultadosDe, setResultadosDe] = useState('')
   const [abierto, setAbierto] = useState(false)
   const [buscando, setBuscando] = useState(false)
   const entrada = useRef<HTMLInputElement>(null)
@@ -23,13 +24,20 @@ export function ProductoBuscador({ onElegir, deshabilitado }: Props) {
     const temporizador = setTimeout(() => {
       if (!q) {
         setResultados([])
+        setResultadosDe('')
         setBuscando(false)
         return
       }
       setBuscando(true)
       productoService.listar(q)
-        .then(setResultados)
-        .catch(() => setResultados([]))
+        .then(res => {
+          setResultados(res)
+          setResultadosDe(q)
+        })
+        .catch(() => {
+          setResultados([])
+          setResultadosDe(q)
+        })
         .finally(() => setBuscando(false))
     }, 250)
     return () => clearTimeout(temporizador)
@@ -39,6 +47,7 @@ export function ProductoBuscador({ onElegir, deshabilitado }: Props) {
     onElegir(producto)
     setTexto('')
     setResultados([])
+    setResultadosDe('')
     setAbierto(false)
     entrada.current?.focus()
   }
@@ -65,7 +74,7 @@ export function ProductoBuscador({ onElegir, deshabilitado }: Props) {
           onKeyDown={e => {
             if (e.key === 'Enter') {
               e.preventDefault()
-              if (resultados[0]) elegir(resultados[0])
+              if (resultadosDe === texto.trim() && resultados[0]) elegir(resultados[0])
             }
           }}
           placeholder={deshabilitado ? 'Elige primero el cliente' : 'Agregar producto: escribe el nombre o el código…'}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import type { Cliente, ConfiguracionSistema, Documento, MetodoPrecio, Producto, Proyecto, TipoDocumento } from '@/types'
+import type { Cliente, ConfiguracionSistema, Documento, MetodoPrecio, PrecioSugerido, Producto, Proyecto, TipoDocumento } from '@/types'
 import { clienteService } from '@/services/clienteService'
 import { configuracionService } from '@/services/configuracionService'
 import { documentoService, type DocumentoPayload } from '@/services/documentoService'
@@ -111,6 +111,38 @@ function payloadDe(f: Formulario, tipo: TipoDocumento): DocumentoPayload {
 }
 
 type Aviso = { tipo: 'ok' | 'error'; texto: string } | null
+
+function precioDeSugerido(res: PrecioSugerido): {
+  precioUnit: string
+  metodoPrecio: MetodoPrecio
+  parametros: string | null
+} | null {
+  if (res.precioUnit != null) {
+    return {
+      precioUnit: String(res.precioUnit),
+      metodoPrecio: 'ULTIMO_PRECIO',
+      parametros: JSON.stringify({
+        folio: res.folio,
+        fecha: res.fecha,
+        clienteNombre: res.clienteNombre,
+        otroCliente: res.origen === 'OTRO_CLIENTE',
+        dias: res.diasAntiguedad,
+        viejo: res.viejo,
+      }),
+    }
+  }
+  if (res.precioFormula != null) {
+    return {
+      precioUnit: String(res.precioFormula),
+      metodoPrecio: 'FORMULA_LISTA',
+      parametros: JSON.stringify({
+        lista: res.precioLista,
+        descuentoPct: res.descuentoPct,
+      }),
+    }
+  }
+  return null
+}
 
 /** Crea o edita una cotización o factura. */
 export function DocumentoEditorPage() {
@@ -226,6 +258,11 @@ export function DocumentoEditorPage() {
     return { total: acum.total + total, kilos: acum.kilos + (pesoTotal ?? 0) }
   }, { total: 0, kilos: 0 }), [form.lineas])
 
+  const PREGUNTA_CAMBIO_CLIENTE =
+    '¿Recalcular los precios para el nuevo cliente?\n\n' +
+    'Aceptar: recalcula los precios que salieron del historial, la lista o el peso.\n' +
+    'Cancelar: conserva los precios escritos.'
+
   const agregarProducto = async (p: Producto) => {
     const clave = `nueva-${Date.now()}-${Math.random()}`
     setClaveNueva(clave)
@@ -241,24 +278,11 @@ export function DocumentoEditorPage() {
     if (!esPlacaOPlatinaGenerica && !esLibre && form.clienteId) {
       try {
         const res = await precioService.sugerido(form.clienteId, p.id)
-        if (res.precioUnit != null) {
-          precioUnit = String(res.precioUnit)
-          metodoPrecio = 'ULTIMO_PRECIO'
-          parametros = JSON.stringify({
-            folio: res.folio,
-            fecha: res.fecha,
-            clienteNombre: res.clienteNombre,
-            otroCliente: res.origen === 'OTRO_CLIENTE',
-            dias: res.diasAntiguedad,
-            viejo: res.viejo,
-          })
-        } else if (res.precioFormula != null) {
-          precioUnit = String(res.precioFormula)
-          metodoPrecio = 'FORMULA_LISTA'
-          parametros = JSON.stringify({
-            lista: res.precioLista,
-            descuentoPct: res.descuentoPct,
-          })
+        const sugerido = precioDeSugerido(res)
+        if (sugerido) {
+          precioUnit = sugerido.precioUnit
+          metodoPrecio = sugerido.metodoPrecio
+          parametros = sugerido.parametros
         }
       } catch {
         // Si la consulta falla, el precio queda vacío, sin mensaje de error
@@ -296,24 +320,111 @@ export function DocumentoEditorPage() {
     if (l.productoCodigo === 'GEN-LIBRE' && l.descripcion.trim() && !l.precioUnit.trim()) {
       try {
         const res = await precioService.sugerido(form.clienteId, l.productoId, l.descripcion.trim())
-        if (res.precioUnit != null) {
+        const sugerido = precioDeSugerido(res)
+        if (sugerido) {
           cambiarLinea(clave, {
-            precioUnit: String(res.precioUnit),
-            metodoPrecio: 'ULTIMO_PRECIO',
-            parametros: JSON.stringify({
-              folio: res.folio,
-              fecha: res.fecha,
-              clienteNombre: res.clienteNombre,
-              otroCliente: res.origen === 'OTRO_CLIENTE',
-              dias: res.diasAntiguedad,
-              viejo: res.viejo,
-            }),
+            precioUnit: sugerido.precioUnit,
+            metodoPrecio: sugerido.metodoPrecio,
+            parametros: sugerido.parametros,
           })
         }
       } catch {
         // Silencio en error
       }
     }
+  }
+
+  const alCambiarCliente = async (clienteNuevo: string) => {
+    if (clienteNuevo === form.clienteId) return
+
+    if (form.lineas.length === 0) {
+      setNuevoProyecto(null)
+      setForm(f => ({ ...f, clienteId: clienteNuevo, proyectoId: '' }))
+      return
+    }
+
+    const aceptar = clienteNuevo ? window.confirm(PREGUNTA_CAMBIO_CLIENTE) : false
+
+    setNuevoProyecto(null)
+
+    if (!aceptar) {
+      setForm(f => ({
+        ...f,
+        clienteId: clienteNuevo,
+        proyectoId: '',
+        lineas: f.lineas.map(l => {
+          if (l.metodoPrecio === 'ULTIMO_PRECIO' || l.metodoPrecio === 'FORMULA_LISTA') {
+            return { ...l, metodoPrecio: 'MANUAL' as MetodoPrecio, parametros: null }
+          }
+          return l
+        }),
+      }))
+      return
+    }
+
+    const lineasActualizadas: LineaForm[] = await Promise.all(
+      form.lineas.map(async (l): Promise<LineaForm> => {
+        if (l.metodoPrecio === 'ULTIMO_PRECIO' || l.metodoPrecio === 'FORMULA_LISTA') {
+          try {
+            const res = await precioService.sugerido(
+              clienteNuevo,
+              l.productoId,
+              l.productoGenerico ? l.descripcion : undefined,
+            )
+            const sugerido = precioDeSugerido(res)
+            if (sugerido) {
+              return {
+                ...l,
+                precioUnit: sugerido.precioUnit,
+                metodoPrecio: sugerido.metodoPrecio,
+                parametros: sugerido.parametros,
+              }
+            }
+          } catch {
+            // Silencio en error
+          }
+          return { ...l, metodoPrecio: 'MANUAL' as MetodoPrecio, parametros: null }
+        }
+
+        if (l.metodoPrecio === 'POR_PESO') {
+          try {
+            const res = await precioService.sugerido(
+              clienteNuevo,
+              l.productoId,
+              l.productoGenerico ? l.descripcion : undefined,
+            )
+            let paramsObj: Record<string, any> = {}
+            try {
+              if (l.parametros) paramsObj = JSON.parse(l.parametros)
+            } catch {
+              // Parámetros previos no parseables
+            }
+            if (res.tarifaKg != null) paramsObj.tarifa = res.tarifaKg
+            if (res.monedaTarifa != null) paramsObj.moneda = res.monedaTarifa
+            const nuevosParams = JSON.stringify(paramsObj)
+            const nuevoPrecio = tipoCambio && config
+              ? recalcularPrecioPorPeso('POR_PESO', nuevosParams, l.pesoUnitKg, tipoCambio, config.ivaPct)
+              : null
+            return {
+              ...l,
+              parametros: nuevosParams,
+              precioUnit: nuevoPrecio ?? l.precioUnit,
+            }
+          } catch {
+            return l
+          }
+        }
+
+        return l
+      }),
+    )
+
+    setForm(f => ({
+      ...f,
+      clienteId: clienteNuevo,
+      proyectoId: '',
+      lineas: lineasActualizadas,
+    }))
   }
 
   const cambiarLinea = (clave: string, cambios: Partial<LineaForm>) =>
@@ -575,11 +686,7 @@ export function DocumentoEditorPage() {
             <select
               id="cliente"
               value={form.clienteId}
-              onChange={e => {
-                const clienteId = e.target.value
-                setNuevoProyecto(null)
-                setForm(f => ({ ...f, clienteId, proyectoId: '' }))
-              }}
+              onChange={e => alCambiarCliente(e.target.value)}
               className={SELECT}
             >
               <option value="">Elige un cliente…</option>

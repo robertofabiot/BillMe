@@ -318,4 +318,64 @@ class DocumentoControllerTest extends IntegrationTest {
                         .content(body))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void filtrarSinAcentosEncuentraDocumentosPorCliente() throws Exception {
+        ClienteResponse clientePerez = clienteService.crear(new ClienteRequest("Cliente Pérez", null, null));
+        documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA, clientePerez.id(), null, LocalDate.of(2026, 10, 5), null, false,
+                List.of(new LineaRequest(null, producto.id(), null, BigDecimal.ONE, null, new BigDecimal("100"), null, null, null, null))
+        ));
+
+        mockMvc.perform(get("/api/documentos").param("q", "perez"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.contenido", hasSize(1)))
+                .andExpect(jsonPath("$.contenido[0].clienteNombre").value("Cliente Pérez"));
+
+        mockMvc.perform(get("/api/documentos").param("q", "PÉREZ"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.contenido", hasSize(1)))
+                .andExpect(jsonPath("$.contenido[0].clienteNombre").value("Cliente Pérez"));
+    }
+
+    @Test
+    void cantidadMayorAlLimiteResponde400() throws Exception {
+        String body = """
+                {
+                  "tipo": "FACTURA",
+                  "clienteId": "%s",
+                  "fecha": "2026-10-05",
+                  "lineas": [
+                    { "productoId": "%s", "cantidad": 12345678, "precioUnit": 100 }
+                  ]
+                }
+                """.formatted(cliente.id(), producto.id());
+
+        mockMvc.perform(post("/api/documentos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errores[0].campo").value("lineas[0].cantidad"))
+                .andExpect(jsonPath("$.errores[0].mensaje").value("Cantidad: tiene un valor muy alto"));
+    }
+
+    @Test
+    void totalDeLineaDemasiadoGrandeResponde400() throws Exception {
+        String body = """
+                {
+                  "tipo": "FACTURA",
+                  "clienteId": "%s",
+                  "fecha": "2026-10-05",
+                  "lineas": [
+                    { "productoId": "%s", "cantidad": 9999999, "precioUnit": 999999999 }
+                  ]
+                }
+                """.formatted(cliente.id(), producto.id());
+
+        mockMvc.perform(post("/api/documentos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value("La línea 1 tiene un total demasiado grande"));
+    }
 }

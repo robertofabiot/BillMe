@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -19,6 +20,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Traduce las excepciones a respuestas JSON con la forma {@link ErrorResponse},
@@ -28,10 +30,37 @@ import java.util.List;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Map<String, String> ETIQUETAS = Map.ofEntries(
+            Map.entry("nombre", "Nombre"), Map.entry("telefono", "Teléfono"),
+            Map.entry("descuentoPct", "Descuento"), Map.entry("tarifaKg", "Tarifa por kg"),
+            Map.entry("monto", "Monto"), Map.entry("fechaPago", "Fecha"), Map.entry("nota", "Nota"),
+            Map.entry("clienteId", "Cliente"), Map.entry("fecha", "Fecha"), Map.entry("lineas", "Líneas"),
+            Map.entry("cantidad", "Cantidad"), Map.entry("precioUnit", "Precio unitario"),
+            Map.entry("pesoUnitKg", "Peso"), Map.entry("descripcion", "Descripción"),
+            Map.entry("lugarEntrega", "Lugar de entrega"), Map.entry("codigoInterno", "Código"),
+            Map.entry("nombrePrincipal", "Nombre"), Map.entry("username", "Usuario"),
+            Map.entry("password", "Contraseña"), Map.entry("nueva", "Contraseña nueva"),
+            Map.entry("actual", "Contraseña actual"), Map.entry("desde", "Desde"), Map.entry("hasta", "Hasta"),
+            Map.entry("proveedorId", "Proveedor"), Map.entry("precioSinIva", "Precio sin IVA"));
+
+    private static String mensajeDeCampo(FieldError e) {
+        String campo = e.getField().substring(e.getField().lastIndexOf('.') + 1);
+        String etiqueta = ETIQUETAS.getOrDefault(campo, campo);
+        String problema = switch (String.valueOf(e.getCode())) {
+            case "NotNull", "NotBlank", "NotEmpty" -> "es obligatorio";
+            case "Size" -> "es demasiado largo";
+            case "Positive" -> "debe ser mayor a 0";
+            case "PositiveOrZero", "DecimalMin", "Min" -> "tiene un valor muy bajo";
+            case "DecimalMax", "Max" -> "tiene un valor muy alto";
+            default -> "no es válido";
+        };
+        return etiqueta + ": " + problema;
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> validacion(MethodArgumentNotValidException ex) {
         List<ErrorResponse.CampoError> errores = ex.getBindingResult().getFieldErrors().stream()
-                .map(e -> new ErrorResponse.CampoError(e.getField(), e.getDefaultMessage()))
+                .map(e -> new ErrorResponse.CampoError(e.getField(), mensajeDeCampo(e)))
                 .toList();
         return ResponseEntity.badRequest()
                 .body(new ErrorResponse("Hay datos inválidos en el formulario", errores));
@@ -75,7 +104,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> integridad(DataIntegrityViolationException ex) {
         log.warn("Violación de integridad: {}", ex.getMostSpecificCause().getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ErrorResponse.de("La operación choca con datos existentes (por ejemplo, un código repetido)"));
+                .body(ErrorResponse.de("No se pudo guardar: hay un dato repetido o fuera de rango"));
     }
 
     @ExceptionHandler(AuthenticationException.class)

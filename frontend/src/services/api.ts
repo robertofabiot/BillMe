@@ -41,7 +41,10 @@ async function toApiError(res: Response): Promise<ApiError> {
   const text = await res.text().catch(() => '')
   try {
     const body = JSON.parse(text) as { mensaje?: string; errores?: CampoError[] }
-    if (body.mensaje) return new ApiError(res.status, body.mensaje, body.errores ?? [])
+    const mensaje = body.errores && body.errores.length > 0
+      ? body.errores.map(e => e.mensaje).join('. ')
+      : body.mensaje
+    if (mensaje) return new ApiError(res.status, mensaje, body.errores ?? [])
   } catch {
     // respuesta que no es JSON (por ejemplo, un proxy caído)
   }

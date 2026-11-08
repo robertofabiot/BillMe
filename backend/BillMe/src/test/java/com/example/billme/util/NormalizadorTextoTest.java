@@ -56,4 +56,11 @@ class NormalizadorTextoTest {
         assertThat(normalizar(null)).isEmpty();
         assertThat(normalizar("   ")).isEmpty();
     }
+
+    @Test
+    void sinAcentosQuitaDiacriticosYMinusculas() {
+        assertThat(NormalizadorTexto.sinAcentos("PÉREZ")).isEqualTo("perez");
+        assertThat(NormalizadorTexto.sinAcentos("Cotización ñandú")).isEqualTo("cotizacion nandu");
+        assertThat(NormalizadorTexto.sinAcentos(null)).isEqualTo("");
+    }
 }

@@ -64,3 +64,7 @@ export function textoSaldo(saldo?: number | null): string {
   return `Saldo a favor C$${formatted}`
 }
 
+export function sinAcentos(texto: string): string {
+  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+}
+

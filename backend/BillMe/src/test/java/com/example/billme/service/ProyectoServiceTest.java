@@ -172,6 +172,17 @@ class ProyectoServiceTest extends IntegrationTest {
         assertThat(proyectoService.obtenerPorId(p.id()).totalFacturado()).isEqualByComparingTo("1000.00");
     }
 
+    @Test
+    void proyectosSalenEnOrdenAlfabetico() {
+        proyectoService.crear(new ProyectoRequest(cliente.id(), "Zeta", null));
+        proyectoService.crear(new ProyectoRequest(cliente.id(), "Alfa", null));
+        proyectoService.crear(new ProyectoRequest(cliente.id(), "Beta", null));
+
+        List<ProyectoResponse> todos = proyectoService.listarPorCliente(cliente.id());
+        assertThat(todos).extracting(ProyectoResponse::nombre)
+                .containsExactly("Alfa", "Beta", "Zeta");
+    }
+
     private static LineaRequest linea(java.util.UUID productoId, String cantidad, String precio) {
         return new LineaRequest(null, productoId, null, new BigDecimal(cantidad), null, new BigDecimal(precio),
                 null, null, null, null);

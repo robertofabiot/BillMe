@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, type ChangeEvent } from 'react'
 import type { Proyecto, Cliente } from '@/types'
 import { proyectoService } from '@/services/proyectoService'
 import { clienteService } from '@/services/clienteService'
-import { formatCurrency } from '@/lib/format'
+import { formatCurrency, sinAcentos } from '@/lib/format'
 import { ProyectoModal } from '@/components/proyectos/ProyectoModal'
 import { ProyectoDetailSheet } from '@/components/proyectos/ProyectoDetailSheet'
 import { Input } from '@/components/ui/input'
@@ -70,12 +70,12 @@ export function ProyectosPage() {
 
   /* ── Filter ── */
   const filtered = useMemo(() => {
-    const q = search.toLowerCase()
+    const q = sinAcentos(search)
     return proyectos.filter(p => {
       const cNombre = p.clienteNombre || clientes.find(c => c.id === p.clienteId)?.nombre
       return !q ||
-        p.nombre.toLowerCase().includes(q) ||
-        (cNombre?.toLowerCase().includes(q) ?? false)
+        sinAcentos(p.nombre).includes(q) ||
+        (cNombre ? sinAcentos(cNombre).includes(q) : false)
     }).sort((a, b) => {
       // Ordenar por estado (Activos primero)
       if (a.estado === 'ACTIVO' && b.estado !== 'ACTIVO') return -1

@@ -8,6 +8,7 @@ import com.example.billme.repository.AbonoRepository;
 import com.example.billme.repository.ClienteRepository;
 import com.example.billme.repository.ConsolidadoRepository;
 import com.example.billme.repository.DocumentoRepository;
+import com.example.billme.util.NormalizadorTexto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -33,14 +34,14 @@ public class ClienteService {
 
     public List<ClienteResponse> listarTodos() {
         Map<UUID, BigDecimal> saldos = cuentaClienteService.saldos();
-        return clienteRepository.findAll().stream()
+        return clienteRepository.ordenados().stream()
                 .map(c -> toResponse(c, saldos.getOrDefault(c.getId(), BigDecimal.ZERO)))
                 .collect(Collectors.toList());
     }
 
     public List<ClienteResponse> buscar(String q) {
         Map<UUID, BigDecimal> saldos = cuentaClienteService.saldos();
-        return clienteRepository.buscar(q).stream()
+        return clienteRepository.buscar(NormalizadorTexto.sinAcentos(q)).stream()
                 .map(c -> toResponse(c, saldos.getOrDefault(c.getId(), BigDecimal.ZERO)))
                 .collect(Collectors.toList());
     }
