@@ -14,14 +14,15 @@ Diseñado bajo la filosofía **KISS** (Keep It Simple, Stupid), prioriza la faci
 - **Gestión de clientes:** Registro, edición y búsqueda inmediata de clientes.
 - **Condiciones comerciales individuales:**
   - Descuento comercial por defecto (`descuento_pct`) aplicado a precios de lista.
-  - Tarifa personalizada en USD/kg (`tarifa_kg_usd`) para cálculo de placas y platinas.
+  - Tarifa personalizada por kg antes de IVA (`tarifa_kg`) en dólares o córdobas (`tarifa_moneda`: `USD` o `NIO`) para cálculo de placas y platinas.
 - **Cuenta corriente en vivo:**
   - Definición de saldo inicial (`saldo_inicial`) y fecha de corte (`fecha_inicio_cuenta`).
-  - Cálculo dinámico de saldo deudor o saldo a favor (`saldo_inicial + Σ facturas_activas − Σ abonos`).
-  - Las facturas históricas importadas sirven exclusivamente para histórico de precios y no alteran la deuda corriente.
+  - Cálculo dinámico de saldo deudor o saldo a favor (`saldo_inicial + Σ facturas_activas − Σ abonos`), considerando únicamente facturas en estado activo emitidas a partir de la fecha de inicio.
+  - Los registros del histórico de precios (serie `HIS`) sirven exclusivamente como referencia de precios pasados y no alteran la deuda corriente.
 - **Registro de abonos:**
   - Abonos asignados directamente a la cuenta del cliente (con asignación opcional a proyecto).
   - Campos: fecha de pago, monto, proyecto, referencia bancaria y notas.
+  - Validación estricta: los abonos con fecha anterior a la fecha de inicio de la cuenta (`fecha_inicio_cuenta`) son rechazados.
   - Soporte para pagos superiores a la deuda (saldo a favor).
 
 ---
@@ -47,23 +48,27 @@ Diseñado bajo la filosofía **KISS** (Keep It Simple, Stupid), prioriza la faci
 - **Historial de precios de lista de proveedores:**
   - Registro de listas con vigencia por fecha y fuente (`LISTA_IMPORTADA`, `FACTURA_PROVEEDOR`, `PRECIO_CLIENTE`, `MANUAL`).
   - Consulta del precio de lista vigente y cálculo bidireccional (precio sin IVA, con descuento o deducido desde precio de venta).
-- **Importador de listas de precios:** Carga recurrente de archivos Excel (`.xlsx`, `.xlsm`) de proveedores con mapeo automático y vista previa antes de guardar.
+- **Importador de listas de precios e histórico:**
+  - Carga recurrente de archivos Excel (`.xlsx`, `.xlsm`) de proveedores con mapeo automático y vista previa antes de guardar.
+  - Importación exclusiva de histórico de precios con asignación a la serie `HIS`, sin crear facturas activas ni proyectos ficticios, convertible de forma individual a factura activa (`FAC`).
 
 ---
 
 ### 2.4. Módulo de Cotizaciones y Facturación
-- **Series independientes:** Folios automáticos independientes para cotizaciones (`COT-0001`) y facturas (`FAC-0001`).
-- **Conversión directa:** Conversión de cotizaciones a facturas activas con un solo clic preservando líneas, entregas y precios.
+- **Series independientes:** Folios automáticos independientes para cotizaciones (`COT-0001`), facturas (`FAC-0001`) y documentos históricos (`HIS-0001`).
+- **Conversión directa:** Conversión de cotizaciones a facturas activas con un solo clic preservando líneas, entregas y precios. Conversión individual de registros históricos (`HIS`) a facturas activas (`FAC`).
 - **Fecha real de operación:** Selección de fecha real del documento independiente de la fecha de captura.
+- **Opción de total en dólares:** Opción configurable por documento (`mostrar_total_usd`) para visualizar y exportar el equivalente en dólares (`Total U$`, `Total KG`), fijando el tipo de cambio oficial (`tipo_cambio`) de forma inmutable al momento de crear el documento.
 - **Líneas de documento avanzadas:**
   - Cantidad y precio unitario en córdobas con IVA incluido (15%).
   - Cálculo automático de peso unitario y peso total en kilogramos.
   - Métodos de fijación de precio: `ULTIMO_PRECIO`, `FORMULA_LISTA`, `POR_PESO`, `POR_METRO`, `MANUAL`.
   - Calculadora de pesos integrada para placas, platinas y angulares con densidad calibrada (0.129 kg/in³).
+  - Tarifa por kg editable individualmente por línea sin alterar la ficha del cliente.
   - Alerta visual cuando un precio de referencia supera los 365 días de antigüedad.
   - Control opcional de entrega por línea: fecha de entrega y lugar de entrega.
-- **Historial de revisiones:** Versionado inmutable (`documento_revisiones`) cada vez que se modifica un documento existente.
-- **Anulación segura:** Posibilidad de anular facturas y cotizaciones con confirmación explícita sin eliminar registros históricos.
+- **Historial de revisiones inmutable:** Versionado obligatorio (`documento_revisiones`) cada vez que se modifica un documento existente, con motivo de cambio obligatorio (`motivo`) y protegido contra modificación o borrado mediante un trigger SQL protector (`trg_documento_revisiones_inmutable` / `revisiones_inmutables`).
+- **Anulación segura y reactivación:** Posibilidad de anular facturas regresando la cotización de origen a estado pendiente; reactivación de facturas anuladas con confirmación explícita si no existe otra factura activa asociada.
 - **Paginación y búsqueda en servidor:** Búsqueda en tiempo real por texto libre (`q`) con debounce de 300 ms y paginación en servidor (`Pageable`).
 
 ---
@@ -77,6 +82,7 @@ Diseñado bajo la filosofía **KISS** (Keep It Simple, Stupid), prioriza la faci
   - Total facturado en el período.
   - Abonos recibidos en el período.
   - Saldo total actualizado.
+- Opción de total en dólares (`mostrar_total_usd`, `tipo_cambio`, `total_usd`, `total_actualizado_usd`) para expresar el consolidado y su saldo en divisa extranjera.
 - Exportación en formatos listos para entrega: Excel estructurado, imagen PNG nítida para mensajería instantánea y documento PDF.
 
 ---
@@ -126,14 +132,14 @@ Diseñado bajo la filosofía **KISS** (Keep It Simple, Stupid), prioriza la faci
 ## 3. Requerimientos No Funcionales
 
 ### Tecnologías
-- **Frontend:** React 18, TypeScript, Vite, Tailwind CSS, Lucide Icons, html2canvas, jspdf, xlsx.
-- **Backend:** Java 21 LTS, Spring Boot 3.x, Spring Data JPA, Hibernate, Flyway.
+- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons, html-to-image, jspdf, Apache POI (backend para Excel).
+- **Backend:** Java 21 LTS, Spring Boot 4, Spring Data JPA, Hibernate, Flyway, Apache POI.
 - **Base de Datos:** PostgreSQL 17 con extensiones `pg_trgm` y `uuid-ossp`.
 
 ### Infraestructura y Despliegue
 - Despliegue continuo en nube:
   - Frontend: Vercel.
-  - Backend: Render (contenedor Docker con health check `/api/health` y ping keep-alive en horario de oficina).
+  - Backend: Render (contenedor Docker con health check `/actuator/health` y ping keep-alive en horario de oficina).
   - Base de datos: Supabase / PostgreSQL administrado con respaldos automáticos.
 
 ### Rendimiento y Escalabilidad

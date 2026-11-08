@@ -5,19 +5,20 @@ Hoja de ruta acordada el 2026-11-01 después de auditar los Excel del negocio (l
 ## 1. Decisiones de negocio
 
 - **Precio sugerido:** el último precio dado a ese cliente. Las cotizaciones no aceptadas cuentan para el historial, nunca para ingresos. Se avisa si el precio tiene más de un año. Como alternativas se puede calcular con la fórmula de lista o escribir uno nuevo. El vendedor puede cambiar el precio libremente.
-- **Moneda, IVA y redondeo:** siempre córdobas, IVA del 15 % incluido en el precio mostrado y TC fijo de 36.6243. El precio unitario y el peso unitario se redondean a 2 decimales.
-- **Placas y platinas:** se cobran por peso: tarifa USD/kg de cada cliente (hay una tarifa por defecto configurable) × TC × 1.15.
+- **Moneda, IVA y redondeo:** siempre córdobas en contabilidad, IVA del 15 % incluido en el precio mostrado y TC fijo inicial de 36.6243 parametrizable. El precio unitario y el peso unitario se redondean a 2 decimales.
+- **Placas y platinas:** se cobran por peso: tarifa de cada cliente (`tarifa_kg`) en USD o C$ (`tarifa_moneda`), con tarifa global de respaldo en Configuración: `tarifa * (moneda == NIO ? 1 : TC) * 1.15`.
 - **Láminas por metro:** precio por metro de una lámina ya vendida × largo nuevo.
 - **Proveedores:** la lista de precios es del proveedor principal; los pernos se cotizan con otros proveedores y todo se compra a pedido. Se guarda costo y precio final, y la compra al proveedor queda ligada a la venta.
 - **Calculadora de pesos:** solo placas, platinas y angulares, con los errores corregidos. El peso de la factura del proveedor manda. La densidad se mantiene en 0.129 kg/in³ (configurable) porque coincide con los pesos del proveedor.
-- **Abonos y consolidados:** los abonos van a la cuenta del cliente, con proyecto opcional. Los consolidados se agrupan por fecha de entrega y el nombre de cada subtotal es editable.
-- **Documentos:** series COT y FAC separadas; son documentos internos, sin numeración fiscal. Se exportan a PNG, PDF y Excel replicando el formato actual, sin logo.
+- **Abonos y consolidados:** los abonos van a la cuenta del cliente, con proyecto opcional; se rechazan pagos con fecha anterior al inicio de la cuenta. Los consolidados se agrupan por fecha de entrega, con opción de total en dólares y subtotales editables.
+- **Documentos:** series independientes COT, FAC y HIS; son documentos internos, sin numeración fiscal. Incluyen opción de total en dólares fijando el tipo de cambio al crearse. Se exportan a PNG, PDF y Excel replicando el formato actual, sin logo.
+- **Saldo y estado de cuenta:** el saldo deudor solo cuenta facturas activas (`saldo_inicial + Σ facturas activas − Σ abonos`). El histórico de precios (serie HIS) no suma al saldo ni a reportes de ganancias y puede convertirse individualmente a factura activa.
 - **Usuarios y uso:** 2 usuarios sin roles. Se usa sobre todo en PC y el celular queda para emergencias. No se necesita trabajar sin internet.
-- **Migración:** no se migran las hojas del libro de facturas. Se importa `cotizaciones1`, que el usuario completará con 2026, así que el importador debe poder ejecutarse varias veces.
+- **Migración:** no se migran las hojas del libro de facturas. Se importa el histórico de precios bajo la serie HIS cuantas veces haga falta.
 
-**Fuera de alcance:** roles, modo sin conexión, ajustes de precio excepcionales de un cliente, grupos de precio, área de pintado, calculadoras de perlín/viga/tubo/barra, inventario, USD, numeración DGI y aprobaciones de precio.
+**Fuera de alcance:** roles, modo sin conexión, ajustes de precio excepcionales de un cliente, grupos de precio, área de pintado, calculadoras de perlín/viga/tubo/barra, inventario, USD contable, numeración DGI y aprobaciones de precio.
 
-Todos los requerimientos operativos y decisiones de diseño fueron ejecutados e incorporados al sistema a través de los 13 Pull Requests planificados.
+Todos los requerimientos operativos y decisiones de diseño fueron ejecutados e incorporados al sistema a través de los 13 Pull Requests iniciales más la serie de correcciones pre-deploy C1 a C7.
 
 ## 2. Fórmulas oficiales
 
@@ -30,12 +31,13 @@ Sugerido   último PU dado a ese cliente → si no hay, último a cualquier clie
 Fórmula    PU = r2(lista × 1.15 × (1 − d_cliente))
 Lista      desde proveedor: lista = P_sin_IVA / (1 − d_prov)
            desde cliente:   lista = PU_cliente / 1.15 / (1 − d_cliente)
-Por peso   PU = r2(peso_unit × tarifa_USD × TC × 1.15)
+Por peso   PU = r2(peso_unit × tarifa × (moneda == NIO ? 1 : TC) × 1.15)
 Por metro  PU = r2(PU_ref / largo_ref × largo_nuevo)
 Placa/platina  peso = ancho × largo × espesor × ρ        (pulgadas)
 Angular        peso = (ala1 + ala2 − espesor) × espesor × largo × ρ
-Ganancia   total − cant × costo_sin_IVA × 1.15
-Saldo      saldo_inicial + Σ facturas activas no importadas (desde fecha_inicio) − Σ abonos (desde fecha_inicio)
+Ganancia   total − cant × costo_sin_IVA × 1.15   (solo facturas activas con costo)
+Saldo      saldo_inicial + Σ facturas activas (desde fecha_inicio) − Σ abonos (desde fecha_inicio)
+           (el histórico de precios serie HIS no suma al saldo)
 ```
 
 ## 3. Modelo de datos objetivo
@@ -44,13 +46,13 @@ Saldo      saldo_inicial + Σ facturas activas no importadas (desde fecha_inicio
 |---|---|
 | `usuarios` | Sin `rol` |
 | `configuracion` | Nueva: IVA, TC, tarifa por kg, densidad, días de precio viejo |
-| `clientes` | + descuento_pct, tarifa_kg_usd, saldo_inicial, fecha_inicio_cuenta; sin borrados en cascada |
+| `clientes` | + descuento_pct, tarifa_kg, tarifa_moneda, saldo_inicial, fecha_inicio_cuenta; sin borrados en cascada |
 | `proveedores`, `precios_lista`, `compras` | Nuevas |
 | `productos` | Sin precio/costo (pasan a `precios_lista`); + unidad, familia, genéricos y búsqueda por similitud |
-| `documentos` / `documento_lineas` | Reemplazan `facturas` / `detalles_factura`: tipo, folio por serie, fecha real, descripción libre, pesos, método de precio, entrega y costo |
-| `documento_revisiones` | Nueva: versiones anteriores al editar |
-| `abonos` | Pasan a la cuenta del cliente, con proyecto opcional |
-| `consolidados` / `consolidado_grupos` | Consolidado en vivo por rango; solo se guardan los nombres editados |
+| `documentos` / `documento_lineas` | Reemplazan `facturas` / `detalles_factura`: tipo (COTIZACION, FACTURA, HISTORICO), folio por serie (COT, FAC, HIS), fecha real, descripción libre, pesos, método de precio, entrega, costo, mostrar_total_usd, tipo_cambio |
+| `documento_revisiones` | Nueva: versiones anteriores al editar con motivo inmutable protegido por base de datos |
+| `abonos` | Pasan a la cuenta del cliente, con proyecto opcional y validación de fecha de corte |
+| `consolidados` / `consolidado_grupos` | Consolidado en vivo por rango; mostrar_total_usd, tipo_cambio; solo se guardan los nombres editados |
 
 ## 4. Pull Requests
 
@@ -71,6 +73,13 @@ Todos los PR comparten este DoD: CI en verde (`./mvnw verify`, `npm run lint`, `
 | 11 | `feat/consolidados-por-entrega` | Consolidado en vivo por fecha de entrega con saldo anterior y abonos | V7 | Hecho |
 | 12 | `feat/compras-y-ganancias` | Compra al proveedor ligada a la venta y reporte de ganancias | V8 | Hecho |
 | 13 | `chore/pulido-movil-y-docs` | Celular, legibilidad, paginación, limpieza, manual de uso | — | Hecho |
+| C1 | `fix/bloqueantes-pre-deploy` | Fallos que bloquean el deploy | — | Hecho |
+| C2 | `feat/historial-y-total-usd` | Historial inmutable y total en dólares | V9 | Hecho |
+| C3 | `feat/historico-de-precios` | Histórico de precios, conversión y anulación | V10 | Hecho |
+| C4 | `feat/tarifa-por-cliente` | Tarifa por cliente y precio por peso | V11 | Hecho |
+| C5 | `fix/interfaz-pre-deploy` | Legibilidad, barra fija, consolidados y PDF | — | Hecho |
+| C6 | `fix/logica-menor` | Búsqueda, orden, cambio de cliente y mensajes | — | Hecho |
+| C7 | `docs/actualizacion-final` | Documentación final | — | Hecho |
 
 ### Casos de prueba (números de ejemplo)
 

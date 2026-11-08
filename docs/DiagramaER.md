@@ -38,7 +38,8 @@ erDiagram
         varchar telefono
         varchar detalles
         numeric descuento_pct
-        numeric tarifa_kg_usd
+        numeric tarifa_kg
+        varchar tarifa_moneda
         numeric saldo_inicial
         date fecha_inicio_cuenta
     }
@@ -102,6 +103,8 @@ erDiagram
         numeric total_kg
         text notas
         boolean mostrar_entrega
+        boolean mostrar_total_usd
+        numeric tipo_cambio
         uuid cotizacion_origen_id FK
         varchar import_key UK
         uuid cliente_id FK
@@ -139,6 +142,7 @@ erDiagram
         uuid documento_id FK
         integer numero
         text snapshot
+        varchar motivo
         uuid usuario_id FK
     }
 
@@ -164,6 +168,8 @@ erDiagram
         uuid proyecto_id FK
         date desde
         date hasta
+        boolean mostrar_total_usd
+        numeric tipo_cambio
     }
 
     CONSOLIDADO_GRUPOS {
@@ -247,7 +253,8 @@ erDiagram
 | `telefono` | VARCHAR(50) | SÍ | Teléfono o número de WhatsApp. |
 | `detalles` | TEXT | SÍ | Notas y condiciones particulares. |
 | `descuento_pct` | NUMERIC(5, 2) | NO | Descuento porcentual otorgado por defecto sobre lista. |
-| `tarifa_kg_usd` | NUMERIC(8, 4) | SÍ | Tarifa en USD/kg para cálculo de placas y platinas. |
+| `tarifa_kg` | NUMERIC(8, 4) | SÍ | Tarifa por kg para cálculo de placas y platinas. |
+| `tarifa_moneda` | VARCHAR(3) | NO | Moneda de la tarifa ('USD' o 'NIO', por defecto 'USD'). |
 | `saldo_inicial` | NUMERIC(14, 2) | NO | Saldo deudor anterior a la fecha de inicio de cuenta. |
 | `fecha_inicio_cuenta`| DATE | SÍ | Fecha a partir de la cual las facturas y abonos computan deuda. |
 
@@ -319,9 +326,9 @@ erDiagram
 | Campo | Tipo | Nulo | Descripción |
 |---|---|---|---|
 | `id` | UUID | NO | Llave primaria. |
-| `tipo` | VARCHAR(20) | NO | Tipo: `COTIZACION` o `FACTURA`. |
-| `folio` | VARCHAR(50) | NO | Folio único con prefijo (`COT-XXXX` o `FAC-XXXX`). |
-| `estado` | VARCHAR(20) | NO | `PENDIENTE`, `ACEPTADA`, `RECHAZADA`, `ACTIVA`, `ANULADA`. |
+| `tipo` | VARCHAR(20) | NO | Tipo: `COTIZACION`, `FACTURA` o `HISTORICO`. |
+| `folio` | VARCHAR(50) | NO | Folio único con prefijo (`COT-XXXX`, `FAC-XXXX` o `HIS-XXXX`). |
+| `estado` | VARCHAR(20) | NO | `PENDIENTE`, `ACEPTADA`, `RECHAZADA`, `ACTIVA`, `ANULADA`, `HISTORICA`. |
 | `fecha` | DATE | NO | Fecha formal del documento. |
 | `cliente_id` | UUID | NO | Llave foránea hacia `clientes`. |
 | `proyecto_id` | UUID | SÍ | Llave foránea hacia `proyectos`. |
@@ -330,6 +337,8 @@ erDiagram
 | `total_kg` | NUMERIC(12, 2)| NO | Suma total del peso de las líneas en kilogramos. |
 | `notas` | TEXT | SÍ | Observaciones internas (no se imprimen al exportar). |
 | `mostrar_entrega`| BOOLEAN | NO | Activa control de fechas y lugares de entrega en líneas. |
+| `mostrar_total_usd`| BOOLEAN | NO | Indica si se presenta el equivalente en dólares. |
+| `tipo_cambio` | NUMERIC(12, 6)| NO | Tipo de cambio fijado al momento de crear el documento. |
 | `cotizacion_origen_id` | UUID | SÍ | Llave foránea hacia `documentos` cuando se convierte de cotización. |
 | `import_key` | VARCHAR(64) | SÍ | Clave hash para conciliación e importación idempotente. |
 
@@ -362,6 +371,7 @@ erDiagram
 | `documento_id` | UUID | NO | Llave foránea hacia `documentos`. |
 | `numero` | INTEGER | NO | Número consecutivo de revisión. |
 | `snapshot` | TEXT | NO | JSON completo inmutable con los datos del documento al ser editado. |
+| `motivo` | VARCHAR(200) | NO | Motivo obligatorio de la modificación (tabla protegida con trigger inmutable). |
 | `usuario_id` | UUID | SÍ | Llave foránea hacia `usuarios` que realizó la modificación. |
 
 ---
@@ -393,6 +403,8 @@ erDiagram
 | `proyecto_id` | UUID | SÍ | Llave foránea hacia `proyectos` (opcional). |
 | `desde` | DATE | NO | Fecha inicial del rango. |
 | `hasta` | DATE | NO | Fecha final del rango. |
+| `mostrar_total_usd`| BOOLEAN | NO | Indica si se presenta el equivalente en dólares. |
+| `tipo_cambio` | NUMERIC(12, 6)| NO | Tipo de cambio fijado al momento de crear el consolidado. |
 
 #### Tabla: `consolidado_grupos`
 | Campo | Tipo | Nulo | Descripción |

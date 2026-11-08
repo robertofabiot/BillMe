@@ -42,13 +42,14 @@ El backend se organiza por capas en `com.example.billme`:
 | `importacion`, `exportacion` | Lectura de listas de precios en `.xlsx` y generación de documentos en Excel con Apache POI. |
 | `security`, `config` | Filtro JWT, `BCryptPasswordEncoder`, CORS y usuario inicial. |
 
-El esquema lo gestiona Flyway (`V1` a `V8`); Hibernate solo lo valida. La estructura completa está en el [diagrama entidad-relación](docs/DiagramaER.md).
+El esquema lo gestiona Flyway (`V1` a `V11`); Hibernate solo lo valida. La estructura completa está en el [diagrama entidad-relación](docs/DiagramaER.md).
 
 ## Características técnicas
 
-- **Documentos versionados:** folios independientes por serie (`COT-0001`, `FAC-0001`), revisiones inmutables en cada modificación y anulación lógica en lugar de borrado.
-- **Precio sugerido:** resuelve el último precio vendido al cliente y, si no existe, aplica el precio de lista vigente con el descuento del cliente. Incluye cálculo por peso y por metro.
-- **Cuenta corriente derivada:** el saldo se calcula como `saldo_inicial + Σ facturas activas − Σ abonos`, con soporte para saldo a favor. No se almacena, se deriva en la consulta.
+- **Documentos versionados:** folios independientes por serie (`COT-0001`, `FAC-0001`, `HIS-0001`), revisiones inmutables en cada modificación protegidas con trigger de base de datos y motivo obligatorio, y anulación lógica con reactivación.
+- **Histórico de precios:** importación de ventas anteriores bajo la serie `HIS` que no alteran el saldo ni las ganancias, con conversión individual a facturas activas (`FAC`).
+- **Precio sugerido:** resuelve el último precio vendido al cliente y, si no existe, aplica el precio de lista vigente con el descuento del cliente. Incluye cálculo por peso (con tarifa en USD o C$ por cliente) y por metro.
+- **Cuenta corriente derivada:** el saldo se calcula como `saldo_inicial + Σ facturas activas − Σ abonos` (considerando solo facturas activas desde la fecha de corte), con soporte para saldo a favor. No se almacena, se deriva en la consulta.
 - **Búsqueda tolerante a errores:** coincidencia aproximada con la extensión `pg_trgm` de PostgreSQL.
 - **Paginación y filtrado en servidor:** `Pageable` en los listados de documentos, con búsqueda por texto libre y *debounce* de 300 ms en el cliente.
 - **Importación de listas de precios:** lectura de `.xlsx`/`.xlsm` con mapeo automático de columnas y vista previa antes de confirmar.
