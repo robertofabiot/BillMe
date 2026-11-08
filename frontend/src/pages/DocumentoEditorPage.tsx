@@ -35,6 +35,7 @@ interface Formulario {
 const TITULOS: Record<TipoDocumento, { nuevo: string; lista: string; ruta: string }> = {
   COTIZACION: { nuevo: 'Nueva cotización', lista: 'Cotizaciones', ruta: '/cotizaciones' },
   FACTURA: { nuevo: 'Nueva factura', lista: 'Facturas', ruta: '/' },
+  HISTORICO: { nuevo: 'Histórico', lista: 'Precios', ruta: '/precios' },
 }
 
 const SALIR_SIN_GUARDAR = 'Hay cambios sin guardar. ¿Salir sin guardar?'
@@ -200,7 +201,7 @@ export function DocumentoEditorPage() {
   }, [form.clienteId])
 
   const cambiosSinGuardar = JSON.stringify(form) !== guardadoRef.current
-  const soloLectura = documento?.estado === 'ACEPTADA' || documento?.estado === 'ANULADA'
+  const soloLectura = documento?.estado === 'ACEPTADA' || documento?.estado === 'ANULADA' || documento?.estado === 'HISTORICA'
 
   const abrirExportar = () => {
     if (cambiosSinGuardar && !window.confirm('Se exportará la última versión guardada. ¿Continuar?')) {
@@ -419,9 +420,32 @@ export function DocumentoEditorPage() {
   }
 
   const anular = () => {
-    if (documento && window.confirm(`¿Anular ${documento.folio}? Dejará de contar en ingresos y ya no se podrá editar.`)) {
+    if (!documento) return
+    const avisoOrigen = documento.cotizacionOrigenFolio
+      ? ` La cotización ${documento.cotizacionOrigenFolio} volverá a pendiente.`
+      : ''
+    if (window.confirm(`¿Anular ${documento.folio}? Dejará de contar en ingresos.${avisoOrigen}`)) {
       void ejecutar(() => documentoService.anular(documento.id), 'Factura anulada.')
     }
+  }
+
+  const convertirHistorico = () => {
+    if (!documento) return
+    const avisoSaldo = clienteActual?.fechaInicioCuenta && documento.fecha < clienteActual.fechaInicioCuenta
+      ? ' Su fecha es anterior al inicio de la cuenta: no cambiará el saldo.'
+      : ''
+    if (
+      !window.confirm(
+        `¿Convertir ${documento.folio} en factura activa? Recibirá un folio de factura nuevo y sumará ${formatCurrency(documento.total)} al saldo de ${documento.clienteNombre}.${avisoSaldo}`
+      )
+    ) return
+    void ejecutar(() => documentoService.convertirHistorico(documento.id), 'Factura activa creada.')
+  }
+
+  const reactivar = () => {
+    if (!documento) return
+    if (!window.confirm(`¿Reactivar ${documento.folio}? Volverá a contar en ingresos y en el saldo.`)) return
+    void ejecutar(() => documentoService.reactivar(documento.id), 'Factura reactivada.')
   }
 
   const alRegistrarCompra = async () => {
@@ -472,9 +496,11 @@ export function DocumentoEditorPage() {
 
         {documento && (
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" onClick={abrirExportar} className="gap-2">
-              <FileDown className="w-4 h-4" /> Exportar
-            </Button>
+            {documento.estado !== 'HISTORICA' && (
+              <Button variant="outline" onClick={abrirExportar} className="gap-2">
+                <FileDown className="w-4 h-4" /> Exportar
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setViendoCambios(true)} className="gap-2">
               <History className="w-4 h-4" /> Ver cambios
             </Button>
@@ -502,6 +528,16 @@ export function DocumentoEditorPage() {
                 <Button variant="outline" disabled={trabajando} onClick={anular} className="text-red-600 hover:text-red-700">Anular</Button>
               </>
             )}
+            {documento.estado === 'HISTORICA' && (
+              <Button disabled={trabajando} onClick={convertirHistorico} className="bg-[#558564] hover:bg-[#558564]/90 text-white">
+                Convertir en factura activa
+              </Button>
+            )}
+            {documento.estado === 'ANULADA' && (
+              <Button variant="outline" disabled={trabajando} onClick={reactivar}>
+                Reactivar
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -517,7 +553,12 @@ export function DocumentoEditorPage() {
       )}
       {documento?.estado === 'ANULADA' && (
         <p className="text-sm bg-[#F9FAFB] border border-[#E5E7EB] text-[#705D56] rounded px-4 py-3">
-          Esta factura está anulada: no cuenta en ingresos y no se puede editar.
+          Esta factura está anulada: no cuenta en ingresos. Para editarla, reactívala.
+        </p>
+      )}
+      {documento?.estado === 'HISTORICA' && (
+        <p className="text-sm bg-[#F9FAFB] border border-[#E5E7EB] text-[#705D56] rounded px-4 py-3">
+          Este registro viene del histórico de precios. No cuenta en saldos ni reportes. Para usarlo como venta, conviértelo en factura activa.
         </p>
       )}
       {documento?.estado === 'RECHAZADA' && (

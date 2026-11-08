@@ -333,8 +333,8 @@ export interface ImportacionCotizaciones {
   filasLeidas: number
   filasNuevas: number
   filasYaImportadas: number
-  facturasNuevas: number
-  facturasConLineasNuevas: number
+  registrosNuevos: number
+  registrosConLineasNuevas: number
   clientesNuevos: string[]
   filasIncompletas: FilaProblema[]
   porConciliar: PorConciliar[]
@@ -348,9 +348,9 @@ export interface DecisionConciliacion {
 
 // ─── Cotizaciones y facturas ────────────────────────────────────────────
 
-export type TipoDocumento = 'COTIZACION' | 'FACTURA'
+export type TipoDocumento = 'COTIZACION' | 'FACTURA' | 'HISTORICO'
 /** Cotización: PENDIENTE, ACEPTADA o RECHAZADA. Factura: ACTIVA o ANULADA. */
-export type EstadoDocumento = 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA' | 'ACTIVA' | 'ANULADA'
+export type EstadoDocumento = 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA' | 'ACTIVA' | 'ANULADA' | 'HISTORICA'
 export type MetodoPrecio = 'ULTIMO_PRECIO' | 'FORMULA_LISTA' | 'POR_PESO' | 'POR_METRO' | 'MANUAL'
 
 export interface LineaDocumento {

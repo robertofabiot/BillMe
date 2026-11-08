@@ -4,7 +4,6 @@ import com.example.billme.calculo.CalculoDocumento;
 import com.example.billme.dto.DecisionConciliacion;
 import com.example.billme.dto.ImportacionCotizacionesResponse;
 import com.example.billme.enums.EstadoDocumento;
-import com.example.billme.enums.EstadoProyecto;
 import com.example.billme.enums.MetodoPrecio;
 import com.example.billme.enums.TipoDocumento;
 import com.example.billme.importacion.ClaveImportacion;
@@ -16,14 +15,12 @@ import com.example.billme.model.AliasProducto;
 import com.example.billme.model.Documento;
 import com.example.billme.model.DocumentoLinea;
 import com.example.billme.model.Producto;
-import com.example.billme.model.Proyecto;
 import com.example.billme.model.Usuario;
 import com.example.billme.repository.AliasProductoRepository;
 import com.example.billme.repository.ClienteRepository;
 import com.example.billme.repository.DocumentoLineaRepository;
 import com.example.billme.repository.DocumentoRepository;
 import com.example.billme.repository.ProductoRepository;
-import com.example.billme.repository.ProyectoRepository;
 import com.example.billme.util.NormalizadorTexto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -49,7 +46,6 @@ public class ImportacionCotizacionesService {
     private final DocumentoRepository documentoRepository;
     private final DocumentoLineaRepository documentoLineaRepository;
     private final ClienteRepository clienteRepository;
-    private final ProyectoRepository proyectoRepository;
     private final ProductoRepository productoRepository;
     private final AliasProductoRepository aliasProductoRepository;
     private final ProductoService productoService;
@@ -182,15 +178,22 @@ public class ImportacionCotizacionesService {
                 ? Collections.emptySet()
                 : documentoLineaRepository.findImportKeysIn(todasLasClavesLinea);
 
+        Set<String> gruposConvertidos = new HashSet<>();
+        for (String clave : grupos.keySet()) {
+            documentoRepository.findByImportKey(clave)
+                    .filter(d -> d.getTipo() != TipoDocumento.HISTORICO)
+                    .ifPresent(d -> gruposConvertidos.add(clave));
+        }
+
         int filasNuevas = 0;
         int filasYaImportadas = 0;
-        int facturasNuevas = 0;
-        int facturasConLineasNuevas = 0;
+        int registrosNuevos = 0;
+        int registrosConLineasNuevas = 0;
 
         for (GrupoDocumento grupo : grupos.values()) {
             long nuevasEnGrupo = 0;
             for (FilaPreparada fp : grupo.filas()) {
-                if (clavesExistentes.contains(fp.claveLinea())) {
+                if (clavesExistentes.contains(fp.claveLinea()) || gruposConvertidos.contains(fp.claveDoc())) {
                     filasYaImportadas++;
                 } else {
                     filasNuevas++;
@@ -200,9 +203,9 @@ public class ImportacionCotizacionesService {
             if (nuevasEnGrupo > 0) {
                 boolean existeDoc = documentoRepository.findByImportKey(grupo.claveDoc()).isPresent();
                 if (existeDoc) {
-                    facturasConLineasNuevas++;
+                    registrosConLineasNuevas++;
                 } else {
-                    facturasNuevas++;
+                    registrosNuevos++;
                 }
             }
         }
@@ -212,7 +215,7 @@ public class ImportacionCotizacionesService {
 
         for (GrupoDocumento grupo : grupos.values()) {
             for (FilaPreparada fp : grupo.filas()) {
-                if (clavesExistentes.contains(fp.claveLinea())) {
+                if (clavesExistentes.contains(fp.claveLinea()) || gruposConvertidos.contains(fp.claveDoc())) {
                     continue;
                 }
                 FilaCotizacion f = fp.fila();
@@ -253,8 +256,8 @@ public class ImportacionCotizacionesService {
                 lectura.filas().size(),
                 filasNuevas,
                 filasYaImportadas,
-                facturasNuevas,
-                facturasConLineasNuevas,
+                registrosNuevos,
+                registrosConLineasNuevas,
                 clientesNuevos,
                 lectura.incompletas(),
                 porConciliar,
@@ -343,15 +346,22 @@ public class ImportacionCotizacionesService {
                 ? Collections.emptySet()
                 : documentoLineaRepository.findImportKeysIn(todasLasClavesLinea);
 
+        Set<String> gruposConvertidos = new HashSet<>();
+        for (String clave : grupos.keySet()) {
+            documentoRepository.findByImportKey(clave)
+                    .filter(d -> d.getTipo() != TipoDocumento.HISTORICO)
+                    .ifPresent(d -> gruposConvertidos.add(clave));
+        }
+
         int filasNuevas = 0;
         int filasYaImportadas = 0;
-        int facturasNuevas = 0;
-        int facturasConLineasNuevas = 0;
+        int registrosNuevos = 0;
+        int registrosConLineasNuevas = 0;
 
         for (GrupoDocumento grupo : grupos.values()) {
             long nuevasEnGrupo = 0;
             for (FilaPreparada fp : grupo.filas()) {
-                if (clavesExistentes.contains(fp.claveLinea())) {
+                if (clavesExistentes.contains(fp.claveLinea()) || gruposConvertidos.contains(fp.claveDoc())) {
                     filasYaImportadas++;
                 } else {
                     filasNuevas++;
@@ -361,9 +371,9 @@ public class ImportacionCotizacionesService {
             if (nuevasEnGrupo > 0) {
                 boolean existeDoc = documentoRepository.findByImportKey(grupo.claveDoc()).isPresent();
                 if (existeDoc) {
-                    facturasConLineasNuevas++;
+                    registrosConLineasNuevas++;
                 } else {
-                    facturasNuevas++;
+                    registrosNuevos++;
                 }
             }
         }
@@ -386,14 +396,12 @@ public class ImportacionCotizacionesService {
         }
         Set<String> aliasCreados = new HashSet<>();
 
-        Map<String, Proyecto> proyectosCache = new HashMap<>();
-
         List<GrupoDocumento> gruposOrdenados = new ArrayList<>(grupos.values());
         gruposOrdenados.sort(Comparator.comparing(GrupoDocumento::fecha));
 
         for (GrupoDocumento grupo : gruposOrdenados) {
             List<FilaPreparada> lineasNuevas = grupo.filas().stream()
-                    .filter(fp -> !clavesExistentes.contains(fp.claveLinea()))
+                    .filter(fp -> !(clavesExistentes.contains(fp.claveLinea()) || gruposConvertidos.contains(fp.claveDoc())))
                     .toList();
 
             if (lineasNuevas.isEmpty()) {
@@ -406,31 +414,13 @@ public class ImportacionCotizacionesService {
             if (docExistente.isPresent()) {
                 documento = docExistente.get();
             } else {
-                Proyecto proyecto = null;
-                if (grupo.proyectoRaw() != null && !grupo.proyectoRaw().isBlank()) {
-                    String nombreProyecto = grupo.proyectoRaw().trim();
-                    String projKey = grupo.cliente().getId().toString() + "|" + NormalizadorTexto.normalizar(nombreProyecto);
-                    proyecto = proyectosCache.get(projKey);
-                    if (proyecto == null) {
-                        Optional<Proyecto> optProj = proyectoRepository.findFirstByClienteIdAndNombreIgnoreCase(
-                                grupo.cliente().getId(), nombreProyecto);
-                        if (optProj.isPresent()) {
-                            proyecto = optProj.get();
-                        } else {
-                            proyecto = proyectoRepository.save(Proyecto.builder()
-                                    .nombre(nombreProyecto)
-                                    .cliente(grupo.cliente())
-                                    .estado(EstadoProyecto.ACTIVO)
-                                    .build());
-                        }
-                        proyectosCache.put(projKey, proyecto);
-                    }
-                }
-
-                String folio = documentoService.siguienteFolio(TipoDocumento.FACTURA);
+                String folio = documentoService.siguienteFolio(TipoDocumento.HISTORICO);
                 Usuario usuario = documentoService.usuarioActual();
 
                 String notas = "Importado de " + lectura.hoja() + ".";
+                if (grupo.proyectoRaw() != null && !grupo.proyectoRaw().isBlank()) {
+                    notas += " Proyecto en el Excel: " + grupo.proyectoRaw().trim() + ".";
+                }
                 List<String> observaciones = grupo.filas().stream()
                         .map(fp -> fp.fila().observaciones())
                         .filter(o -> o != null && !o.isBlank())
@@ -442,12 +432,12 @@ public class ImportacionCotizacionesService {
                 }
 
                 documento = Documento.builder()
-                        .tipo(TipoDocumento.FACTURA)
+                        .tipo(TipoDocumento.HISTORICO)
                         .folio(folio)
-                        .estado(EstadoDocumento.ACTIVA)
+                        .estado(EstadoDocumento.HISTORICA)
                         .fecha(grupo.fecha())
                         .cliente(grupo.cliente())
-                        .proyecto(proyecto)
+                        .proyecto(null)
                         .usuario(usuario)
                         .importKey(grupo.claveDoc())
                         .tipoCambio(configuracionService.tipoCambio().setScale(6, RoundingMode.HALF_UP))
@@ -538,8 +528,8 @@ public class ImportacionCotizacionesService {
                 lectura.filas().size(),
                 filasNuevas,
                 filasYaImportadas,
-                facturasNuevas,
-                facturasConLineasNuevas,
+                registrosNuevos,
+                registrosConLineasNuevas,
                 clientesNuevos,
                 lectura.incompletas(),
                 List.of(),

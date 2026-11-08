@@ -23,16 +23,19 @@ import com.example.billme.support.IntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -229,5 +232,90 @@ class DocumentoControllerTest extends IntegrationTest {
                 .andExpect(jsonPath("$.contenido[0].fecha", is("2026-10-20")))
                 .andExpect(jsonPath("$.contenido[1].fecha", is("2026-10-12")))
                 .andExpect(jsonPath("$.contenido[2].fecha", is("2026-10-05")));
+    }
+
+    @Test
+    void convertirHistoricoEndpointRetorna200() throws Exception {
+        DocumentoResponse fac = documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA, cliente.id(), null, LocalDate.of(2026, 10, 5), null, false,
+                List.of(new LineaRequest(null, producto.id(), null, BigDecimal.ONE, null, new BigDecimal("100"), null, null, null, null))
+        ));
+        Documento his = documentoRepository.findById(fac.id()).orElseThrow();
+        his.setTipo(TipoDocumento.HISTORICO);
+        his.setEstado(EstadoDocumento.HISTORICA);
+        his.setFolio("HIS-0001");
+        documentoRepository.save(his);
+
+        mockMvc.perform(post("/api/documentos/{id}/convertir-historico", his.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tipo", is("FACTURA")))
+                .andExpect(jsonPath("$.estado", is("ACTIVA")))
+                .andExpect(jsonPath("$.folio", is("FAC-0002")));
+    }
+
+    @Test
+    void reactivarEndpointRetorna200() throws Exception {
+        DocumentoResponse fac = documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA, cliente.id(), null, LocalDate.of(2026, 10, 5), null, false,
+                List.of(new LineaRequest(null, producto.id(), null, BigDecimal.ONE, null, new BigDecimal("100"), null, null, null, null))
+        ));
+        documentoService.anular(fac.id());
+
+        mockMvc.perform(post("/api/documentos/{id}/reactivar", fac.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado", is("ACTIVA")));
+    }
+
+    @Test
+    void convertirHistoricoDocInexistenteDa404() throws Exception {
+        mockMvc.perform(post("/api/documentos/{id}/convertir-historico", UUID.randomUUID()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void convertirHistoricoSobreFacturaDa409() throws Exception {
+        DocumentoResponse fac = documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA, cliente.id(), null, LocalDate.of(2026, 10, 5), null, false,
+                List.of(new LineaRequest(null, producto.id(), null, BigDecimal.ONE, null, new BigDecimal("100"), null, null, null, null))
+        ));
+
+        mockMvc.perform(post("/api/documentos/{id}/convertir-historico", fac.id()))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void reactivarDocInexistenteDa404() throws Exception {
+        mockMvc.perform(post("/api/documentos/{id}/reactivar", UUID.randomUUID()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void reactivarFacturaActivaDa409() throws Exception {
+        DocumentoResponse fac = documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA, cliente.id(), null, LocalDate.of(2026, 10, 5), null, false,
+                List.of(new LineaRequest(null, producto.id(), null, BigDecimal.ONE, null, new BigDecimal("100"), null, null, null, null))
+        ));
+
+        mockMvc.perform(post("/api/documentos/{id}/reactivar", fac.id()))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void crearDocumentoConTipoHistoricoDa400() throws Exception {
+        String body = """
+                {
+                  "tipo": "HISTORICO",
+                  "clienteId": "%s",
+                  "fecha": "2026-10-05",
+                  "lineas": [
+                    { "productoId": "%s", "cantidad": 1, "precioUnit": 100 }
+                  ]
+                }
+                """.formatted(cliente.id(), producto.id());
+
+        mockMvc.perform(post("/api/documentos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
     }
 }

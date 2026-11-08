@@ -17,6 +17,7 @@ import com.example.billme.enums.EstadoDocumento;
 import com.example.billme.enums.MetodoPrecio;
 import com.example.billme.enums.TipoDocumento;
 import com.example.billme.model.Abono;
+import com.example.billme.model.Documento;
 import com.example.billme.model.DocumentoRevision;
 import com.example.billme.model.Proveedor;
 import com.example.billme.model.Usuario;
@@ -574,6 +575,201 @@ class DocumentoServiceTest extends IntegrationTest {
         crear(TipoDocumento.COTIZACION);
 
         assertEstado(HttpStatus.CONFLICT, () -> productoService.eliminar(tubo.id()));
+    }
+
+    @Test
+    void historicoNoApareceConTipoNullEnFiltrarPeroSiAlFiltrarHistorico() {
+        DocumentoResponse fac = crear(TipoDocumento.FACTURA);
+        Documento his = documentoRepository.findById(fac.id()).orElseThrow();
+        his.setTipo(TipoDocumento.HISTORICO);
+        his.setEstado(EstadoDocumento.HISTORICA);
+        documentoRepository.save(his);
+
+        List<DocumentoResponse> sinTipo = documentoService.filtrar(null, null, null, null, null, null, null);
+        assertThat(sinTipo).noneMatch(d -> d.id().equals(his.getId()));
+
+        List<DocumentoResponse> conTipoHistorico = documentoService.filtrar(TipoDocumento.HISTORICO, null, null, null, null, null, null);
+        assertThat(conTipoHistorico).anyMatch(d -> d.id().equals(his.getId()));
+    }
+
+    @Test
+    void convertirHistoricoAsignaFolioFacDejaVersionYFallaSiSeRepite() {
+        DocumentoResponse fac = crear(TipoDocumento.FACTURA);
+        Documento his = documentoRepository.findById(fac.id()).orElseThrow();
+        his.setTipo(TipoDocumento.HISTORICO);
+        his.setEstado(EstadoDocumento.HISTORICA);
+        his.setFolio("HIS-0001");
+        documentoRepository.save(his);
+
+        DocumentoResponse convertida = documentoService.convertirHistorico(his.getId());
+        assertThat(convertida.tipo()).isEqualTo("FACTURA");
+        assertThat(convertida.estado()).isEqualTo("ACTIVA");
+        assertThat(convertida.folio()).isEqualTo("FAC-0002");
+
+        List<RevisionResponse> revs = documentoService.revisiones(his.getId());
+        assertThat(revs).hasSize(1);
+        assertThat(revs.get(0).motivo()).isEqualTo("Convertido en factura activa");
+
+        assertThatThrownBy(() -> documentoService.convertirHistorico(his.getId()))
+                .isInstanceOfSatisfying(ResponseStatusException.class, e -> {
+                    assertThat(e.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(e.getReason()).isEqualTo("Solo se convierte un registro del histórico");
+                });
+    }
+
+    @Test
+    void actualizarSobreHistoricoDa409ConMensajeExacto() {
+        DocumentoResponse fac = crear(TipoDocumento.FACTURA);
+        Documento his = documentoRepository.findById(fac.id()).orElseThrow();
+        his.setTipo(TipoDocumento.HISTORICO);
+        his.setEstado(EstadoDocumento.HISTORICA);
+        documentoRepository.save(his);
+
+        assertThatThrownBy(() -> documentoService.actualizar(his.getId(), requestDe(fac)))
+                .isInstanceOfSatisfying(ResponseStatusException.class, e -> {
+                    assertThat(e.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(e.getReason()).isEqualTo("Este registro del histórico no se edita: conviértelo primero en factura activa");
+                });
+    }
+
+    @Test
+    void actualizarSobreFacturaAnuladaDa409ConMensajeExacto() {
+        DocumentoResponse fac = crear(TipoDocumento.FACTURA);
+        documentoService.anular(fac.id());
+
+        assertThatThrownBy(() -> documentoService.actualizar(fac.id(), requestDe(fac)))
+                .isInstanceOfSatisfying(ResponseStatusException.class, e -> {
+                    assertThat(e.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(e.getReason()).isEqualTo("Reactiva la factura para poder editarla");
+                });
+    }
+
+    @Test
+    void anularFacturaDevuelveCotizacionAPendienteYPermiteReconvertirla() {
+        DocumentoResponse cot = crear(TipoDocumento.COTIZACION);
+        assertThat(cot.estado()).isEqualTo("PENDIENTE");
+
+        DocumentoResponse fac1 = documentoService.convertirAFactura(cot.id(), null);
+        assertThat(fac1.estado()).isEqualTo("ACTIVA");
+        assertThat(documentoService.obtener(cot.id()).estado()).isEqualTo("ACEPTADA");
+        assertThat(documentoService.obtener(cot.id()).facturaGeneradaId()).isEqualTo(fac1.id());
+
+        DocumentoResponse fac1Anulada = documentoService.anular(fac1.id());
+        assertThat(fac1Anulada.estado()).isEqualTo("ANULADA");
+
+        DocumentoResponse cotPendiente = documentoService.obtener(cot.id());
+        assertThat(cotPendiente.estado()).isEqualTo("PENDIENTE");
+        assertThat(cotPendiente.facturaGeneradaId()).isNull();
+
+        List<RevisionResponse> revsCot = documentoService.revisiones(cot.id());
+        assertThat(revsCot).isNotEmpty();
+        assertThat(revsCot.get(0).motivo()).isEqualTo("Factura " + fac1.folio() + " anulada: la cotización vuelve a pendiente");
+
+        DocumentoResponse fac2 = documentoService.convertirAFactura(cot.id(), null);
+        assertThat(fac2.estado()).isEqualTo("ACTIVA");
+        assertThat(fac2.folio()).isNotEqualTo(fac1.folio());
+        assertThat(documentoService.obtener(cot.id()).estado()).isEqualTo("ACEPTADA");
+        assertThat(documentoService.obtener(cot.id()).facturaGeneradaId()).isEqualTo(fac2.id());
+    }
+
+    @Test
+    void reactivarFacturaFuncionaSinSegundaFacturaYDa409ConSegundaFactura() {
+        DocumentoResponse cot = crear(TipoDocumento.COTIZACION);
+        DocumentoResponse fac1 = documentoService.convertirAFactura(cot.id(), null);
+        documentoService.anular(fac1.id());
+
+        DocumentoResponse reactivada = documentoService.reactivar(fac1.id());
+        assertThat(reactivada.estado()).isEqualTo("ACTIVA");
+        assertThat(documentoService.obtener(cot.id()).estado()).isEqualTo("ACEPTADA");
+
+        List<RevisionResponse> revsFac = documentoService.revisiones(fac1.id());
+        assertThat(revsFac.get(0).motivo()).isEqualTo("Factura reactivada");
+        List<RevisionResponse> revsCot = documentoService.revisiones(cot.id());
+        assertThat(revsCot.get(0).motivo()).isEqualTo("Factura " + fac1.folio() + " reactivada");
+
+        assertThatThrownBy(() -> documentoService.reactivar(fac1.id()))
+                .isInstanceOfSatisfying(ResponseStatusException.class, e -> {
+                    assertThat(e.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(e.getReason()).isEqualTo("Solo se reactiva una factura anulada");
+                });
+
+        documentoService.anular(fac1.id());
+        DocumentoResponse fac2 = documentoService.convertirAFactura(cot.id(), null);
+        assertThat(fac2.estado()).isEqualTo("ACTIVA");
+
+        assertThatThrownBy(() -> documentoService.reactivar(fac1.id()))
+                .isInstanceOfSatisfying(ResponseStatusException.class, e -> {
+                    assertThat(e.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(e.getReason()).isEqualTo("La cotización ya tiene otra factura: no se puede reactivar esta");
+                });
+    }
+
+    @Test
+    void crearConTipoHistoricoDa400BadRequest() {
+        assertThatThrownBy(() -> documentoService.crear(request(TipoDocumento.HISTORICO, List.of(linea(tubo.id(), "1", "100")))))
+                .isInstanceOfSatisfying(ResponseStatusException.class, e -> {
+                    assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(e.getReason()).isEqualTo("Indica si es cotización o factura");
+                });
+    }
+
+    @Test
+    void historicoConvertidoAFacturaPuedeSerAnuladoYReactivado() {
+        DocumentoResponse facInicial = crear(TipoDocumento.FACTURA);
+        Documento his = documentoRepository.findById(facInicial.id()).orElseThrow();
+        his.setTipo(TipoDocumento.HISTORICO);
+        his.setEstado(EstadoDocumento.HISTORICA);
+        his.setFolio("HIS-0001");
+        documentoRepository.save(his);
+
+        DocumentoResponse convertida = documentoService.convertirHistorico(his.getId());
+        assertThat(convertida.estado()).isEqualTo("ACTIVA");
+        assertThat(convertida.tipo()).isEqualTo("FACTURA");
+
+        DocumentoResponse anulada = documentoService.anular(convertida.id());
+        assertThat(anulada.estado()).isEqualTo("ANULADA");
+
+        // No se puede editar mientras está anulada
+        assertThatThrownBy(() -> documentoService.actualizar(convertida.id(), requestDe(convertida)))
+                .isInstanceOfSatisfying(ResponseStatusException.class, e -> {
+                    assertThat(e.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(e.getReason()).isEqualTo("Reactiva la factura para poder editarla");
+                });
+
+        DocumentoResponse reactivada = documentoService.reactivar(convertida.id());
+        assertThat(reactivada.estado()).isEqualTo("ACTIVA");
+
+        // Ahora sí se puede editar
+        DocumentoRequest edicionReq = new DocumentoRequest(null, cliente.id(), null, FECHA, "Notas editadas", false,
+                List.of(linea(tubo.id(), "2", "150")));
+        DocumentoResponse editada = documentoService.actualizar(convertida.id(), edicionReq);
+        assertThat(editada.total()).isEqualByComparingTo("300.00");
+        assertThat(editada.notas()).isEqualTo("Notas editadas");
+    }
+
+    @Test
+    void cotizacionConMultiplesFacturasAnuladasReactivacionExclusiva() {
+        DocumentoResponse cot = crear(TipoDocumento.COTIZACION);
+        DocumentoResponse fac1 = documentoService.convertirAFactura(cot.id(), null);
+        documentoService.anular(fac1.id());
+
+        DocumentoResponse fac2 = documentoService.convertirAFactura(cot.id(), null);
+        documentoService.anular(fac2.id());
+
+        // Ambas facturas están anuladas y cotización vuelve a PENDIENTE
+        assertThat(documentoService.obtener(cot.id()).estado()).isEqualTo("PENDIENTE");
+
+        // Reactivar fac1 tiene éxito y pone la cotización en ACEPTADA
+        DocumentoResponse r1 = documentoService.reactivar(fac1.id());
+        assertThat(r1.estado()).isEqualTo("ACTIVA");
+        assertThat(documentoService.obtener(cot.id()).estado()).isEqualTo("ACEPTADA");
+
+        // Intentar reactivar fac2 falla con 409 porque fac1 está activa
+        assertThatThrownBy(() -> documentoService.reactivar(fac2.id()))
+                .isInstanceOfSatisfying(ResponseStatusException.class, e -> {
+                    assertThat(e.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(e.getReason()).isEqualTo("La cotización ya tiene otra factura: no se puede reactivar esta");
+                });
     }
 
     // ── Ayudas ───────────────────────────────────────────────────────────────

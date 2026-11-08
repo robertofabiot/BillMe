@@ -1,7 +1,9 @@
 package com.example.billme.service;
 
 import com.example.billme.dto.*;
+import com.example.billme.enums.EstadoDocumento;
 import com.example.billme.enums.TipoDocumento;
+import com.example.billme.repository.DocumentoRepository;
 import com.example.billme.support.IntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +35,9 @@ class ProyectoServiceTest extends IntegrationTest {
 
     @Autowired
     private DocumentoService documentoService;
+
+    @Autowired
+    private DocumentoRepository documentoRepository;
 
     private ClienteResponse cliente;
     private ProductoResponse producto;
@@ -146,6 +151,25 @@ class ProyectoServiceTest extends IntegrationTest {
                 List.of(linea(producto.id(), "6", "100.00"))));
         assertThat(facEditada.notas()).isEqualTo("Factura editada correctamente");
         assertThat(facEditada.total()).isEqualByComparingTo("600.00");
+    }
+
+    @Test
+    void historicoEnProyectoNoSumaAntesDeConvertirYDespuesSi() {
+        ProyectoResponse p = proyectoService.crear(new ProyectoRequest(cliente.id(), "Proyecto Con Histórico", null));
+        DocumentoResponse doc = documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA, cliente.id(), p.id(), FECHA, null, false,
+                List.of(linea(producto.id(), "10", "100.00"))));
+
+        var docEnt = documentoRepository.findById(doc.id()).orElseThrow();
+        docEnt.setTipo(TipoDocumento.HISTORICO);
+        docEnt.setEstado(EstadoDocumento.HISTORICA);
+        documentoRepository.save(docEnt);
+
+        assertThat(proyectoService.obtenerPorId(p.id()).totalFacturado()).isEqualByComparingTo("0.00");
+
+        documentoService.convertirHistorico(docEnt.getId());
+
+        assertThat(proyectoService.obtenerPorId(p.id()).totalFacturado()).isEqualByComparingTo("1000.00");
     }
 
     private static LineaRequest linea(java.util.UUID productoId, String cantidad, String precio) {

@@ -11,6 +11,7 @@ function apariencia(d: Pick<Documento, 'estado'>) {
     case 'RECHAZADA': return { texto: 'Rechazada', ...GRIS }
     case 'ANULADA': return { texto: 'Anulada', ...GRIS }
     case 'ACTIVA': return { texto: 'Activa', ...VERDE }
+    case 'HISTORICA': return { texto: 'Histórico', ...GRIS }
     default: return { texto: d.estado, ...GRIS }
   }
 }

@@ -231,6 +231,37 @@ class PrecioSugeridoServiceTest extends IntegrationTest {
         assertThat(histRedondo.get(0).descripcion()).contains("Redondo");
     }
 
+    @Test
+    void cotizacionDeFacturaAnuladaSigueAlimentandoPrecioSugerido() {
+        DocumentoResponse cot = crearDoc(clienteA.id(), productoTubo.id(), new BigDecimal("350.00"), Fechas.hoy().minusDays(1), TipoDocumento.COTIZACION);
+        DocumentoResponse fac = documentoService.convertirAFactura(cot.id(), null);
+        documentoService.anular(fac.id());
+
+        // La cotización volvió a pendiente; su precio sigue sugiriéndose
+        PrecioSugeridoResponse res = precioSugeridoService.sugerir(clienteA.id(), productoTubo.id(), null);
+        assertThat(res.precioUnit()).isEqualByComparingTo("350.00");
+        assertThat(res.folio()).isEqualTo(cot.folio());
+        assertThat(res.origen()).isEqualTo("ESTE_CLIENTE");
+    }
+
+    @Test
+    void historicoAlimentaPrecioSugeridoYHistorial() {
+        DocumentoResponse doc = crearDoc(clienteA.id(), productoTubo.id(), new BigDecimal("420.00"), Fechas.hoy().minusDays(3), TipoDocumento.COTIZACION);
+        var docEnt = documentoRepository.findById(doc.id()).orElseThrow();
+        docEnt.setTipo(TipoDocumento.HISTORICO);
+        docEnt.setEstado(EstadoDocumento.HISTORICA);
+        docEnt.setFolio("HIS-0001");
+        documentoRepository.save(docEnt);
+
+        PrecioSugeridoResponse res = precioSugeridoService.sugerir(clienteA.id(), productoTubo.id(), null);
+        assertThat(res.precioUnit()).isEqualByComparingTo("420.00");
+        assertThat(res.folio()).isEqualTo("HIS-0001");
+
+        List<PrecioHistorialResponse> hist = precioSugeridoService.historial(null, clienteA.id());
+        assertThat(hist).anyMatch(h -> "HIS-0001".equals(h.folio()) && "HISTORICO".equals(h.tipo())
+                && h.precioUnit().compareTo(new BigDecimal("420.00")) == 0);
+    }
+
     private DocumentoResponse crearDoc(UUID clienteId, UUID productoId, BigDecimal pu, LocalDate fecha, TipoDocumento tipo) {
         return documentoService.crear(new DocumentoRequest(
                 tipo,

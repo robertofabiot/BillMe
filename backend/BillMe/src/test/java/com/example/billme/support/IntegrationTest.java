@@ -48,6 +48,7 @@ public abstract class IntegrationTest {
         jdbc.execute("alter sequence seq_folio_cot restart");
         jdbc.execute("alter sequence seq_folio_fac restart");
         jdbc.execute("alter sequence seq_folio_cons restart");
+        jdbc.execute("alter sequence seq_folio_his restart");
     }
 
     private static EmbeddedPostgres iniciarPostgres() {

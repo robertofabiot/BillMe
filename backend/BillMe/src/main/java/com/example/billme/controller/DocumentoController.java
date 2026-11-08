@@ -99,4 +99,14 @@ public class DocumentoController {
     public ResponseEntity<DocumentoResponse> anular(@PathVariable UUID id) {
         return ResponseEntity.ok(documentoService.anular(id));
     }
+
+    @PostMapping("/{id}/convertir-historico")
+    public ResponseEntity<DocumentoResponse> convertirHistorico(@PathVariable UUID id) {
+        return ResponseEntity.ok(documentoService.convertirHistorico(id));
+    }
+
+    @PostMapping("/{id}/reactivar")
+    public ResponseEntity<DocumentoResponse> reactivar(@PathVariable UUID id) {
+        return ResponseEntity.ok(documentoService.reactivar(id));
+    }
 }

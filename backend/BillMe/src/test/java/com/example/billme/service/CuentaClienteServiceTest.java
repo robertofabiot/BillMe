@@ -10,6 +10,7 @@ import com.example.billme.dto.ProductoRequest;
 import com.example.billme.dto.ProductoResponse;
 import com.example.billme.dto.ProyectoRequest;
 import com.example.billme.dto.ProyectoResponse;
+import com.example.billme.enums.EstadoDocumento;
 import com.example.billme.enums.TipoDocumento;
 import com.example.billme.model.Abono;
 import com.example.billme.model.Cliente;
@@ -245,7 +246,7 @@ class CuentaClienteServiceTest extends IntegrationTest {
                 List.of(new LineaRequest(null, producto.id(), "Material", BigDecimal.ONE, null, new BigDecimal("700.00"), null, null, null, null))
         ));
 
-        // Factura con import_key
+        // Registro del histórico (no cuenta en saldo)
         DocumentoResponse facImportada = documentoService.crear(new DocumentoRequest(
                 TipoDocumento.FACTURA,
                 cliente.id(),
@@ -256,7 +257,8 @@ class CuentaClienteServiceTest extends IntegrationTest {
                 List.of(new LineaRequest(null, producto.id(), "Material", BigDecimal.ONE, null, new BigDecimal("800.00"), null, null, null, null))
         ));
         var docEnt = documentoRepository.findById(facImportada.id()).orElseThrow();
-        docEnt.setImportKey("EXP-001");
+        docEnt.setTipo(TipoDocumento.HISTORICO);
+        docEnt.setEstado(EstadoDocumento.HISTORICA);
         documentoRepository.save(docEnt);
 
         // Abono anterior a fecha_inicio_cuenta (2026-01-20)
@@ -274,5 +276,11 @@ class CuentaClienteServiceTest extends IntegrationTest {
         assertThat(cuenta.saldo()).isEqualByComparingTo("1000.00");
         assertThat(cuenta.movimientos()).hasSize(1);
         assertThat(cuenta.movimientos().get(0).tipo()).isEqualTo("SALDO_INICIAL");
+
+        // Al convertir el histórico a factura activa, sí entra al saldo
+        documentoService.convertirHistorico(docEnt.getId());
+        CuentaClienteResponse cuentaTrasConvertir = cuentaClienteService.cuenta(cliente.id());
+        assertThat(cuentaTrasConvertir.totalFacturado()).isEqualByComparingTo("800.00");
+        assertThat(cuentaTrasConvertir.saldo()).isEqualByComparingTo("1800.00");
     }
 }
