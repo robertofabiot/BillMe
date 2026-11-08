@@ -46,8 +46,19 @@ public record ConsolidadoResponse(
             String nombre,
             List<Linea> lineas,
             BigDecimal subtotal,
-            BigDecimal subtotalKg
-    ) {}
+            BigDecimal subtotalKg,
+            boolean editado
+    ) {
+        public Grupo(
+                LocalDate fechaEntrega,
+                String nombre,
+                List<Linea> lineas,
+                BigDecimal subtotal,
+                BigDecimal subtotalKg
+        ) {
+            this(fechaEntrega, nombre, lineas, subtotal, subtotalKg, false);
+        }
+    }
 
     public record Linea(
             UUID documentoId,

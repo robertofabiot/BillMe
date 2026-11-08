@@ -409,4 +409,70 @@ class ConsolidadoServiceTest extends IntegrationTest {
             ));
         }
     }
+
+    @Test
+    void consolidadoGrupoMarcaEditadoSoloSiFueRenombrado() {
+        LocalDate fechaFactura = LocalDate.of(2026, 3, 5);
+        documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA,
+                cliente.id(),
+                null,
+                fechaFactura,
+                null,
+                false,
+                List.of(new LineaRequest(null, producto.id(), "Material grupo editado", BigDecimal.ONE, null, new BigDecimal("1500.00"), null, null, null, null))
+        ));
+
+        // Vista previa: no está editado
+        ConsolidadoResponse vista = consolidadoService.vistaPrevia(new ConsolidadoRangoRequest(
+                cliente.id(), null, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31)
+        ));
+        assertThat(vista.grupos().get(0).editado()).isFalse();
+
+        // Creado sin editar nombre
+        ConsolidadoResponse creado = consolidadoService.crear(new ConsolidadoGuardarRequest(
+                cliente.id(), null, "Consolidado Normal",
+                LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
+                List.of()
+        ));
+        assertThat(creado.grupos().get(0).editado()).isFalse();
+
+        // Actualizar con nombre editado
+        ConsolidadoResponse actualizado = consolidadoService.actualizar(creado.id(), new ConsolidadoGuardarRequest(
+                cliente.id(), null, "Consolidado Normal",
+                LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
+                List.of(new ConsolidadoGuardarRequest.NombreGrupo(fechaFactura, "Mi Grupo Personalizado"))
+        ));
+        assertThat(actualizado.grupos().get(0).editado()).isTrue();
+    }
+
+    @Test
+    void consolidadoConLineasSinPesoConservaNullYSumaSoloLasQueTienenPeso() {
+        LocalDate fecha = LocalDate.of(2026, 3, 10);
+        documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA,
+                cliente.id(),
+                null,
+                fecha,
+                null,
+                false,
+                List.of(
+                        new LineaRequest(null, producto.id(), "Sin peso", BigDecimal.ONE, null, new BigDecimal("500.00"), null, null, null, null),
+                        new LineaRequest(null, producto.id(), "Con peso", new BigDecimal("2"), new BigDecimal("10.000"), new BigDecimal("100.00"), null, null, null, null)
+                )
+        ));
+
+        ConsolidadoResponse vista = consolidadoService.vistaPrevia(new ConsolidadoRangoRequest(
+                cliente.id(), null, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31)
+        ));
+
+        assertThat(vista.grupos()).hasSize(1);
+        ConsolidadoResponse.Grupo grupo = vista.grupos().get(0);
+        assertThat(grupo.lineas()).hasSize(2);
+        assertThat(grupo.lineas().get(0).pesoUnitKg()).isNull();
+        assertThat(grupo.lineas().get(0).pesoTotalKg()).isNull();
+        assertThat(grupo.lineas().get(1).pesoUnitKg()).isEqualByComparingTo("10.000");
+        assertThat(grupo.lineas().get(1).pesoTotalKg()).isEqualByComparingTo("20.000");
+        assertThat(grupo.subtotalKg()).isEqualByComparingTo("20.000");
+    }
 }
