@@ -3,6 +3,7 @@ package com.example.billme.importacion;
 import com.example.billme.calculo.CalculoDocumento;
 import com.example.billme.dto.FilaProblema;
 import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.openxml4j.opc.PackageAccess;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
@@ -14,6 +15,7 @@ import org.xml.sax.SAXException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -36,15 +38,31 @@ public class CotizacionesLector {
     private static final DateTimeFormatter FORMATO_FECHA_TEXTO = DateTimeFormatter.ofPattern("d/M/yyyy");
 
     public LecturaCotizaciones leer(InputStream archivo) {
-        try (OPCPackage paquete = OPCPackage.open(archivo)) {
-            XSSFReader lector = new XSSFReader(paquete);
-            ReadOnlySharedStringsTable textos = new ReadOnlySharedStringsTable(paquete);
+        Path temporal = null;
+        try {
+            temporal = LectorExcel.copiarATemporal(archivo);
+            try (OPCPackage paquete = OPCPackage.open(temporal.toFile(), PackageAccess.READ)) {
+                XSSFReader lector = new XSSFReader(paquete);
+                ReadOnlySharedStringsTable textos = new ReadOnlySharedStringsTable(paquete);
 
-            // 1ª pasada: buscar hoja llamada "cotizaciones" (ignora mayúsculas/minúsculas)
-            var hojas = (XSSFReader.SheetIterator) lector.getSheetsData();
-            while (hojas.hasNext()) {
-                try (InputStream hoja = hojas.next()) {
-                    if (hojas.getSheetName().equalsIgnoreCase("cotizaciones")) {
+                // 1ª pasada: buscar hoja llamada "cotizaciones" (ignora mayúsculas/minúsculas)
+                var hojas = (XSSFReader.SheetIterator) lector.getSheetsData();
+                while (hojas.hasNext()) {
+                    try (InputStream hoja = hojas.next()) {
+                        if (hojas.getSheetName().equalsIgnoreCase("cotizaciones")) {
+                            ManejadorCotizaciones manejador = new ManejadorCotizaciones();
+                            LectorExcel.recorrer(hoja, textos, manejador);
+                            if (manejador.columnas != null) {
+                                return new LecturaCotizaciones(hojas.getSheetName(), manejador.filas, manejador.incompletas);
+                            }
+                        }
+                    }
+                }
+
+                // 2ª pasada: si no hay hoja "cotizaciones" válida, buscar primera hoja con los 4 encabezados obligatorios
+                hojas = (XSSFReader.SheetIterator) lector.getSheetsData();
+                while (hojas.hasNext()) {
+                    try (InputStream hoja = hojas.next()) {
                         ManejadorCotizaciones manejador = new ManejadorCotizaciones();
                         LectorExcel.recorrer(hoja, textos, manejador);
                         if (manejador.columnas != null) {
@@ -53,23 +71,13 @@ public class CotizacionesLector {
                     }
                 }
             }
-
-            // 2ª pasada: si no hay hoja "cotizaciones" válida, buscar primera hoja con los 4 encabezados obligatorios
-            hojas = (XSSFReader.SheetIterator) lector.getSheetsData();
-            while (hojas.hasNext()) {
-                try (InputStream hoja = hojas.next()) {
-                    ManejadorCotizaciones manejador = new ManejadorCotizaciones();
-                    LectorExcel.recorrer(hoja, textos, manejador);
-                    if (manejador.columnas != null) {
-                        return new LecturaCotizaciones(hojas.getSheetName(), manejador.filas, manejador.incompletas);
-                    }
-                }
-            }
         } catch (ResponseStatusException e) {
             throw e;
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "No se pudo leer el archivo. Debe ser un Excel (.xlsx o .xlsm).", e);
+        } finally {
+            LectorExcel.borrar(temporal);
         }
 
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
