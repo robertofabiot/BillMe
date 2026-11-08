@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 public class CalculoService {
 
     private final ConfiguracionService configuracionService;
+    private final PrecioPorPesoService precioPorPesoService;
 
     public CalculoPesoResponse calcularPeso(CalculoPesoRequest request) {
         try {
@@ -45,13 +46,12 @@ public class CalculoService {
 
     public PrecioCalculadoResponse calcularPrecioPorPeso(PrecioPorPesoRequest request) {
         try {
-            BigDecimal tipoCambio = configuracionService.tipoCambio();
-            BigDecimal factorIva = configuracionService.factorIva();
-            BigDecimal pu = CalculadoraPrecio.porPeso(
+            BigDecimal tipoCambio = request.tipoCambio() != null ? request.tipoCambio() : configuracionService.tipoCambio();
+            BigDecimal pu = precioPorPesoService.calcular(
                     request.pesoUnitKg(),
-                    request.tarifaUsd(),
-                    tipoCambio,
-                    factorIva
+                    request.tarifa(),
+                    request.moneda(),
+                    tipoCambio
             );
             return new PrecioCalculadoResponse(pu);
         } catch (IllegalArgumentException e) {

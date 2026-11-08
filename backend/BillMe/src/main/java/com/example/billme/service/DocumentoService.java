@@ -46,6 +46,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -64,6 +65,7 @@ public class DocumentoService {
     private final PrecioListaService precioListaService;
     private final DocumentoRevisionRepository revisionRepository;
     private final ConfiguracionService configuracionService;
+    private final PrecioPorPesoService precioPorPesoService;
     private final JsonMapper jsonMapper;
     private final DocumentoExcel documentoExcel;
 
@@ -374,8 +376,20 @@ public class DocumentoService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Escribe la descripción de la línea");
             }
             BigDecimal cantidad = pedida.cantidad().setScale(3, RoundingMode.HALF_UP);
-            LineaCalculada calculada = CalculoDocumento.linea(cantidad, pedida.precioUnit(),
-                    pedida.pesoUnitKg() != null ? pedida.pesoUnitKg() : producto.getPeso());
+            BigDecimal pesoPedido = pedida.pesoUnitKg() != null ? pedida.pesoUnitKg() : producto.getPeso();
+            BigDecimal precioPedido = pedida.precioUnit();
+            if (pedida.metodoPrecio() == MetodoPrecio.POR_PESO) {
+                boolean esNueva = linea.getId() == null;
+                boolean cambioPeso = linea.getPesoUnitKg() == null || pesoPedido == null
+                        || CalculoDocumento.r2(pesoPedido).compareTo(linea.getPesoUnitKg()) != 0;
+                boolean cambioParametros = !Objects.equals(pedida.parametros(), linea.getParametros());
+                if (esNueva || cambioPeso || cambioParametros) {
+                    precioPedido = precioPorPesoService
+                            .recalcular(pedida.parametros(), pesoPedido, documento.getTipoCambio())
+                            .orElse(pedida.precioUnit());
+                }
+            }
+            LineaCalculada calculada = CalculoDocumento.linea(cantidad, precioPedido, pesoPedido);
 
             linea.setDocumento(documento);
             linea.setOrden(lineas.size());

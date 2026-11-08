@@ -49,6 +49,13 @@ public abstract class IntegrationTest {
         jdbc.execute("alter sequence seq_folio_fac restart");
         jdbc.execute("alter sequence seq_folio_cons restart");
         jdbc.execute("alter sequence seq_folio_his restart");
+        jdbc.execute("update configuracion set valor = case clave "
+                + "when 'iva_pct' then '15' "
+                + "when 'tipo_cambio' then '36.6243' "
+                + "when 'tarifa_kg_usd' then '1.80' "
+                + "when 'densidad_kg_in3' then '0.129' "
+                + "when 'dias_precio_viejo' then '365' "
+                + "else valor end");
     }
 
     private static EmbeddedPostgres iniciarPostgres() {

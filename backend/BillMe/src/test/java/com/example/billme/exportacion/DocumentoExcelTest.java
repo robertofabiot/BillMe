@@ -283,7 +283,7 @@ class DocumentoExcelTest {
     @Test
     @DisplayName("encabezadoPorDefecto arma la cadena esperada según tipo y proyecto")
     void encabezadoPorDefectoSegunTipoYProyecto() {
-        DocumentoService service = new DocumentoService(null, null, null, null, null, null, null, null, null, generador);
+        DocumentoService service = new DocumentoService(null, null, null, null, null, null, null, null, null, null, generador);
 
         // Cotización con cliente y proyecto
         Documento cotConProyecto = Documento.builder()
@@ -334,7 +334,7 @@ class DocumentoExcelTest {
         UUID id = UUID.randomUUID();
         Mockito.when(docRepo.findById(id)).thenReturn(Optional.of(doc));
 
-        DocumentoService service = new DocumentoService(docRepo, null, null, null, null, null, null, null, null, generador);
+        DocumentoService service = new DocumentoService(docRepo, null, null, null, null, null, null, null, null, null, generador);
         ArchivoExcel archivo = service.exportarExcel(id, null);
 
         assertThat(archivo.nombre()).isEqualTo("FAC-0012_Maria-Lopez_2026-10-30.xlsx");

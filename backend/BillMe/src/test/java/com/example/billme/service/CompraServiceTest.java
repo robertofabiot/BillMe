@@ -3,6 +3,7 @@ package com.example.billme.service;
 import com.example.billme.dto.*;
 import com.example.billme.enums.EstadoDocumento;
 import com.example.billme.enums.FuentePrecio;
+import com.example.billme.enums.MetodoPrecio;
 import com.example.billme.enums.TipoDocumento;
 import com.example.billme.model.Documento;
 import com.example.billme.model.DocumentoLinea;
@@ -345,5 +346,73 @@ class CompraServiceTest extends IntegrationTest {
         assertThat(lista).hasSize(2);
         assertThat(lista.get(0).id()).isEqualTo(c2.id());
         assertThat(lista.get(1).id()).isEqualTo(c1.id());
+    }
+
+    @Test
+    void facturaPorPesoConPesoRealRecalculaPrecioYGeneraRevision() {
+        String params = "{\"tarifa\": 1.80, \"moneda\": \"USD\"}";
+        DocumentoResponse factura = documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA,
+                cliente.id(),
+                null,
+                FECHA,
+                null,
+                false,
+                List.of(new LineaRequest(null, tubo.id(), null, new BigDecimal("10"), new BigDecimal("2.58"),
+                        new BigDecimal("195.60"), MetodoPrecio.POR_PESO, params, null, null))
+        ));
+        assertThat(factura.total()).isEqualByComparingTo("1956.00");
+        UUID lineaId = factura.lineas().get(0).id();
+
+        compraService.registrar(factura.id(), new CompraRequest(
+                proveedor.getId(),
+                FECHA,
+                "F-PESO",
+                "Compra peso real",
+                List.of(new CompraRequest.Linea(lineaId, new BigDecimal("100.00"), null, new BigDecimal("3")))
+        ));
+
+        DocumentoResponse doc = documentoService.obtener(factura.id());
+        LineaResponse linea = doc.lineas().get(0);
+        // 3.00 * 1.80 * 36.6243 * 1.15 = 227.44
+        assertThat(linea.precioUnit()).isEqualByComparingTo("227.44");
+        assertThat(linea.total()).isEqualByComparingTo("2274.40");
+        assertThat(doc.total()).isEqualByComparingTo("2274.40");
+        assertThat(doc.totalKg()).isEqualByComparingTo("30.00");
+
+        var revisiones = documentoService.revisiones(factura.id());
+        assertThat(revisiones).isNotEmpty();
+        assertThat(revisiones.get(0).motivo()).isEqualTo("Compra registrada");
+    }
+
+    @Test
+    void facturaManualConPesoRealConservaPrecio() {
+        DocumentoResponse factura = documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA,
+                cliente.id(),
+                null,
+                FECHA,
+                null,
+                false,
+                List.of(new LineaRequest(null, tubo.id(), null, new BigDecimal("10"), new BigDecimal("2.58"),
+                        new BigDecimal("195.60"), MetodoPrecio.MANUAL, null, null, null))
+        ));
+        assertThat(factura.total()).isEqualByComparingTo("1956.00");
+        UUID lineaId = factura.lineas().get(0).id();
+
+        compraService.registrar(factura.id(), new CompraRequest(
+                proveedor.getId(),
+                FECHA,
+                "F-MANUAL",
+                null,
+                List.of(new CompraRequest.Linea(lineaId, new BigDecimal("100.00"), null, new BigDecimal("3")))
+        ));
+
+        DocumentoResponse doc = documentoService.obtener(factura.id());
+        LineaResponse linea = doc.lineas().get(0);
+        assertThat(linea.precioUnit()).isEqualByComparingTo("195.60");
+        assertThat(linea.total()).isEqualByComparingTo("1956.00");
+        assertThat(doc.total()).isEqualByComparingTo("1956.00");
+        assertThat(doc.totalKg()).isEqualByComparingTo("30.00");
     }
 }

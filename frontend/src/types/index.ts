@@ -36,13 +36,16 @@ export interface Abono {
   nota?: string | null
 }
 
+export type MonedaTarifa = 'USD' | 'NIO'
+
 export interface Cliente {
   id: string
   nombre: string
   telefono?: string
   detalles?: string
   descuentoPct?: number
-  tarifaKgUsd?: number | null
+  tarifaKg?: number | null
+  tarifaMoneda?: MonedaTarifa
   saldoInicial?: number
   fechaInicioCuenta?: string | null
   saldo?: number
@@ -227,8 +230,9 @@ export interface PrecioSugerido {
   precioLista?: number | null
   descuentoPct?: number | null
   precioFormula?: number | null
-  tarifaKgUsd?: number | null
-  origenTarifa?: 'ULTIMA' | 'CLIENTE' | 'CONFIGURACION' | null
+  tarifaKg?: number | null
+  monedaTarifa?: MonedaTarifa | null
+  origenTarifa?: 'CLIENTE' | 'CONFIGURACION' | null
 }
 
 export interface PrecioFormula {

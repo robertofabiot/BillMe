@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { MetodoPrecio, UnidadLongitud } from '@/types'
+import type { MetodoPrecio, MonedaTarifa, UnidadLongitud } from '@/types'
 import { calculoService } from '@/services/calculoService'
 import { precioService } from '@/services/precioService'
 import { formatCurrency } from '@/lib/format'
@@ -14,6 +14,7 @@ interface Props {
   clienteId: string
   linea: LineaForm | null
   soloPeso?: boolean
+  tipoCambio?: number | null
   onAplicar: (datos: {
     pesoUnitKg: string
     descripcion?: string
@@ -39,6 +40,7 @@ export function CalculadoraPesoDialog({
   clienteId,
   linea,
   soloPeso = false,
+  tipoCambio,
   onAplicar,
 }: Props) {
   const [forma, setForma] = useState<FormaTipo>('PLACA')
@@ -57,7 +59,8 @@ export function CalculadoraPesoDialog({
   const [ala2Unidad, setAla2Unidad] = useState<UnidadLongitud>('PULGADA')
 
   // Tarifa y resultados
-  const [tarifaUsd, setTarifaUsd] = useState('')
+  const [tarifa, setTarifa] = useState('')
+  const [moneda, setMoneda] = useState<MonedaTarifa>('USD')
   const [pesoCalculado, setPesoCalculado] = useState<number | null>(null)
   const [descCalculada, setDescCalculada] = useState('')
   const [precioCalculado, setPrecioCalculado] = useState<number | null>(null)
@@ -83,6 +86,7 @@ export function CalculadoraPesoDialog({
     let preAla2 = ''
     let preAla2U: UnidadLongitud = 'PULGADA'
     let preTarifa = ''
+    let preMoneda: MonedaTarifa = 'USD'
 
     // Si viene de una línea POR_PESO con parámetros guardados, rellenar campos
     if (linea.metodoPrecio === 'POR_PESO' && linea.parametros) {
@@ -94,7 +98,9 @@ export function CalculadoraPesoDialog({
           if (p.largo) { preLargo = p.largo.texto ?? ''; preLargoU = p.largo.unidad ?? defaultLargoUnidad }
           if (p.espesor) { preEspesor = p.espesor.texto ?? ''; preEspesorU = p.espesor.unidad ?? 'PULGADA' }
           if (p.ala2) { preAla2 = p.ala2.texto ?? ''; preAla2U = p.ala2.unidad ?? 'PULGADA' }
-          if (p.tarifaUsd) preTarifa = String(p.tarifaUsd)
+          if (p.tarifa != null) preTarifa = String(p.tarifa)
+          else if (p.tarifaUsd != null) preTarifa = String(p.tarifaUsd)
+          if (p.moneda) preMoneda = p.moneda
         }
       } catch {
         // Ignorar error al parsear parámetros viejos
@@ -110,7 +116,8 @@ export function CalculadoraPesoDialog({
     setEspesorUnidad(preEspesorU)
     setAla2Texto(preAla2)
     setAla2Unidad(preAla2U)
-    setTarifaUsd(preTarifa)
+    setTarifa(preTarifa)
+    setMoneda(preMoneda)
     setPesoCalculado(null)
     setDescCalculada('')
     setPrecioCalculado(null)
@@ -121,8 +128,11 @@ export function CalculadoraPesoDialog({
       const desc = linea.productoGenerico ? linea.descripcion.trim() : undefined
       precioService.sugerido(clienteId, linea.productoId, desc)
         .then(res => {
-          if (res.tarifaKgUsd != null) {
-            setTarifaUsd(String(res.tarifaKgUsd))
+          if (res.tarifaKg != null) {
+            setTarifa(String(res.tarifaKg))
+          }
+          if (res.monedaTarifa) {
+            setMoneda(res.monedaTarifa)
           }
         })
         .catch(() => {})
@@ -181,18 +191,20 @@ export function CalculadoraPesoDialog({
       setPrecioCalculado(null)
       return
     }
-    const tarifa = parseFloat(tarifaUsd)
-    if (pesoCalculado != null && tarifa > 0) {
+    const tarifaNum = parseFloat(tarifa)
+    if (pesoCalculado != null && tarifaNum > 0) {
       calculoService.precioPorPeso({
         pesoUnitKg: pesoCalculado,
-        tarifaUsd: tarifa,
+        tarifa: tarifaNum,
+        moneda,
+        tipoCambio: tipoCambio ?? undefined,
       })
         .then(res => setPrecioCalculado(res.precioUnit))
         .catch(() => setPrecioCalculado(null))
     } else {
       setPrecioCalculado(null)
     }
-  }, [open, soloPeso, forma, pesoCalculado, tarifaUsd])
+  }, [open, soloPeso, forma, pesoCalculado, tarifa, moneda, tipoCambio])
 
   if (!linea) return null
 
@@ -212,7 +224,8 @@ export function CalculadoraPesoDialog({
         ancho: { texto: anchoTexto.trim(), unidad: anchoUnidad },
         largo: { texto: largoTexto.trim(), unidad: largoUnidad },
         espesor: { texto: espesorTexto.trim(), unidad: espesorUnidad },
-        tarifaUsd: parseFloat(tarifaUsd) || 0,
+        tarifa: parseFloat(tarifa) || 0,
+        moneda,
       })
       onAplicar({
         pesoUnitKg: String(pesoCalculado),
@@ -350,22 +363,35 @@ export function CalculadoraPesoDialog({
             </div>
           </div>
 
-          {/* Tarifa USD si es modo completo para Placa o Platina */}
+          {/* Tarifa si es modo completo para Placa o Platina */}
           {esModoCompletoPlacaOPlatina && (
-            <div className="flex flex-col gap-1 pt-1">
+            <div className="flex flex-col gap-1.5 pt-1">
               <label htmlFor="tarifa-input" className="text-sm font-medium text-[#705D56]">
-                Tarifa USD por kg (sin IVA)
+                Tarifa por kg (sin IVA)
               </label>
               <Input
                 id="tarifa-input"
                 type="number"
                 min="0"
                 step="any"
-                value={tarifaUsd}
-                onChange={e => setTarifaUsd(e.target.value)}
+                value={tarifa}
+                onChange={e => setTarifa(e.target.value)}
                 placeholder="Ej. 1.80"
                 className="text-sm max-w-xs"
               />
+              <div className="flex items-center gap-2">
+                <select
+                  value={moneda}
+                  onChange={e => setMoneda(e.target.value as MonedaTarifa)}
+                  className="h-8 rounded border border-[#E5E7EB] bg-white px-2 text-sm text-[#022F40] outline-none focus:border-[#022F40]"
+                >
+                  <option value="USD">USD</option>
+                  <option value="NIO">C$</option>
+                </select>
+                <span className="text-xs text-[#80727B]">
+                  Solo para esta línea: la tarifa del cliente no cambia.
+                </span>
+              </div>
             </div>
           )}
 

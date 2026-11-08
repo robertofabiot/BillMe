@@ -4,7 +4,7 @@ import com.example.billme.calculo.CalculadoraPrecio;
 import com.example.billme.dto.PrecioFormulaResponse;
 import com.example.billme.dto.PrecioHistorialResponse;
 import com.example.billme.dto.PrecioSugeridoResponse;
-import com.example.billme.enums.FormaCalculo;
+import com.example.billme.enums.MonedaTarifa;
 import com.example.billme.model.Cliente;
 import com.example.billme.model.Documento;
 import com.example.billme.model.DocumentoLinea;
@@ -16,8 +16,6 @@ import com.example.billme.repository.PrecioListaRepository;
 import com.example.billme.repository.ProductoRepository;
 import com.example.billme.util.Fechas;
 import com.example.billme.util.NormalizadorTexto;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -42,7 +40,6 @@ public class PrecioSugeridoService {
     private final DocumentoLineaRepository documentoLineaRepository;
     private final PrecioListaRepository precioListaRepository;
     private final ConfiguracionService configuracionService;
-    private final ObjectMapper objectMapper;
 
     public PrecioSugeridoResponse sugerir(UUID clienteId, UUID productoId, String descripcion) {
         Cliente cliente = clienteRepository.findById(clienteId)
@@ -96,26 +93,10 @@ public class PrecioSugeridoService {
             precioFormula = CalculadoraPrecio.porFormula(precioLista, configuracionService.factorIva(), descuentoPct);
         }
 
-        BigDecimal tarifaKgUsd = null;
-        String origenTarifa = null;
-        if (producto.getFormaCalculo() == FormaCalculo.PLACA || producto.getFormaCalculo() == FormaCalculo.PLATINA) {
-            List<DocumentoLinea> porPeso = documentoLineaRepository.ultimasPorPeso(clienteId, PageRequest.of(0, 1));
-            if (!porPeso.isEmpty()) {
-                BigDecimal ultima = extraerTarifaUsd(porPeso.get(0).getParametros());
-                if (ultima != null) {
-                    tarifaKgUsd = ultima;
-                    origenTarifa = "ULTIMA";
-                }
-            }
-            if (tarifaKgUsd == null && cliente.getTarifaKgUsd() != null) {
-                tarifaKgUsd = cliente.getTarifaKgUsd();
-                origenTarifa = "CLIENTE";
-            }
-            if (tarifaKgUsd == null) {
-                tarifaKgUsd = configuracionService.tarifaKgUsd();
-                origenTarifa = "CONFIGURACION";
-            }
-        }
+        boolean propia = cliente.getTarifaKg() != null;
+        BigDecimal tarifaKg = propia ? cliente.getTarifaKg() : configuracionService.tarifaKgUsd();
+        String monedaTarifa = propia ? cliente.getTarifaMoneda().name() : MonedaTarifa.USD.name();
+        String origenTarifa = propia ? "CLIENTE" : "CONFIGURACION";
 
         return new PrecioSugeridoResponse(
                 precioUnit,
@@ -128,7 +109,8 @@ public class PrecioSugeridoService {
                 precioLista,
                 descuentoPct,
                 precioFormula,
-                tarifaKgUsd,
+                tarifaKg,
+                monedaTarifa,
                 origenTarifa
         );
     }
@@ -168,22 +150,5 @@ public class PrecioSugeridoService {
                     viejo
             );
         }).toList();
-    }
-
-    private BigDecimal extraerTarifaUsd(String parametros) {
-        if (parametros == null || parametros.isBlank()) {
-            return null;
-        }
-        try {
-            JsonNode node = objectMapper.readTree(parametros);
-            if (node.hasNonNull("tarifaUsd")) {
-                BigDecimal val = new BigDecimal(node.get("tarifaUsd").asText());
-                if (val.compareTo(BigDecimal.ZERO) > 0) {
-                    return val;
-                }
-            }
-        } catch (Exception ignored) {
-        }
-        return null;
     }
 }
