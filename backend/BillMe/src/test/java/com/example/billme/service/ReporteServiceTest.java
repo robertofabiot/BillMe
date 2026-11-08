@@ -225,4 +225,32 @@ class ReporteServiceTest extends IntegrationTest {
         assertThat(repFecha.facturas()).hasSize(1);
         assertThat(repFecha.facturado()).isEqualByComparingTo("200.00");
     }
+
+    @Test
+    void historicoNoSumaAntesDeConvertirYDespuesSi() {
+        DocumentoResponse doc = documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA,
+                cliente.id(),
+                null,
+                FECHA,
+                null,
+                false,
+                List.of(new LineaRequest(null, productoConCosto.id(), null, BigDecimal.ONE, null,
+                        new BigDecimal("1500.00"), null, null, null, null))
+        ));
+        var docEnt = documentoRepository.findById(doc.id()).orElseThrow();
+        docEnt.setTipo(TipoDocumento.HISTORICO);
+        docEnt.setEstado(com.example.billme.enums.EstadoDocumento.HISTORICA);
+        documentoRepository.save(docEnt);
+
+        GananciasResponse antes = reporteService.ganancias(null, null, null, null);
+        assertThat(antes.facturado()).isEqualByComparingTo("0.00");
+        assertThat(antes.facturas()).isEmpty();
+
+        documentoService.convertirHistorico(docEnt.getId());
+
+        GananciasResponse despues = reporteService.ganancias(null, null, null, null);
+        assertThat(despues.facturado()).isEqualByComparingTo("1500.00");
+        assertThat(despues.facturas()).hasSize(1);
+    }
 }

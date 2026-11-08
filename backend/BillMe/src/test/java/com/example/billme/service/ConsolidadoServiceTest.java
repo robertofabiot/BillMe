@@ -1,6 +1,7 @@
 package com.example.billme.service;
 
 import com.example.billme.dto.*;
+import com.example.billme.enums.EstadoDocumento;
 import com.example.billme.enums.TipoDocumento;
 import com.example.billme.model.Abono;
 import com.example.billme.model.Cliente;
@@ -225,13 +226,17 @@ class ConsolidadoServiceTest extends IntegrationTest {
         ConsolidadoResponse trasAnular = consolidadoService.obtener(guardado1.id());
         assertThat(trasAnular.grupos()).noneMatch(g -> g.fechaEntrega().equals(LocalDate.of(2026, 3, 10)));
 
-        // 6. Factura importada no entra
+        // 6. Registro del histórico no entra; tras convertir sí
         Documento docImport = documentoRepository.findById(facAnular.id()).orElseThrow();
-        docImport.setImportKey("TEST-IMPORT-123");
-        docImport.setEstado(com.example.billme.enums.EstadoDocumento.ACTIVA);
+        docImport.setTipo(TipoDocumento.HISTORICO);
+        docImport.setEstado(EstadoDocumento.HISTORICA);
         documentoRepository.save(docImport);
         ConsolidadoResponse trasImport = consolidadoService.obtener(guardado1.id());
         assertThat(trasImport.grupos()).noneMatch(g -> g.fechaEntrega().equals(LocalDate.of(2026, 3, 10)));
+
+        documentoService.convertirHistorico(docImport.getId());
+        ConsolidadoResponse trasConvertir = consolidadoService.obtener(guardado1.id());
+        assertThat(trasConvertir.grupos()).anyMatch(g -> g.fechaEntrega().equals(LocalDate.of(2026, 3, 10)));
 
         // 7. Filtrar por proyecto no incluye el saldo inicial
         // Creamos factura y abono para Obra centro en marzo

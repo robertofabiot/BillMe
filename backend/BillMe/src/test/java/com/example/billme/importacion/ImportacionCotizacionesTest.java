@@ -1,6 +1,10 @@
 package com.example.billme.importacion;
 
+import com.example.billme.dto.DocumentoRequest;
 import com.example.billme.dto.DocumentoResponse;
+import com.example.billme.dto.LineaRequest;
+import com.example.billme.enums.EstadoDocumento;
+import com.example.billme.enums.TipoDocumento;
 import com.example.billme.model.Cliente;
 import com.example.billme.model.Documento;
 import com.example.billme.model.DocumentoLinea;
@@ -98,12 +102,30 @@ class ImportacionCotizacionesTest extends IntegrationTest {
 
         aplicar(excel, cliente.getId())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.facturasNuevas").value(2))
+                .andExpect(jsonPath("$.registrosNuevos").value(2))
                 .andExpect(jsonPath("$.filasNuevas").value(3))
                 .andExpect(jsonPath("$.aplicada").value(true));
 
         List<Documento> docs = documentoRepository.findAll();
         assertThat(docs).hasSize(2);
+        assertThat(docs.get(0).getTipo()).isEqualTo(TipoDocumento.HISTORICO);
+        assertThat(docs.get(0).getEstado()).isEqualTo(EstadoDocumento.HISTORICA);
+        assertThat(docs.get(0).getFolio()).isEqualTo("HIS-0001");
+        assertThat(docs.get(0).getProyecto()).isNull();
+        assertThat(docs.get(1).getFolio()).isEqualTo("HIS-0002");
+
+        // La siguiente factura normal debe ser FAC-0001
+        Producto prod = productoRepository.findByCodigoInterno("GEN-LIBRE").orElseThrow();
+        DocumentoResponse fac = documentoService.crear(new DocumentoRequest(
+                TipoDocumento.FACTURA,
+                cliente.getId(),
+                null,
+                LocalDate.of(2026, 11, 2),
+                null,
+                false,
+                List.of(new LineaRequest(null, prod.getId(), "Tubo libre", BigDecimal.ONE, null, new BigDecimal("100.00"), null, null, null, null))
+        ));
+        assertThat(fac.folio()).isEqualTo("FAC-0001");
 
         DocumentoResponse doc1 = documentoService.obtener(docs.get(0).getId());
         DocumentoResponse doc2 = documentoService.obtener(docs.get(1).getId());
@@ -132,7 +154,7 @@ class ImportacionCotizacionesTest extends IntegrationTest {
 
         aplicar(excel, cliente.getId())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.facturasNuevas").value(1))
+                .andExpect(jsonPath("$.registrosNuevos").value(1))
                 .andExpect(jsonPath("$.filasNuevas").value(2));
 
         assertThat(documentoRepository.count()).isEqualTo(1);
@@ -143,8 +165,8 @@ class ImportacionCotizacionesTest extends IntegrationTest {
                 .andExpect(jsonPath("$.filasLeidas").value(2))
                 .andExpect(jsonPath("$.filasNuevas").value(0))
                 .andExpect(jsonPath("$.filasYaImportadas").value(2))
-                .andExpect(jsonPath("$.facturasNuevas").value(0))
-                .andExpect(jsonPath("$.facturasConLineasNuevas").value(0));
+                .andExpect(jsonPath("$.registrosNuevos").value(0))
+                .andExpect(jsonPath("$.registrosConLineasNuevas").value(0));
 
         assertThat(documentoRepository.count()).isEqualTo(1);
         assertThat(documentoLineaRepository.count()).isEqualTo(2);
@@ -163,7 +185,7 @@ class ImportacionCotizacionesTest extends IntegrationTest {
 
         aplicar(excel1, cliente.getId())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.facturasNuevas").value(1))
+                .andExpect(jsonPath("$.registrosNuevos").value(1))
                 .andExpect(jsonPath("$.filasNuevas").value(1));
 
         Documento docInicial = documentoRepository.findAll().get(0);
@@ -179,8 +201,8 @@ class ImportacionCotizacionesTest extends IntegrationTest {
                 .andExpect(jsonPath("$.filasLeidas").value(2))
                 .andExpect(jsonPath("$.filasNuevas").value(1))
                 .andExpect(jsonPath("$.filasYaImportadas").value(1))
-                .andExpect(jsonPath("$.facturasNuevas").value(0))
-                .andExpect(jsonPath("$.facturasConLineasNuevas").value(1));
+                .andExpect(jsonPath("$.registrosNuevos").value(0))
+                .andExpect(jsonPath("$.registrosConLineasNuevas").value(1));
 
         assertThat(documentoRepository.count()).isEqualTo(1);
         DocumentoResponse docActualizado = documentoService.obtener(docInicial.getId());
@@ -207,7 +229,7 @@ class ImportacionCotizacionesTest extends IntegrationTest {
         aplicar(excel, cliente.getId())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.filasNuevas").value(2))
-                .andExpect(jsonPath("$.facturasNuevas").value(1));
+                .andExpect(jsonPath("$.registrosNuevos").value(1));
 
         DocumentoResponse doc = documentoService.obtener(documentoRepository.findAll().get(0).getId());
         assertThat(doc.lineas()).hasSize(2);
@@ -241,7 +263,7 @@ class ImportacionCotizacionesTest extends IntegrationTest {
                 .andExpect(jsonPath("$.aplicada").value(false))
                 .andExpect(jsonPath("$.filasLeidas").value(2))
                 .andExpect(jsonPath("$.filasNuevas").value(2))
-                .andExpect(jsonPath("$.facturasNuevas").value(1));
+                .andExpect(jsonPath("$.registrosNuevos").value(1));
 
         assertThat(documentoRepository.count()).isEqualTo(0);
         assertThat(documentoLineaRepository.count()).isEqualTo(0);
@@ -374,7 +396,7 @@ class ImportacionCotizacionesTest extends IntegrationTest {
 
         aplicar(excel1, cliente.getId(), decisionesJson)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.facturasNuevas").value(1))
+                .andExpect(jsonPath("$.registrosNuevos").value(1))
                 .andExpect(jsonPath("$.filasNuevas").value(1));
 
         Optional<AliasProducto> aliasOpt = aliasProductoRepository.findFirstByAliasNorm(
@@ -610,5 +632,167 @@ class ImportacionCotizacionesTest extends IntegrationTest {
 
         DocumentoLinea linea = documentoLineaRepository.findAll().get(0);
         assertThat(linea.getProducto().getId()).isEqualTo(prod.getId());
+    }
+
+    @Test
+    void importadoConProyectoEnExcelGuardaEnNotasYProyectoEsNull() throws Exception {
+        Cliente cliente = clienteRepository.save(Cliente.builder()
+                .nombre("Cliente Con Proyecto")
+                .descuentoPct(BigDecimal.ZERO)
+                .build());
+
+        byte[] excel = ExcelDePrueba.cotizaciones()
+                .fila(LocalDate.of(2026, 11, 1), 2, "Item Proyecto", 100.0, null, null, null, null, null, "Bodega", "Proyecto Torre", null, null)
+                .bytes();
+
+        aplicar(excel, cliente.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.registrosNuevos").value(1));
+
+        Documento doc = documentoRepository.findAll().get(0);
+        assertThat(doc.getTipo()).isEqualTo(TipoDocumento.HISTORICO);
+        assertThat(doc.getEstado()).isEqualTo(EstadoDocumento.HISTORICA);
+        assertThat(doc.getProyecto()).isNull();
+        assertThat(doc.getNotas()).contains("Proyecto en el Excel: Proyecto Torre.");
+    }
+
+    @Test
+    void trasConvertirRegistroYAgregarFilaAlExcelLaFacturaNoCambiaYFilaCuentaComoYaImportada() throws Exception {
+        Cliente cliente = clienteRepository.save(Cliente.builder()
+                .nombre("Cliente Convertir")
+                .descuentoPct(BigDecimal.ZERO)
+                .build());
+
+        byte[] excel1 = ExcelDePrueba.cotizaciones()
+                .fila(LocalDate.of(2026, 11, 1), 2, "Item Base", 100.0, null, null, null, null, null, "Bodega", null, null, null)
+                .bytes();
+
+        aplicar(excel1, cliente.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.registrosNuevos").value(1));
+
+        Documento doc = documentoRepository.findAll().get(0);
+        assertThat(doc.getFolio()).isEqualTo("HIS-0001");
+
+        // Convertir el histórico en factura activa
+        DocumentoResponse convertida = documentoService.convertirHistorico(doc.getId());
+        assertThat(convertida.tipo()).isEqualTo("FACTURA");
+        assertThat(convertida.folio()).isEqualTo("FAC-0001");
+        assertThat(convertida.lineas()).hasSize(1);
+        assertThat(convertida.total()).isEqualByComparingTo("200.00");
+
+        // Ahora preparamos excel2 con el mismo grupo + una fila nueva
+        byte[] excel2 = ExcelDePrueba.cotizaciones()
+                .fila(LocalDate.of(2026, 11, 1), 2, "Item Base", 100.0, null, null, null, null, null, "Bodega", null, null, null)
+                .fila(LocalDate.of(2026, 11, 1), 1, "Item Nuevo", 50.0, null, null, null, null, null, "Bodega", null, null, null)
+                .bytes();
+
+        // En vista previa, como el grupo ya está convertido, esa fila cuenta como ya importada (filasNuevas = 0, filasYaImportadas = 2)
+        vistaPrevia(excel2, cliente.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.filasLeidas").value(2))
+                .andExpect(jsonPath("$.filasNuevas").value(0))
+                .andExpect(jsonPath("$.filasYaImportadas").value(2))
+                .andExpect(jsonPath("$.registrosNuevos").value(0))
+                .andExpect(jsonPath("$.registrosConLineasNuevas").value(0));
+
+        // Aplicar no modifica la factura convertida ni crea nuevos registros
+        aplicar(excel2, cliente.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.filasLeidas").value(2))
+                .andExpect(jsonPath("$.filasNuevas").value(0))
+                .andExpect(jsonPath("$.filasYaImportadas").value(2))
+                .andExpect(jsonPath("$.registrosNuevos").value(0))
+                .andExpect(jsonPath("$.registrosConLineasNuevas").value(0));
+
+        DocumentoResponse docTras = documentoService.obtener(doc.getId());
+        assertThat(docTras.lineas()).hasSize(1);
+        assertThat(docTras.total()).isEqualByComparingTo("200.00");
+    }
+
+    @Test
+    void archivoMixtoConGrupoConvertidoGrupoExistenteYGrupoNuevo() throws Exception {
+        Cliente cliente = clienteRepository.save(Cliente.builder()
+                .nombre("Cliente Mixto")
+                .descuentoPct(BigDecimal.ZERO)
+                .build());
+
+        // Archivo 1: dos grupos
+        byte[] excel1 = ExcelDePrueba.cotizaciones()
+                .fila(LocalDate.of(2026, 11, 1), 1, "Item G1 L1", 100.0, null, null, null, null, null, "Bodega 1", null, null, null)
+                .fila(LocalDate.of(2026, 11, 1), 1, "Item G2 L1", 150.0, null, null, null, null, null, "Bodega 2", null, null, null)
+                .bytes();
+
+        aplicar(excel1, cliente.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.registrosNuevos").value(2));
+
+        List<Documento> docs1 = documentoRepository.findAll();
+        assertThat(docs1).hasSize(2);
+        DocumentoResponse r1 = documentoService.obtener(docs1.get(0).getId());
+        DocumentoResponse r2 = documentoService.obtener(docs1.get(1).getId());
+        DocumentoResponse docG1 = r1.lineas().stream().anyMatch(l -> "Bodega 1".equals(l.lugarEntrega())) ? r1 : r2;
+        DocumentoResponse docG2 = r1.lineas().stream().anyMatch(l -> "Bodega 2".equals(l.lugarEntrega())) ? r1 : r2;
+
+        // Convertimos el Grupo 1 a Factura activa
+        DocumentoResponse facG1 = documentoService.convertirHistorico(docG1.id());
+        assertThat(facG1.tipo()).isEqualTo("FACTURA");
+        assertThat(facG1.folio()).isEqualTo("FAC-0001");
+
+        // El Grupo 2 sigue siendo HISTORICO
+        assertThat(docG2.tipo()).isEqualTo("HISTORICO");
+
+        // Archivo 2:
+        // - G1 L1 (ya importada)
+        // - G1 L2 (nueva en grupo convertido -> debe ignorarse)
+        // - G2 L1 (ya importada)
+        // - G2 L2 (nueva en grupo histórico existente -> debe agregarse)
+        // - G3 L1 (grupo nuevo)
+        byte[] excel2 = ExcelDePrueba.cotizaciones()
+                .fila(LocalDate.of(2026, 11, 1), 1, "Item G1 L1", 100.0, null, null, null, null, null, "Bodega 1", null, null, null)
+                .fila(LocalDate.of(2026, 11, 1), 1, "Item G1 L2", 80.0, null, null, null, null, null, "Bodega 1", null, null, null)
+                .fila(LocalDate.of(2026, 11, 1), 1, "Item G2 L1", 150.0, null, null, null, null, null, "Bodega 2", null, null, null)
+                .fila(LocalDate.of(2026, 11, 1), 1, "Item G2 L2", 90.0, null, null, null, null, null, "Bodega 2", null, null, null)
+                .fila(LocalDate.of(2026, 11, 2), 1, "Item G3 L1", 200.0, null, null, null, null, null, "Bodega 3", null, null, null)
+                .bytes();
+
+        vistaPrevia(excel2, cliente.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.filasLeidas").value(5))
+                .andExpect(jsonPath("$.filasYaImportadas").value(3))
+                .andExpect(jsonPath("$.filasNuevas").value(2))
+                .andExpect(jsonPath("$.registrosNuevos").value(1))
+                .andExpect(jsonPath("$.registrosConLineasNuevas").value(1));
+
+        aplicar(excel2, cliente.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.filasLeidas").value(5))
+                .andExpect(jsonPath("$.filasYaImportadas").value(3))
+                .andExpect(jsonPath("$.filasNuevas").value(2))
+                .andExpect(jsonPath("$.registrosNuevos").value(1))
+                .andExpect(jsonPath("$.registrosConLineasNuevas").value(1));
+
+        // Verificamos estado final:
+        // G1: FACTURA FAC-0001 sigue intacta con 1 sola línea de 100.00
+        DocumentoResponse docG1Actualizado = documentoService.obtener(docG1.id());
+        assertThat(docG1Actualizado.lineas()).hasSize(1);
+        assertThat(docG1Actualizado.total()).isEqualByComparingTo("100.00");
+
+        // G2: HISTORICO recibió su nueva línea y su total subió a 240.00
+        DocumentoResponse docG2Actualizado = documentoService.obtener(docG2.id());
+        assertThat(docG2Actualizado.lineas()).hasSize(2);
+        assertThat(docG2Actualizado.total()).isEqualByComparingTo("240.00");
+
+        // G3: Se creó nuevo histórico HIS-0003 con 1 línea de 200.00
+        List<Documento> todos = documentoRepository.findAll();
+        assertThat(todos).hasSize(3);
+        DocumentoResponse docG3 = todos.stream()
+                .map(d -> documentoService.obtener(d.getId()))
+                .filter(d -> d.lineas().stream().anyMatch(l -> "Bodega 3".equals(l.lugarEntrega())))
+                .findFirst().orElseThrow();
+        assertThat(docG3.folio()).isEqualTo("HIS-0003");
+        assertThat(docG3.tipo()).isEqualTo("HISTORICO");
+        assertThat(docG3.estado()).isEqualTo("HISTORICA");
+        assertThat(docG3.total()).isEqualByComparingTo("200.00");
     }
 }
