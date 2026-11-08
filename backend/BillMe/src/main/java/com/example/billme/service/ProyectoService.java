@@ -36,21 +36,21 @@ public class ProyectoService {
 
     public List<ProyectoResponse> listarTodos() {
         Map<UUID, BigDecimal> totales = mapaTotales();
-        return proyectoRepository.findAll().stream()
+        return proyectoRepository.findAllByOrderByNombreAsc().stream()
                 .map(p -> toResponse(p, totales.getOrDefault(p.getId(), BigDecimal.ZERO)))
                 .collect(Collectors.toList());
     }
 
     public List<ProyectoResponse> listarPorCliente(UUID clienteId) {
         Map<UUID, BigDecimal> totales = mapaTotales();
-        return proyectoRepository.findByClienteId(clienteId).stream()
+        return proyectoRepository.findByClienteIdOrderByNombreAsc(clienteId).stream()
                 .map(p -> toResponse(p, totales.getOrDefault(p.getId(), BigDecimal.ZERO)))
                 .collect(Collectors.toList());
     }
 
     public List<ProyectoResponse> listarActivosPorCliente(UUID clienteId) {
         Map<UUID, BigDecimal> totales = mapaTotales();
-        return proyectoRepository.findByClienteIdAndEstado(clienteId, EstadoProyecto.ACTIVO).stream()
+        return proyectoRepository.findByClienteIdAndEstadoOrderByNombreAsc(clienteId, EstadoProyecto.ACTIVO).stream()
                 .map(p -> toResponse(p, totales.getOrDefault(p.getId(), BigDecimal.ZERO)))
                 .collect(Collectors.toList());
     }

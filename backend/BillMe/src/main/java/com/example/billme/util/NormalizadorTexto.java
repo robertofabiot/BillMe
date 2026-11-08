@@ -23,6 +23,15 @@ public final class NormalizadorTexto {
     private NormalizadorTexto() {
     }
 
+    /** Minúsculas y sin acentos; conserva guiones y números, para buscar folios y nombres. */
+    public static String sinAcentos(String texto) {
+        if (texto == null) {
+            return "";
+        }
+        String s = Normalizer.normalize(texto, Normalizer.Form.NFD);
+        return DIACRITICOS.matcher(s).replaceAll("").toLowerCase(Locale.ROOT).trim();
+    }
+
     public static String normalizar(String texto) {
         if (texto == null) {
             return "";

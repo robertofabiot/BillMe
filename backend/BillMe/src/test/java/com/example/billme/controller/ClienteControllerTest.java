@@ -23,6 +23,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -209,5 +210,44 @@ class ClienteControllerTest extends IntegrationTest {
                         .content(jsonMapper.writeValueAsString(updateReq)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.mensaje").value("Hay abonos anteriores a esa fecha: cámbialos antes de mover el inicio de la cuenta"));
+    }
+
+    @Test
+    void buscarSinAcentosEncuentraClientes() throws Exception {
+        clienteService.crear(new ClienteRequest("Cliente Pérez", "88881234", null));
+
+        mockMvc.perform(get("/api/clientes").param("q", "perez"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].nombre").value("Cliente Pérez"));
+
+        mockMvc.perform(get("/api/clientes").param("q", "PÉREZ"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].nombre").value("Cliente Pérez"));
+    }
+
+    @Test
+    void listarTodosDevuelveEnOrdenAlfabeticoSinImportarOrdenCreacion() throws Exception {
+        clienteService.crear(new ClienteRequest("Zacarías", null, null));
+        clienteService.crear(new ClienteRequest("Alberto", null, null));
+        clienteService.crear(new ClienteRequest("Bernardo", null, null));
+
+        mockMvc.perform(get("/api/clientes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].nombre").value("Alberto"))
+                .andExpect(jsonPath("$[1].nombre").value("Bernardo"))
+                .andExpect(jsonPath("$[2].nombre").value("Zacarías"));
+    }
+
+    @Test
+    void crearConNombreDe200CaracteresRespondeNombreEsDemasiadoLargo() throws Exception {
+        String nombreLargo = "A".repeat(200);
+        mockMvc.perform(post("/api/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombre\": \"" + nombreLargo + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errores[0].campo").value("nombre"))
+                .andExpect(jsonPath("$.errores[0].mensaje").value("Nombre: es demasiado largo"));
     }
 }

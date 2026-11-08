@@ -12,12 +12,14 @@ public interface ProyectoRepository extends JpaRepository<Proyecto, UUID> {
 
     Optional<Proyecto> findFirstByClienteIdAndNombreIgnoreCase(UUID clienteId, String nombre);
 
-    /** Todos los proyectos de un cliente. */
-    List<Proyecto> findByClienteId(UUID clienteId);
+    List<Proyecto> findAllByOrderByNombreAsc();
+
+    /** Todos los proyectos de un cliente, ordenados por nombre. */
+    List<Proyecto> findByClienteIdOrderByNombreAsc(UUID clienteId);
 
     /**
-     * Solo proyectos activos de un cliente.
+     * Solo proyectos activos de un cliente, ordenados por nombre.
      * Se usa al crear una nueva factura para poblar el selector de proyectos.
      */
-    List<Proyecto> findByClienteIdAndEstado(UUID clienteId, EstadoProyecto estado);
+    List<Proyecto> findByClienteIdAndEstadoOrderByNombreAsc(UUID clienteId, EstadoProyecto estado);
 }

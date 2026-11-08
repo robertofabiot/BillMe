@@ -28,6 +28,7 @@ import com.example.billme.repository.ProductoRepository;
 import com.example.billme.repository.ProyectoRepository;
 import com.example.billme.repository.UsuarioRepository;
 import com.example.billme.util.Fechas;
+import com.example.billme.util.NormalizadorTexto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -71,8 +72,8 @@ public class DocumentoService {
 
     public PaginaResponse<DocumentoResponse> filtrar(TipoDocumento tipo, EstadoDocumento estado, UUID clienteId, UUID proyectoId,
                                                     UUID productoId, LocalDate desde, LocalDate hasta, String q, Pageable pageable) {
-        String qNormalizada = (q != null) ? q.trim() : "";
-        String contiene = "%" + qNormalizada.toLowerCase() + "%";
+        String qNormalizada = NormalizadorTexto.sinAcentos(q);
+        String contiene = "%" + qNormalizada + "%";
         Page<Documento> pagina = documentoRepository.filtrar(tipo, estado, clienteId, proyectoId, productoId, desde, hasta, qNormalizada, contiene, pageable);
         List<DocumentoResponse> elementos = pagina.getContent().stream()
                 .map(d -> toResponse(d, null))
@@ -390,6 +391,11 @@ public class DocumentoService {
                 }
             }
             LineaCalculada calculada = CalculoDocumento.linea(cantidad, precioPedido, pesoPedido);
+            if (calculada.total().compareTo(new BigDecimal("999999999999.99")) > 0
+                    || (calculada.pesoTotalKg() != null && calculada.pesoTotalKg().compareTo(new BigDecimal("9999999999.99")) > 0)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "La línea " + (lineas.size() + 1) + " tiene un total demasiado grande");
+            }
 
             linea.setDocumento(documento);
             linea.setOrden(lineas.size());

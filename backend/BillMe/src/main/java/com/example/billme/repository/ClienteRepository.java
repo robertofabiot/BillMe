@@ -19,11 +19,14 @@ public interface ClienteRepository extends JpaRepository<Cliente, UUID> {
      */
     List<Cliente> findByNombreContainingIgnoreCase(String nombre);
 
+    @Query("SELECT c FROM Cliente c ORDER BY lower(c.nombre)")
+    List<Cliente> ordenados();
+
     /**
      * Búsqueda por nombre o teléfono para el buscador general de clientes.
      */
     @Query("SELECT c FROM Cliente c WHERE " +
-           "LOWER(c.nombre) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
-           "c.telefono LIKE CONCAT('%', :q, '%')")
+           "cast(function('translate', lower(c.nombre), 'áéíóúüñ', 'aeiouun') as string) LIKE CONCAT('%', :q, '%') OR " +
+           "c.telefono LIKE CONCAT('%', :q, '%') ORDER BY lower(c.nombre)")
     List<Cliente> buscar(@Param("q") String q);
 }

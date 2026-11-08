@@ -38,7 +38,9 @@ public interface DocumentoRepository extends JpaRepository<Documento, UUID> {
            "(cast(:hasta as date) IS NULL OR d.fecha <= :hasta) AND " +
            "(cast(:productoId as uuid) IS NULL OR EXISTS " +
            "  (SELECT 1 FROM DocumentoLinea l WHERE l.documento = d AND l.producto.id = :productoId)) AND " +
-           "(:q = '' OR lower(d.folio) LIKE :contiene OR lower(d.cliente.nombre) LIKE :contiene OR lower(p.nombre) LIKE :contiene) " +
+           "(:q = '' OR cast(function('translate', lower(d.folio), 'áéíóúüñ', 'aeiouun') as string) LIKE :contiene " +
+           "OR cast(function('translate', lower(d.cliente.nombre), 'áéíóúüñ', 'aeiouun') as string) LIKE :contiene " +
+           "OR cast(function('translate', lower(p.nombre), 'áéíóúüñ', 'aeiouun') as string) LIKE :contiene) " +
            "ORDER BY d.fecha DESC, d.createdAt DESC")
     Page<Documento> filtrar(
             @Param("tipo") TipoDocumento tipo,
