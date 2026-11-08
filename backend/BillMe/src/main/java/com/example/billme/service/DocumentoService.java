@@ -85,7 +85,7 @@ public class DocumentoService {
 
     public DocumentoResponse obtener(UUID id) {
         Documento documento = buscar(id);
-        return toResponse(documento, documentoRepository.findFirstByCotizacionOrigenId(id).orElse(null));
+        return toResponse(documento, documentoRepository.findFirstByCotizacionOrigenIdAndEstadoNot(id, EstadoDocumento.ANULADA).orElse(null));
     }
 
     public ArchivoExcel exportarExcel(UUID id, String encabezado) {
@@ -117,7 +117,7 @@ public class DocumentoService {
 
     @Transactional
     public DocumentoResponse crear(DocumentoRequest request) {
-        if (request.tipo() == null) {
+        if (request.tipo() == null || request.tipo() == TipoDocumento.HISTORICO) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Indica si es cotización o factura");
         }
         Documento documento = Documento.builder()
@@ -149,11 +149,15 @@ public class DocumentoService {
     public DocumentoResponse actualizar(UUID id, DocumentoRequest request) {
         Documento documento = buscar(id);
         if (documento.getEstado() == EstadoDocumento.ANULADA) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Una factura anulada no se puede editar");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Reactiva la factura para poder editarla");
         }
         if (documento.getEstado() == EstadoDocumento.ACEPTADA) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Esta cotización ya se convirtió en factura: edita la factura");
+        }
+        if (documento.getEstado() == EstadoDocumento.HISTORICA) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Este registro del histórico no se edita: conviértelo primero en factura activa");
         }
         String copiaAnterior = copia(documento);
         String antes = huella(documento);
@@ -257,6 +261,51 @@ public class DocumentoService {
         String copiaAnterior = copia(documento);
         documento.setEstado(EstadoDocumento.ANULADA);
         registrarRevision(documento, copiaAnterior, "Factura anulada");
+        Documento origen = documento.getCotizacionOrigen();
+        if (origen != null && origen.getEstado() == EstadoDocumento.ACEPTADA) {
+            String copiaOrigen = copia(origen);
+            origen.setEstado(EstadoDocumento.PENDIENTE);
+            registrarRevision(origen, copiaOrigen,
+                    "Factura " + documento.getFolio() + " anulada: la cotización vuelve a pendiente");
+        }
+        return toResponse(documento, null);
+    }
+
+    /** Un registro del histórico pasa a ser una factura activa con folio propio. */
+    @Transactional
+    public DocumentoResponse convertirHistorico(UUID id) {
+        Documento documento = buscar(id);
+        if (documento.getTipo() != TipoDocumento.HISTORICO || documento.getEstado() != EstadoDocumento.HISTORICA) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo se convierte un registro del histórico");
+        }
+        String copiaAnterior = copia(documento);
+        documento.setTipo(TipoDocumento.FACTURA);
+        documento.setEstado(EstadoDocumento.ACTIVA);
+        documento.setFolio(siguienteFolio(TipoDocumento.FACTURA));
+        registrarRevision(documento, copiaAnterior, "Convertido en factura activa");
+        return toResponse(documento, null);
+    }
+
+    /** Una factura anulada vuelve a estar activa, salvo que su cotización ya tenga otra factura. */
+    @Transactional
+    public DocumentoResponse reactivar(UUID id) {
+        Documento documento = buscar(id);
+        if (documento.getTipo() != TipoDocumento.FACTURA || documento.getEstado() != EstadoDocumento.ANULADA) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo se reactiva una factura anulada");
+        }
+        Documento origen = documento.getCotizacionOrigen();
+        if (origen != null) {
+            if (documentoRepository.findFirstByCotizacionOrigenIdAndEstadoNot(origen.getId(), EstadoDocumento.ANULADA).isPresent()) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "La cotización ya tiene otra factura: no se puede reactivar esta");
+            }
+            String copiaOrigen = copia(origen);
+            origen.setEstado(EstadoDocumento.ACEPTADA);
+            registrarRevision(origen, copiaOrigen, "Factura " + documento.getFolio() + " reactivada");
+        }
+        String copiaAnterior = copia(documento);
+        documento.setEstado(EstadoDocumento.ACTIVA);
+        registrarRevision(documento, copiaAnterior, "Factura reactivada");
         return toResponse(documento, null);
     }
 
@@ -266,9 +315,11 @@ public class DocumentoService {
     }
 
     String siguienteFolio(TipoDocumento tipo) {
-        return tipo == TipoDocumento.COTIZACION
-                ? "COT-%04d".formatted(documentoRepository.siguienteFolioCotizacion())
-                : "FAC-%04d".formatted(documentoRepository.siguienteFolioFactura());
+        return switch (tipo) {
+            case COTIZACION -> "COT-%04d".formatted(documentoRepository.siguienteFolioCotizacion());
+            case FACTURA -> "FAC-%04d".formatted(documentoRepository.siguienteFolioFactura());
+            case HISTORICO -> "HIS-%04d".formatted(documentoRepository.siguienteFolioHistorico());
+        };
     }
 
     /** El usuario en sesión; null si no corresponde a un usuario guardado. */

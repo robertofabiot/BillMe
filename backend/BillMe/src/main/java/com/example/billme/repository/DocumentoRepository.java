@@ -20,8 +20,8 @@ public interface DocumentoRepository extends JpaRepository<Documento, UUID> {
 
     boolean existsByProyectoId(UUID proyectoId);
 
-    /** La factura que salió de una cotización. */
-    Optional<Documento> findFirstByCotizacionOrigenId(UUID cotizacionId);
+    /** La factura activa que salió de una cotización (ignora facturas anuladas). */
+    Optional<Documento> findFirstByCotizacionOrigenIdAndEstadoNot(UUID cotizacionId, EstadoDocumento estado);
 
     Optional<Documento> findByImportKey(String importKey);
 
@@ -30,7 +30,7 @@ public interface DocumentoRepository extends JpaRepository<Documento, UUID> {
      * los más recientes primero.
      */
     @Query("SELECT d FROM Documento d LEFT JOIN d.proyecto p WHERE " +
-           "(:tipo IS NULL OR d.tipo = :tipo) AND " +
+           "((:tipo IS NULL AND d.tipo <> com.example.billme.enums.TipoDocumento.HISTORICO) OR d.tipo = :tipo) AND " +
            "(:estado IS NULL OR d.estado = :estado) AND " +
            "(cast(:clienteId as uuid) IS NULL OR d.cliente.id = :clienteId) AND " +
            "(cast(:proyectoId as uuid) IS NULL OR d.proyecto.id = :proyectoId) AND " +
@@ -58,9 +58,12 @@ public interface DocumentoRepository extends JpaRepository<Documento, UUID> {
     @Query(value = "select nextval('seq_folio_fac')", nativeQuery = true)
     long siguienteFolioFactura();
 
+    @Query(value = "select nextval('seq_folio_his')", nativeQuery = true)
+    long siguienteFolioHistorico();
+
     @Query("SELECT d FROM Documento d WHERE d.cliente.id = :clienteId " +
            "AND d.tipo = com.example.billme.enums.TipoDocumento.FACTURA " +
-           "AND d.estado = com.example.billme.enums.EstadoDocumento.ACTIVA AND d.importKey IS NULL " +
+           "AND d.estado = com.example.billme.enums.EstadoDocumento.ACTIVA " +
            "AND (cast(:proyectoId as uuid) IS NULL OR d.proyecto.id = :proyectoId) " +
            "AND (cast(:desde as date) IS NULL OR d.fecha >= :desde) " +
            "AND (cast(:hasta as date) IS NULL OR d.fecha <= :hasta) " +
@@ -70,7 +73,7 @@ public interface DocumentoRepository extends JpaRepository<Documento, UUID> {
 
     @Query(value = "SELECT d.cliente_id AS clienteid, COALESCE(SUM(d.total), 0) AS suma " +
                    "FROM documentos d JOIN clientes c ON c.id = d.cliente_id " +
-                   "WHERE d.tipo = 'FACTURA' AND d.estado = 'ACTIVA' AND d.import_key IS NULL " +
+                   "WHERE d.tipo = 'FACTURA' AND d.estado = 'ACTIVA' " +
                    "AND (c.fecha_inicio_cuenta IS NULL OR d.fecha >= c.fecha_inicio_cuenta) " +
                    "GROUP BY d.cliente_id", nativeQuery = true)
     List<SumaPorCliente> sumaFacturasPorCliente();
