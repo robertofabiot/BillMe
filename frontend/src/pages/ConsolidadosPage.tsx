@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Consolidado } from '@/types'
 import { consolidadoService } from '@/services/consolidadoService'
-import { formatCurrency, formatDate } from '@/lib/format'
+import { formatCurrency, formatDate, sinAcentos } from '@/lib/format'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Layers, Plus, Search, Building2, Calendar, Trash2 } from 'lucide-react'
@@ -34,13 +34,13 @@ export function ConsolidadosPage() {
 
   /* ── Filter ── */
   const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim()
+    const q = sinAcentos(search)
     return consolidados.filter(c =>
       !q ||
-      c.nombre.toLowerCase().includes(q) ||
-      (c.folio?.toLowerCase().includes(q) ?? false) ||
-      c.clienteNombre.toLowerCase().includes(q) ||
-      (c.proyectoNombre?.toLowerCase().includes(q) ?? false)
+      sinAcentos(c.nombre).includes(q) ||
+      (c.folio ? sinAcentos(c.folio).includes(q) : false) ||
+      sinAcentos(c.clienteNombre).includes(q) ||
+      (c.proyectoNombre ? sinAcentos(c.proyectoNombre).includes(q) : false)
     )
   }, [consolidados, search])
 

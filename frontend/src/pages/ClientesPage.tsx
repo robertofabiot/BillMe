@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Cliente } from '@/types'
 import { clienteService } from '@/services/clienteService'
-import { formatCurrency, textoSaldo } from '@/lib/format'
+import { formatCurrency, sinAcentos, textoSaldo } from '@/lib/format'
 import { ClienteModal } from '@/components/clientes/ClienteModal'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -61,9 +61,9 @@ export function ClientesPage() {
 
   /* ── Filter ── */
   const filtered = useMemo(() => {
-    const q = search.toLowerCase()
+    const q = sinAcentos(search)
     return clientes.filter(c =>
-      !q || c.nombre.toLowerCase().includes(q) || (c.telefono?.includes(q) ?? false)
+      !q || sinAcentos(c.nombre).includes(q) || (c.telefono ? sinAcentos(c.telefono).includes(q) : false)
     )
   }, [clientes, search])
 
