@@ -72,7 +72,6 @@ html, body {
   background-color: var(--color-bg-body);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
-  font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

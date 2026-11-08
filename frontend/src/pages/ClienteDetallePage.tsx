@@ -195,20 +195,20 @@ export function ClienteDetallePage() {
           <Button
             variant="outline"
             onClick={handleEliminarCliente}
-            className="rounded border-red-200 text-red-600 hover:bg-red-50 text-sm gap-1.5"
+            className="rounded border-red-200 text-red-600 hover:bg-red-50 gap-1.5"
           >
             <Trash2 className="w-3.5 h-3.5" /> Eliminar
           </Button>
           <Button
             variant="outline"
             onClick={() => setShowEditCliente(true)}
-            className="rounded border-[#E5E7EB] text-[#022F40] text-sm gap-1.5"
+            className="rounded border-[#E5E7EB] text-[#022F40] gap-1.5"
           >
             <Pencil className="w-3.5 h-3.5" /> Editar
           </Button>
           <Button
             onClick={handleNuevoAbono}
-            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm gap-1.5"
+            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white gap-1.5"
           >
             <Plus className="w-4 h-4" /> Registrar abono
           </Button>
@@ -361,14 +361,14 @@ export function ClienteDetallePage() {
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => handleEditAbono(m)}
-                            className="p-1 rounded text-[#80727B] hover:text-[#022F40] hover:bg-[#F9FAFB] transition-colors"
+                            className="w-11 h-11 flex items-center justify-center rounded text-[#80727B] hover:text-[#022F40] hover:bg-[#F9FAFB] transition-colors"
                             title="Editar abono"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteAbono(m)}
-                            className="p-1 rounded text-[#80727B] hover:text-red-600 hover:bg-red-50 transition-colors"
+                            className="w-11 h-11 flex items-center justify-center rounded text-[#80727B] hover:text-red-600 hover:bg-red-50 transition-colors"
                             title="Eliminar abono"
                           >
                             <Trash2 className="w-3.5 h-3.5" />

@@ -94,7 +94,7 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
           </div>
           <button
             onClick={() => onOpenChange(false)}
-            className="w-7 h-7 flex items-center justify-center rounded hover:bg-[#F9FAFB] text-[#80727B] hover:text-[#022F40] transition-colors"
+            className="w-11 h-11 flex items-center justify-center rounded hover:bg-[#F9FAFB] text-[#80727B] hover:text-[#022F40] transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -151,7 +151,7 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
               <select
                 value={tarifaMoneda}
                 onChange={e => setTarifaMoneda(e.target.value as MonedaTarifa)}
-                className="h-9 rounded border border-[#E5E7EB] bg-white px-2.5 text-sm text-[#022F40] outline-none focus:border-[#022F40]"
+                className="h-11 rounded border border-[#E5E7EB] bg-white px-2.5 text-base text-[#022F40] outline-none focus:border-[#022F40]"
               >
                 <option value="USD">USD</option>
                 <option value="NIO">C$</option>
@@ -196,13 +196,13 @@ export function ClienteModal({ open, onOpenChange, initial, onSave }: Props) {
 
         {/* Footer */}
         <div className="flex justify-end gap-2 px-5 py-4 border-t border-[#E5E7EB] bg-[#F9FAFB] shrink-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded border-[#E5E7EB] text-sm">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded border-[#E5E7EB]">
             Cancelar
           </Button>
           <Button
             onClick={handleSave}
             disabled={guardando || !nombre.trim()}
-            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm"
+            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white"
           >
             {isEdit ? 'Guardar cambios' : 'Crear cliente'}
           </Button>

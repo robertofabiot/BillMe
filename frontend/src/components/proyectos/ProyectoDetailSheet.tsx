@@ -74,10 +74,10 @@ export function ProyectoDetailSheet({ proyecto, open, onOpenChange, onEdit }: Pr
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            <Button size="sm" variant="outline" onClick={() => onEdit(proyecto)} className="rounded border-[#E5E7EB] text-[#022F40] h-8 text-sm gap-1 bg-white">
+            <Button variant="outline" onClick={() => onEdit(proyecto)} className="rounded border-[#E5E7EB] text-[#022F40] gap-1 bg-white">
               <Pencil className="w-3.5 h-3.5" /> Editar
             </Button>
-            <button onClick={() => onOpenChange(false)} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white text-[#80727B] transition-colors ml-1">
+            <button onClick={() => onOpenChange(false)} className="w-11 h-11 flex items-center justify-center rounded hover:bg-white text-[#80727B] transition-colors ml-1">
               <X className="w-4 h-4" />
             </button>
           </div>

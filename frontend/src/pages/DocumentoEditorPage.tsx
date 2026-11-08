@@ -20,6 +20,7 @@ import { CalculadoraPesoDialog } from '@/components/documentos/CalculadoraPesoDi
 import { RegistrarCompraDialog } from '@/components/documentos/RegistrarCompraDialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { useAvisoSalir, SALIR_SIN_GUARDAR } from '@/hooks/useAvisoSalir'
 import { ArrowLeft, FileDown, FileText, History, Plus, ReceiptText, Save, ShoppingCart } from 'lucide-react'
 
 interface Formulario {
@@ -38,9 +39,7 @@ const TITULOS: Record<TipoDocumento, { nuevo: string; lista: string; ruta: strin
   HISTORICO: { nuevo: 'Histórico', lista: 'Precios', ruta: '/precios' },
 }
 
-const SALIR_SIN_GUARDAR = 'Hay cambios sin guardar. ¿Salir sin guardar?'
-
-const SELECT = 'h-9 w-full rounded border border-[#E5E7EB] bg-white px-3 text-sm text-[#022F40] outline-none focus:border-[#022F40] disabled:opacity-60'
+const SELECT = 'h-11 w-full rounded border border-[#E5E7EB] bg-white px-3 text-base text-[#022F40] outline-none focus:border-[#022F40] disabled:opacity-60'
 
 function formularioVacio(): Formulario {
   return { clienteId: '', proyectoId: '', fecha: hoyIso(), notas: '', mostrarEntrega: false, mostrarTotalUsd: false, lineas: [] }
@@ -215,23 +214,7 @@ export function DocumentoEditorPage() {
   }
 
   // Que un clic en el menú o cerrar la pestaña no pierda lo escrito
-  useEffect(() => {
-    if (!cambiosSinGuardar) return
-    const alClic = (e: MouseEvent) => {
-      const enlace = e.target instanceof Element && e.target.closest('a[href]')
-      if (enlace && !window.confirm(SALIR_SIN_GUARDAR)) {
-        e.preventDefault()
-        e.stopPropagation()
-      }
-    }
-    const alCerrar = (e: BeforeUnloadEvent) => e.preventDefault()
-    document.addEventListener('click', alClic, true)
-    window.addEventListener('beforeunload', alCerrar)
-    return () => {
-      document.removeEventListener('click', alClic, true)
-      window.removeEventListener('beforeunload', alCerrar)
-    }
-  }, [cambiosSinGuardar])
+  useAvisoSalir(cambiosSinGuardar)
 
   const proyectosVisibles = useMemo(
     () => proyectos.filter(p => p.estado === 'ACTIVO' || p.id === form.proyectoId),
@@ -496,7 +479,7 @@ export function DocumentoEditorPage() {
       {/* ── Encabezado ── */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <button type="button" onClick={volver} className="text-sm text-[#705D56] hover:text-[#022F40] flex items-center gap-1 mb-1">
+          <button type="button" onClick={volver} className="min-h-11 text-sm text-[#705D56] hover:text-[#022F40] flex items-center gap-1 mb-1">
             <ArrowLeft className="w-3.5 h-3.5" /> {titulos.lista}
           </button>
           <h1 className="text-xl font-semibold text-[#022F40] flex items-center gap-2">
@@ -762,7 +745,7 @@ export function DocumentoEditorPage() {
           <Button
             disabled={trabajando || (Boolean(documento) && !cambiosSinGuardar)}
             onClick={() => void guardar()}
-            className="h-10 px-6 gap-2 bg-[#022F40] hover:bg-[#022F40]/90 text-white"
+            className="px-6 gap-2 bg-[#022F40] hover:bg-[#022F40]/90 text-white"
           >
             <Save className="w-4 h-4" /> {trabajando ? 'Guardando…' : 'Guardar'}
           </Button>

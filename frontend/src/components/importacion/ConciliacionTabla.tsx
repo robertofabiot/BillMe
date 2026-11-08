@@ -40,7 +40,7 @@ export function ConciliacionTabla({ items, decisiones, onChange }: Props) {
                     <select
                       value={valorActual}
                       onChange={e => onChange(item.descripcion, e.target.value)}
-                      className="w-full max-w-md rounded border border-[#E5E7EB] bg-white px-2 text-sm text-[#022F40] outline-none focus:border-[#022F40]"
+                      className="w-full max-w-md h-11 rounded border border-[#E5E7EB] bg-white px-2 text-base text-[#022F40] outline-none focus:border-[#022F40]"
                     >
                       <option value={item.propuestaProductoId}>
                         {item.propuestaNombre} (propuesta genérica)

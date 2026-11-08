@@ -57,56 +57,49 @@ export async function descargarPng(elemento: HTMLElement, nombre: string): Promi
  * Si la altura calculada excede el alto útil de una página, se distribuye en múltiples
  * páginas desplazando la imagen y aplicando máscaras en los márgenes.
  */
-export async function descargarPdf(
-  elemento: HTMLElement,
-  nombre: string,
-  horizontal: boolean
-): Promise<void> {
-  const dataUrl = await toPng(elemento, {
-    pixelRatio: 2,
-    backgroundColor: '#FFFFFF',
-  })
-
+export async function descargarPdf(elemento: HTMLElement, nombre: string, horizontal: boolean): Promise<void> {
+  const dataUrl = await toPng(elemento, { pixelRatio: 2, backgroundColor: '#FFFFFF' })
   const img = new Image()
   img.src = dataUrl
-  await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve()
-    img.onerror = (e) => reject(new Error('No se pudo cargar la imagen para el PDF: ' + String(e)))
-  })
+  await img.decode()
 
-  const pdf = new jsPDF({
-    orientation: horizontal ? 'l' : 'p',
-    unit: 'mm',
-    format: 'letter',
-  })
+  const pdf = new jsPDF({ orientation: horizontal ? 'l' : 'p', unit: 'mm', format: 'letter' })
+  const margen = 10
+  const anchoUtil = pdf.internal.pageSize.getWidth() - margen * 2
+  const altoUtil = pdf.internal.pageSize.getHeight() - margen * 2
 
-  const margin = 10
-  const pageWidth = pdf.internal.pageSize.getWidth()
-  const pageHeight = pdf.internal.pageSize.getHeight()
-  const anchoUtil = pageWidth - margin * 2
-  const altoUtil = pageHeight - margin * 2
+  const anchoCss = elemento.offsetWidth
+  const escala = img.naturalWidth / anchoCss
+  const altoTotalCss = img.naturalHeight / escala
+  const altoPaginaCss = (altoUtil / anchoUtil) * anchoCss
+  const origen = elemento.getBoundingClientRect().top
+  const finesDeFila = [...elemento.querySelectorAll('tr')]
+    .map(fila => fila.getBoundingClientRect().bottom - origen)
 
-  const imgWidth = img.naturalWidth || elemento.offsetWidth || 1
-  const imgHeight = img.naturalHeight || elemento.offsetHeight || 1
-  const altoPdf = (imgHeight / imgWidth) * anchoUtil
-
-  const totalPaginas = Math.max(1, Math.ceil(altoPdf / altoUtil))
-
-  for (let i = 0; i < totalPaginas; i++) {
-    if (i > 0) {
-      pdf.addPage()
+  let inicio = 0
+  let primera = true
+  while (inicio < altoTotalCss - 1) {
+    const limite = inicio + altoPaginaCss
+    let fin = altoTotalCss
+    if (limite < altoTotalCss) {
+      const candidatos = finesDeFila.filter(y => y > inicio && y <= limite)
+      fin = candidatos.length > 0 ? Math.max(...candidatos) : limite
     }
-    const yOffset = margin - i * altoUtil
-    pdf.addImage(dataUrl, 'PNG', margin, yOffset, anchoUtil, altoPdf)
 
-    // Máscaras blancas sobre los márgenes de 10mm para evitar sangrado fuera del área útil
-    pdf.setFillColor(255, 255, 255)
-    pdf.rect(0, 0, pageWidth, margin, 'F')
-    pdf.rect(0, pageHeight - margin, pageWidth, margin, 'F')
-    pdf.rect(0, 0, margin, pageHeight, 'F')
-    pdf.rect(pageWidth - margin, 0, margin, pageHeight, 'F')
+    const recorte = document.createElement('canvas')
+    recorte.width = img.naturalWidth
+    recorte.height = Math.ceil((fin - inicio) * escala)
+    const contexto = recorte.getContext('2d')
+    if (!contexto) throw new Error('No se pudo preparar el PDF')
+    contexto.fillStyle = '#FFFFFF'
+    contexto.fillRect(0, 0, recorte.width, recorte.height)
+    contexto.drawImage(img, 0, -Math.floor(inicio * escala))
+
+    if (!primera) pdf.addPage()
+    pdf.addImage(recorte.toDataURL('image/png'), 'PNG', margen, margen, anchoUtil,
+      ((fin - inicio) / anchoCss) * anchoUtil, undefined, 'FAST')
+    primera = false
+    inicio = fin
   }
-
-  const blob = pdf.output('blob')
-  descargarArchivo(blob, nombre)
+  descargarArchivo(pdf.output('blob'), nombre)
 }

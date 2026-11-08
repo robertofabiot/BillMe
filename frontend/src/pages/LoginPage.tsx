@@ -89,7 +89,7 @@ export function LoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Tu usuario" 
-              className="h-10 bg-[#FFFFFF] border-[#E5E7EB] text-[#022F40] placeholder:text-[#80727B] rounded focus-visible:ring-[#91E5F6]"
+              className="bg-[#FFFFFF] border-[#E5E7EB] text-[#022F40] placeholder:text-[#80727B] rounded focus-visible:ring-[#91E5F6]"
               disabled={isSubmitting}
             />
           </div>
@@ -101,7 +101,7 @@ export function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••" 
-              className="h-10 bg-[#FFFFFF] border-[#E5E7EB] text-[#022F40] placeholder:text-[#80727B] rounded focus-visible:ring-[#91E5F6]"
+              className="bg-[#FFFFFF] border-[#E5E7EB] text-[#022F40] placeholder:text-[#80727B] rounded focus-visible:ring-[#91E5F6]"
               disabled={isSubmitting}
             />
           </div>
@@ -109,7 +109,7 @@ export function LoginPage() {
           <Button 
             type="submit"
             disabled={isSubmitting || !username || !password}
-            className="mt-2 h-10 w-full bg-[#91E5F6] hover:bg-[#91E5F6]/80 text-[#022F40] font-semibold rounded shadow-none border border-[#91E5F6]/20 transition-colors"
+            className="mt-2 w-full bg-[#91E5F6] hover:bg-[#91E5F6]/80 text-[#022F40] font-semibold rounded shadow-none border border-[#91E5F6]/20 transition-colors"
           >
             {isSubmitting ? 'Verificando...' : 'Entrar'}
           </Button>

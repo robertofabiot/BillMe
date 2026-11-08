@@ -103,7 +103,7 @@ export function ClientesPage() {
         </div>
         <Button
           onClick={openCreate}
-          className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm gap-2"
+          className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white gap-2"
         >
           <Plus className="w-4 h-4" /> Nuevo cliente
         </Button>

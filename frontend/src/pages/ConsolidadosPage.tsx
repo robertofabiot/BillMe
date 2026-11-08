@@ -80,7 +80,7 @@ export function ConsolidadosPage() {
         </div>
         <Button
           onClick={() => navigate('/consolidados/nuevo')}
-          className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm gap-2"
+          className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white gap-2"
         >
           <Plus className="w-4 h-4" /> Nuevo consolidado
         </Button>
@@ -127,7 +127,7 @@ export function ConsolidadosPage() {
                   </div>
                   <button
                     onClick={e => handleDelete(e, c)}
-                    className="p-1 rounded text-[#80727B] hover:text-red-600 hover:bg-red-50 transition-colors"
+                    className="w-11 h-11 flex items-center justify-center rounded text-[#80727B] hover:text-red-600 hover:bg-red-50 transition-colors"
                     title="Eliminar consolidado"
                   >
                     <Trash2 className="w-3.5 h-3.5" />

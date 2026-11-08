@@ -211,8 +211,8 @@ public class ConsolidadoService {
                 LocalDate fechaGrupo = l.getFechaEntrega() != null ? l.getFechaEntrega() : f.getFecha();
                 BigDecimal cant = l.getCantidad();
                 BigDecimal pUnit = l.getPrecioUnit();
-                BigDecimal pesoUnit = l.getPesoUnitKg() != null ? l.getPesoUnitKg() : BigDecimal.ZERO;
-                BigDecimal pesoTot = l.getPesoTotalKg() != null ? l.getPesoTotalKg() : pesoUnit.multiply(cant);
+                BigDecimal pesoUnit = l.getPesoUnitKg();
+                BigDecimal pesoTot = l.getPesoTotalKg();
                 BigDecimal tot = l.getTotal();
                 ConsolidadoResponse.Linea dto = new ConsolidadoResponse.Linea(
                         f.getId(), f.getFolio(), cant, l.getDescripcion(), pesoUnit, pesoTot, pUnit, tot, l.getLugarEntrega()
@@ -232,8 +232,9 @@ public class ConsolidadoService {
                     .thenComparingInt(LineaSortable::orden));
 
             List<ConsolidadoResponse.Linea> lineasDtos = items.stream().map(LineaSortable::linea).toList();
+            boolean editado = nombresGuardados != null && nombresGuardados.containsKey(fecha);
             String defaultNombre = "Subtotal " + n + " (" + Fechas.diaYMes(fecha) + ")";
-            String nombre = (nombresGuardados != null && nombresGuardados.containsKey(fecha))
+            String nombre = editado
                     ? nombresGuardados.get(fecha)
                     : defaultNombre;
 
@@ -242,9 +243,10 @@ public class ConsolidadoService {
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             BigDecimal subtotalKg = lineasDtos.stream()
                     .map(ConsolidadoResponse.Linea::pesoTotalKg)
+                    .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            grupos.add(new ConsolidadoResponse.Grupo(fecha, nombre, lineasDtos, subtotal, subtotalKg));
+            grupos.add(new ConsolidadoResponse.Grupo(fecha, nombre, lineasDtos, subtotal, subtotalKg, editado));
             n++;
         }
 

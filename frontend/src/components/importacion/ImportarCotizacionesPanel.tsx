@@ -114,7 +114,7 @@ export function ImportarCotizacionesPanel() {
               id="cliente-cotizaciones"
               value={clienteId}
               onChange={elegirCliente}
-              className="w-full rounded border border-[#E5E7EB] bg-white px-3 text-sm text-[#022F40] outline-none focus:border-[#022F40]"
+              className="w-full h-11 rounded border border-[#E5E7EB] bg-white px-3 text-base text-[#022F40] outline-none focus:border-[#022F40]"
             >
               <option value="">Elige un cliente…</option>
               {clientes.map(c => (

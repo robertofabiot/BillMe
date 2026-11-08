@@ -120,7 +120,7 @@ export function DocumentosPage({ tipo }: { tipo: Exclude<TipoDocumento, 'HISTORI
           aria-label="Filtrar por estado"
           value={estado}
           onChange={e => handleEstadoChange(e.target.value as EstadoDocumento | '')}
-          className="rounded border border-[#E5E7EB] bg-white px-3 h-11 text-sm text-[#022F40] outline-none focus:border-[#022F40]"
+          className="rounded border border-[#E5E7EB] bg-white px-3 h-11 text-base text-[#022F40] outline-none focus:border-[#022F40]"
         >
           <option value="">Todos los estados</option>
           {ESTADOS[tipo].map(e => <option key={e.valor} value={e.valor}>{e.texto}</option>)}
@@ -166,7 +166,7 @@ export function DocumentosPage({ tipo }: { tipo: Exclude<TipoDocumento, 'HISTORI
                 onClick={() => navigate(`/documentos/${d.id}`)}
                 className="border-b border-[#E5E7EB] last:border-b-0 hover:bg-[#F9FAFB] cursor-pointer transition-colors"
               >
-                <td className="px-4 py-3 font-mono text-sm font-semibold text-[#022F40]">
+                <td className="px-4 py-3 font-mono text-sm font-semibold text-[#022F40] whitespace-nowrap">
                   <Link to={`/documentos/${d.id}`} onClick={e => e.stopPropagation()}>{d.folio}</Link>
                 </td>
                 <td className="px-4 py-3 text-[#705D56] whitespace-nowrap">{formatDate(d.fecha)}</td>
@@ -188,7 +188,6 @@ export function DocumentosPage({ tipo }: { tipo: Exclude<TipoDocumento, 'HISTORI
           variant="outline"
           disabled={pagina <= 0 || cargando}
           onClick={() => setPagina(p => Math.max(0, p - 1))}
-          className="text-sm"
         >
           Anterior
         </Button>
@@ -199,7 +198,6 @@ export function DocumentosPage({ tipo }: { tipo: Exclude<TipoDocumento, 'HISTORI
           variant="outline"
           disabled={pagina >= totalPaginas - 1 || cargando}
           onClick={() => setPagina(p => p + 1)}
-          className="text-sm"
         >
           Siguiente
         </Button>

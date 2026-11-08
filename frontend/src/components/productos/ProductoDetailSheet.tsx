@@ -132,24 +132,22 @@ export function ProductoDetailSheet({ producto, open, onOpenChange, onEdit, onPr
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <Button
-              size="sm"
               variant="outline"
               onClick={handleEliminar}
-              className="rounded border-red-200 text-red-600 hover:bg-red-50 text-sm gap-1"
+              className="rounded border-red-200 text-red-600 hover:bg-red-50 gap-1"
             >
               <Trash2 className="w-3.5 h-3.5" /> Eliminar
             </Button>
             <Button
-              size="sm"
               variant="outline"
               onClick={() => onEdit(producto)}
-              className="rounded border-[#E5E7EB] text-[#022F40] text-sm gap-1"
+              className="rounded border-[#E5E7EB] text-[#022F40] gap-1"
             >
               <Pencil className="w-3.5 h-3.5" /> Editar
             </Button>
             <button
               onClick={() => onOpenChange(false)}
-              className="w-8 h-8 flex items-center justify-center rounded hover:bg-[#F9FAFB] text-[#80727B] transition-colors ml-1"
+              className="w-11 h-11 flex items-center justify-center rounded hover:bg-[#F9FAFB] text-[#80727B] transition-colors ml-1"
             >
               <X className="w-4 h-4" />
             </button>
@@ -205,7 +203,7 @@ export function ProductoDetailSheet({ producto, open, onOpenChange, onEdit, onPr
               <h3 className="text-sm font-semibold uppercase tracking-wider text-[#80727B] flex items-center gap-1.5">
                 <Receipt className="w-3.5 h-3.5" /> Precio de lista del proveedor
               </h3>
-              <Button size="sm" variant="outline" onClick={() => setCalculando(true)} className="text-sm gap-1">
+              <Button variant="outline" onClick={() => setCalculando(true)} className="gap-1">
                 <Calculator className="w-3.5 h-3.5" /> Calcular precio de lista
               </Button>
             </div>

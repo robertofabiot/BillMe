@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { AlertTriangle, BarChart3 } from 'lucide-react'
 
 const SELECT =
-  'h-9 w-full rounded border border-[#E5E7EB] bg-white px-3 text-sm text-[#022F40] outline-none focus:border-[#022F40] disabled:opacity-60'
+  'h-11 w-full rounded border border-[#E5E7EB] bg-white px-3 text-base text-[#022F40] outline-none focus:border-[#022F40] disabled:opacity-60'
 
 export function ReportesPage() {
   const [desde, setDesde] = useState('')

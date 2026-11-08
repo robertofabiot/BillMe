@@ -122,14 +122,14 @@ export function ProyectosPage() {
         </div>
         <Button
           onClick={openCreate}
-          className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm gap-2"
+          className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white gap-2"
         >
           <Plus className="w-4 h-4" /> Nuevo proyecto
         </Button>
       </div>
 
       {/* ── Stats ── */}
-      <div className="grid grid-cols-3 gap-4 max-w-4xl">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl">
         <StatCard icon={FolderGit2} label="Total de proyectos" value={String(stats.total)} />
         <StatCard icon={CheckCircle2} label="Proyectos activos" value={String(stats.activos)} accent="bg-[#558564]" />
         <StatCard icon={TrendingUp} label="Total facturado" value={formatCurrency(stats.facturado)} accent="bg-[#022F40]" />

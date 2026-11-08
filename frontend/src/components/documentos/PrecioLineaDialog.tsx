@@ -331,7 +331,7 @@ export function PrecioLineaDialog({
                         value={descuentoPct}
                         onChange={e => setDescuentoPct(e.target.value)}
                         onFocus={() => setMetodo('FORMULA_LISTA')}
-                        className="w-16 h-7 text-sm px-1.5"
+                        className="w-24 px-1.5"
                         onClick={e => e.stopPropagation()}
                       />
                       <span>%</span>
@@ -372,7 +372,7 @@ export function PrecioLineaDialog({
                         value={tarifaPeso}
                         onChange={e => setTarifaPeso(e.target.value)}
                         onFocus={() => setMetodo('POR_PESO')}
-                        className="w-24 h-7 text-sm px-2"
+                        className="w-24 px-2"
                       />
                       <select
                         value={monedaPeso}
@@ -381,7 +381,7 @@ export function PrecioLineaDialog({
                           setMonedaPeso(e.target.value as MonedaTarifa)
                         }}
                         onFocus={() => setMetodo('POR_PESO')}
-                        className="h-7 rounded border border-[#E5E7EB] bg-white px-2 text-sm text-[#022F40] outline-none"
+                        className="h-11 rounded border border-[#E5E7EB] bg-white px-2 text-base text-[#022F40] outline-none"
                       >
                         <option value="USD">USD</option>
                         <option value="NIO">C$</option>
@@ -406,12 +406,11 @@ export function PrecioLineaDialog({
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
                     onClick={() => {
                       onOpenChange(false)
                       onAbrirCalculadoraPeso()
                     }}
-                    className="text-sm font-medium text-[#022F40]"
+                    className="font-medium text-[#022F40]"
                   >
                     Abrir calculadora
                   </Button>
@@ -447,7 +446,7 @@ export function PrecioLineaDialog({
                       value={precioRef}
                       onChange={e => setPrecioRef(e.target.value)}
                       onFocus={() => setMetodo('POR_METRO')}
-                      className="h-7 text-sm px-2"
+                      className="px-2"
                     />
                   </div>
                   <div className="flex flex-col gap-1">
@@ -460,7 +459,7 @@ export function PrecioLineaDialog({
                       value={largoRef}
                       onChange={e => setLargoRef(e.target.value)}
                       onFocus={() => setMetodo('POR_METRO')}
-                      className="h-7 text-sm px-2"
+                      className="px-2"
                     />
                   </div>
                   <div className="flex flex-col gap-1">
@@ -473,7 +472,7 @@ export function PrecioLineaDialog({
                       value={largoNuevo}
                       onChange={e => setLargoNuevo(e.target.value)}
                       onFocus={() => setMetodo('POR_METRO')}
-                      className="h-7 text-sm px-2"
+                      className="px-2"
                     />
                   </div>
                 </div>
@@ -488,7 +487,6 @@ export function PrecioLineaDialog({
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="text-sm"
           >
             Cancelar
           </Button>
@@ -496,7 +494,7 @@ export function PrecioLineaDialog({
             type="button"
             onClick={handleAplicar}
             disabled={!puedeAplicar}
-            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm"
+            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white"
           >
             Usar este precio
           </Button>

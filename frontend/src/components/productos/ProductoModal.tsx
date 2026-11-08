@@ -104,7 +104,7 @@ export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
               {isEdit ? 'Editar producto' : 'Nuevo producto'}
             </h2>
           </div>
-          <button onClick={() => onOpenChange(false)} className="w-7 h-7 flex items-center justify-center rounded hover:bg-[#F9FAFB] text-[#80727B] transition-colors">
+          <button onClick={() => onOpenChange(false)} className="w-11 h-11 flex items-center justify-center rounded hover:bg-[#F9FAFB] text-[#80727B] transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -170,16 +170,16 @@ export function ProductoModal({ open, onOpenChange, initial, onSave }: Props) {
                 onChange={(e: ChangeEvent<HTMLInputElement>) => setAliasIn(e.target.value)}
                 onKeyDown={handleAliasKey}
                 placeholder={aliases.length === 0 ? 'Escribe y presiona Enter…' : ''}
-                className="flex-1 min-w-[120px] text-sm text-[#022F40] placeholder:text-[#80727B] outline-none bg-transparent py-0.5" />
+                className="flex-1 min-w-[120px] text-base text-[#022F40] placeholder:text-[#80727B] outline-none bg-transparent py-0.5" />
             </div>
           </div>
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-end px-5 py-4 border-t border-[#E5E7EB] bg-[#F9FAFB] shrink-0 gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded border-[#E5E7EB] text-sm">Cancelar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded border-[#E5E7EB]">Cancelar</Button>
           <Button onClick={handleSave} disabled={guardando || !codigo.trim() || !nombre.trim()}
-            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white text-sm h-9 gap-1">
+            className="rounded bg-[#022F40] hover:bg-[#022F40]/90 text-white gap-1">
             <Plus className="w-3.5 h-3.5" />
             {isEdit ? 'Guardar cambios' : 'Crear producto'}
           </Button>
