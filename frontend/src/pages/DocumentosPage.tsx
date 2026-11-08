@@ -192,7 +192,7 @@ export function DocumentosPage({ tipo }: { tipo: Exclude<TipoDocumento, 'HISTORI
           Anterior
         </Button>
         <span className="text-sm text-[#705D56]">
-          Página {totalPaginas === 0 ? 0 : pagina + 1} de {Math.max(1, totalPaginas)}
+          Página {pagina + 1} de {Math.max(1, totalPaginas)}
         </span>
         <Button
           variant="outline"

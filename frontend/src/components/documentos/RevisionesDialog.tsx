@@ -3,6 +3,7 @@ import type { Documento, MetodoPrecio, RevisionDocumento } from '@/types'
 import { documentoService } from '@/services/documentoService'
 import { formatCurrency, formatDate, formatUsd } from '@/lib/format'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { EstadoDocumentoBadge } from './EstadoDocumentoBadge'
 
 interface Props {
   documentoActual: Documento
@@ -93,7 +94,7 @@ export function RevisionesDialog({ documentoActual, open, onOpenChange }: Props)
                   </div>
                   <div className={`p-1.5 rounded ${cambioEstado ? 'bg-amber-100' : ''}`}>
                     <span className="text-[#705D56] font-medium block">Estado</span>
-                    <span className="text-[#022F40] font-semibold">{doc.estado}</span>
+                    <EstadoDocumentoBadge documento={doc} />
                   </div>
                   <div className={`p-1.5 rounded ${cambioCliente ? 'bg-amber-100' : ''}`}>
                     <span className="text-[#705D56] font-medium block">Cliente</span>
