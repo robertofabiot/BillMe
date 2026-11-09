@@ -35,8 +35,9 @@ Ambos comandos deben pasar. `./mvnw` necesita `JAVA_HOME` apuntando a un JDK 21.
 | C5 | `fix/interfaz-pre-deploy` | Legibilidad, barra fija, consolidados y PDF | — | Hecho |
 | C6 | `fix/logica-menor` | Búsqueda, orden, cambio de cliente y mensajes | — | Hecho |
 | C7 | `docs/actualizacion-final` | Documentación final | — | Hecho |
+| C8 | `fix/auditoria-final` | Hallazgos de la auditoría final | — | Hecho |
 
-Después de C7 sigue la sección [Deploy](#deploy). El backend vive en `backend/BillMe/src/main/java/com/example/billme/` (abreviado `BE/`) y el frontend en `frontend/src/` (abreviado `FE/`).
+C8 se agregó el 2026-11-08, tras auditar `main` en `40f8aa8`. No bloquea los pasos 1 a 9 del [Deploy](#deploy): puede hacerse en paralelo, pero debe estar en `main` antes del paso 10 (entrega). El backend vive en `backend/BillMe/src/main/java/com/example/billme/` (abreviado `BE/`) y el frontend en `frontend/src/` (abreviado `FE/`).
 
 ---
 
@@ -1075,11 +1076,113 @@ Actualizar las decisiones, fórmulas y modelo de datos para que coincidan con C2
 
 ---
 
+## C8 · Hallazgos de la auditoría final
+
+La auditoría corrió `./mvnw -B verify` (253 tests, 0 fallos), `npm run lint`, `npm run build` y `npm audit --omit=dev` (0 vulnerabilidades), y probó la app en local con el perfil `prod`, la memoria limitada como en Render (`-Xmx307m`) y un Postgres 17 vacío: cotización → factura, precio por peso y recálculo al cambiar el peso, compra con peso real, anular y reactivar, abono anterior al inicio rechazado, consolidado renombrado guardado dos veces, Excel de documento y consolidado, historial, importación de la lista y del histórico, y reimportación sin duplicados. Todo dio los valores esperados. Quedan estos cuatro arreglos y un ajuste del despliegue.
+
+### 1. Peso y precio ilegibles en la tabla de líneas
+
+En escritorio, la tabla se encoge para caber en el ancho y los campos de peso y precio se aplastan. A 1366 px con "Anotar fecha y lugar de entrega" activado, el peso mide 38 px y el precio 56 px: no cabe `1,035.00`. Con el zoom del navegador al 150 % pasa aunque la entrega esté apagada.
+
+En `FE/components/documentos/LineasTabla.tsx`, solo en la vista de escritorio (la tabla), agregar un ancho mínimo a tres campos. La tabla ya está dentro de un contenedor con `overflow-x-auto`, así que se desplaza de lado en vez de aplastarse.
+
+| Campo | `className` |
+|---|---|
+| Peso unitario | `` `${CELDA} min-w-20` `` |
+| Precio unitario | `` `${CELDA} min-w-28` `` |
+| Lugar de entrega | `` `${CELDA} min-w-32` `` |
+
+**Verificación manual:** abrir una factura con "Anotar fecha y lugar de entrega" activado, a 1366×768 y a 910×600, y ejecutar en la consola:
+
+```js
+[...document.querySelectorAll('table input')].filter(e => e.offsetParent)
+  .map(e => e.getAttribute('aria-label').split(' ')[0] + ':' + e.offsetWidth)
+```
+
+El peso debe medir al menos 80, el precio al menos 112 y el lugar al menos 128. `document.documentElement.scrollWidth > innerWidth` debe dar `false`.
+
+### 2. El importador rechaza libros con hojas grandes
+
+`OPCPackage.open(InputStream)` carga cada hoja entera en memoria y POI rechaza las de más de 100 MB descomprimidos. Un `cotizaciones1` antiguo de 15 MB trae una hoja de 126 MB: la vista previa responde `No se pudo leer el archivo. Debe ser un Excel (.xlsx o .xlsm).` aunque sí lo es. Abierto desde un archivo, POI lee la hoja por partes: el mismo libro se recorre en 0.3 s con 77 MB de memoria.
+
+- `BE/importacion/LectorExcel.java`: agregar estos dos métodos.
+
+```java
+/**
+ * Copia el Excel subido a un archivo temporal. Abierto desde un archivo, POI lee cada hoja
+ * por partes; desde un InputStream la carga entera en memoria y rechaza las de más de 100 MB.
+ */
+static Path copiarATemporal(InputStream archivo) throws IOException {
+    Path temporal = Files.createTempFile("billme-", ".xlsx");
+    Files.copy(archivo, temporal, StandardCopyOption.REPLACE_EXISTING);
+    return temporal;
+}
+
+static void borrar(Path temporal) {
+    if (temporal == null) {
+        return;
+    }
+    try {
+        Files.deleteIfExists(temporal);
+    } catch (IOException ignored) {
+        // Es un archivo temporal: si no se puede borrar, lo limpia el sistema
+    }
+}
+```
+
+- `BE/importacion/ListaPreciosLector.java` y `BE/importacion/CotizacionesLector.java`, método `leer`: el `try (OPCPackage paquete = OPCPackage.open(archivo))` pasa a quedar dentro de un `try` que copia primero el archivo y lo borra al final. El contenido del bloque y los dos `catch` no cambian:
+
+```java
+Path temporal = null;
+try {
+    temporal = LectorExcel.copiarATemporal(archivo);
+    try (OPCPackage paquete = OPCPackage.open(temporal.toFile(), PackageAccess.READ)) {
+        // … lo mismo que hoy …
+    }
+} catch (ResponseStatusException e) {
+    throw e;
+} catch (Exception e) {
+    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+            "No se pudo leer el archivo. Debe ser un Excel (.xlsx o .xlsm).", e);
+} finally {
+    LectorExcel.borrar(temporal);
+}
+```
+
+- Los tests actuales de `ListaPreciosLectorTest`, `CotizacionesLectorTest`, `ImportacionListaTest` e `ImportacionCotizacionesTest` deben seguir pasando sin cambios.
+
+**Verificación manual:** con el backend en local, la vista previa del `cotizaciones1` antiguo de 15 MB (fuera del repositorio) responde 200 en vez de 400.
+
+### 3. El historial muestra el estado en mayúsculas
+
+En `FE/components/documentos/RevisionesDialog.tsx`, el dato Estado muestra `ANULADA`, `ACTIVA`, etc. Sustituir `{doc.estado}` por `<EstadoDocumentoBadge documento={doc} />`, importado de `./EstadoDocumentoBadge`. El resaltado `bg-amber-100` del contenedor no cambia.
+
+### 4. "Página 0 de 1" en listas vacías
+
+`FE/pages/DocumentosPage.tsx`: el texto de paginación pasa a `Página {pagina + 1} de {Math.max(1, totalPaginas)}`.
+
+### 5. Despliegue: cerrar la Data API de Supabase
+
+El backend se conecta directo a Postgres y no usa la API REST de Supabase. Esa API expone las tablas de `public` a quien tenga la clave `anon`, y las tablas que crea Flyway no tienen RLS. En `docs/Despliegue.md`, sección 1, agregar como paso 2 (los siguientes se renumeran):
+
+> 2. **Data API apagada:** BillMe no la usa. Al crear el proyecto, desmarca *Enable Data API*; si ya existe, desactívala en *Project Settings → Data API*. Comprueba en *Advisors → Security Advisor* que no queden avisos de tablas expuestas.
+
+### Fuera de C8
+
+Se revisaron y se dejan como están, para no complicar la app:
+
+- "Elegir precio", al editar un documento guardado, puede ofrecer como "Último precio" el de ese mismo documento.
+- En un consolidado guardado, cambiar las fechas no refresca la tabla hasta presionar "Ver consolidado". Exportar queda bloqueado mientras tanto.
+- "Cerrar sesión" y el botón Atrás del navegador no avisan de cambios sin guardar; los enlaces del menú sí.
+- El login no limita intentos: usar contraseñas de 12 caracteres o más.
+
+---
+
 ## Deploy
 
 Hacerlo cuando C1 a C7 estén en `main` con el CI en verde. Las cuentas y secretos los maneja el dueño del proyecto; nunca se escriben en el repositorio.
 
-1. **Supabase.** Crear el proyecto en *East US (North Virginia)*. Como la base es nueva, no hay que borrar tablas. Copiar de *Connect → Session pooler* el host real, porque puede no ser igual al ejemplo de `docs/Despliegue.md`.
+1. **Supabase.** Crear el proyecto en *East US (North Virginia)* con *Enable Data API* desmarcado (ver C8.5). Como la base es nueva, no hay que borrar tablas. Copiar de *Connect → Session pooler* el host real, porque puede no ser igual al ejemplo de `docs/Despliegue.md`.
 2. **Render.** *New → Blueprint* con este repositorio y las variables de `docs/Despliegue.md`, sección 2. Comprobar en los logs que la imagen Docker construye, que aparece `Successfully applied 12 migrations` y `Usuario inicial '…' creado`, y que `/actuator/health` responde `UP`.
 3. **Vercel.** Root Directory `frontend` y `VITE_API_URL=https://<servicio>.onrender.com/api`. Copiar el dominio en `CORS_ALLOWED_ORIGINS` de Render, sin barra final, y reiniciar.
 4. **GitHub.** Crear los secretos `SUPABASE_DB_URL` y `RESPALDO_CLAVE`, y la variable `BACKEND_URL`. Correr a mano *Respaldo semanal* y *Mantener despierto el backend*.
@@ -1105,4 +1208,4 @@ Hacerlo cuando C1 a C7 estén en `main` con el CI en verde. Las cuentas y secret
    - Facturas sigue vacía.
    - Ganancias y saldos quedan en cero.
    - El precio sugerido ya funciona.
-10. **Entrega.** El dueño del proyecto hace la primera factura real junto con quien la usará a diario.
+10. **Entrega.** Con C8 ya en `main` y desplegado, el dueño del proyecto hace la primera factura real junto con quien la usará a diario.

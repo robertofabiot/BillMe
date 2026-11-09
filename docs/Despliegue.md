@@ -10,7 +10,8 @@ Todo corre en planes gratuitos. Antes de crear cada servicio, revisa los límite
 ## 1. Supabase (base de datos)
 
 1. **Región:** usa la misma región que el backend. `render.yaml` crea el servicio en `virginia`, que equivale a *East US (North Virginia)* en Supabase. Si tu proyecto de Supabase ya existe en otra región, cambia `region` en `render.yaml` **antes** de crear el servicio en Render: después no se puede cambiar.
-2. **Solo la primera vez:** borra las tablas que dejó la versión anterior (`ddl-auto=update`). Flyway no arranca sobre un esquema creado a mano. En *SQL Editor*:
+2. **Data API apagada:** BillMe no la usa. Al crear el proyecto, desmarca *Enable Data API*; si ya existe, desactívala en *Project Settings → Data API*. Comprueba en *Advisors → Security Advisor* que no queden avisos de tablas expuestas.
+3. **Solo la primera vez:** borra las tablas que dejó la versión anterior (`ddl-auto=update`). Flyway no arranca sobre un esquema creado a mano. En *SQL Editor*:
 
    ```sql
    drop table if exists consolidado_items, consolidado_groups, consolidados, abonos,
@@ -18,7 +19,7 @@ Todo corre en planes gratuitos. Antes de crear cada servicio, revisa los límite
        usuarios cascade;
    ```
 
-3. **Cadena de conexión:** en *Project Settings → Database → Connection string*, elige **Session pooler** (puerto 5432). La conexión directa solo funciona por IPv6, y ni Render ni GitHub la tienen.
+4. **Cadena de conexión:** en *Project Settings → Database → Connection string*, elige **Session pooler** (puerto 5432). La conexión directa solo funciona por IPv6, y ni Render ni GitHub la tienen.
 
    | Para | Formato |
    |---|---|

@@ -2,6 +2,7 @@ package com.example.billme.importacion;
 
 import com.example.billme.util.NormalizadorTexto;
 import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.openxml4j.opc.PackageAccess;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import org.xml.sax.SAXException;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -36,16 +38,20 @@ public class ListaPreciosLector {
             Map.entry("caja", "CAJA"), Map.entry("cubeta", "CUBETA"));
 
     public LecturaListaPrecios leer(InputStream archivo) {
-        try (OPCPackage paquete = OPCPackage.open(archivo)) {
-            XSSFReader lector = new XSSFReader(paquete);
-            ReadOnlySharedStringsTable textos = new ReadOnlySharedStringsTable(paquete);
-            XSSFReader.SheetIterator hojas = (XSSFReader.SheetIterator) lector.getSheetsData();
-            while (hojas.hasNext()) {
-                try (InputStream hoja = hojas.next()) {
-                    ManejadorLista manejador = new ManejadorLista();
-                    LectorExcel.recorrer(hoja, textos, manejador);
-                    if (manejador.columnas != null) {
-                        return new LecturaListaPrecios(hojas.getSheetName(), manejador.filas, manejador.ignoradas);
+        Path temporal = null;
+        try {
+            temporal = LectorExcel.copiarATemporal(archivo);
+            try (OPCPackage paquete = OPCPackage.open(temporal.toFile(), PackageAccess.READ)) {
+                XSSFReader lector = new XSSFReader(paquete);
+                ReadOnlySharedStringsTable textos = new ReadOnlySharedStringsTable(paquete);
+                XSSFReader.SheetIterator hojas = (XSSFReader.SheetIterator) lector.getSheetsData();
+                while (hojas.hasNext()) {
+                    try (InputStream hoja = hojas.next()) {
+                        ManejadorLista manejador = new ManejadorLista();
+                        LectorExcel.recorrer(hoja, textos, manejador);
+                        if (manejador.columnas != null) {
+                            return new LecturaListaPrecios(hojas.getSheetName(), manejador.filas, manejador.ignoradas);
+                        }
                     }
                 }
             }
@@ -54,6 +60,8 @@ public class ListaPreciosLector {
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "No se pudo leer el archivo. Debe ser un Excel (.xlsx o .xlsm).", e);
+        } finally {
+            LectorExcel.borrar(temporal);
         }
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "No se encontró una hoja con columnas de código, descripción y precio.");

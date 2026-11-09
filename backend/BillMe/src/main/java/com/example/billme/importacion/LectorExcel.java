@@ -8,7 +8,11 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -22,6 +26,27 @@ import java.util.Set;
 public final class LectorExcel {
 
     private LectorExcel() {}
+
+    /**
+     * Copia el Excel subido a un archivo temporal. Abierto desde un archivo, POI lee cada hoja
+     * por partes; desde un InputStream la carga entera en memoria y rechaza las de más de 100 MB.
+     */
+    static Path copiarATemporal(InputStream archivo) throws IOException {
+        Path temporal = Files.createTempFile("billme-", ".xlsx");
+        Files.copy(archivo, temporal, StandardCopyOption.REPLACE_EXISTING);
+        return temporal;
+    }
+
+    static void borrar(Path temporal) {
+        if (temporal == null) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(temporal);
+        } catch (IOException ignored) {
+            // Es un archivo temporal: si no se puede borrar, lo limpia el sistema
+        }
+    }
 
     public interface ManejadorFila {
         void fila(int numero, Map<String, String> celdas, Set<String> numericas) throws SAXException;

@@ -239,7 +239,7 @@ export function LineasTabla({
                         type="number" min="0" step="any"
                         value={l.pesoUnitKg}
                         onChange={e => onCambiarPeso(l.clave, e.target.value)}
-                        className={CELDA}
+                        className={`${CELDA} min-w-20`}
                       />
                       {!soloLectura && onAbrirCalculadora && (
                         <button
@@ -264,7 +264,7 @@ export function LineasTabla({
                         type="number" min="0" step="any"
                         value={l.precioUnit}
                         onChange={e => onCambiar(l.clave, { precioUnit: e.target.value, metodoPrecio: 'MANUAL', parametros: null })}
-                        className={CELDA}
+                        className={`${CELDA} min-w-28`}
                       />
                       {!soloLectura && onAbrirPrecio && (
                         <button
@@ -310,7 +310,7 @@ export function LineasTabla({
                         value={l.lugarEntrega}
                         maxLength={200}
                         onChange={e => onCambiar(l.clave, { lugarEntrega: e.target.value })}
-                        className={CELDA}
+                        className={`${CELDA} min-w-32`}
                       />
                     </td>
                   )}
